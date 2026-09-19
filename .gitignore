@@ -4,3 +4,4 @@ __pycache__/
 runs/
 .pytest_cache/
 .hypothesis/
+calm_coder/demo/web/logs/

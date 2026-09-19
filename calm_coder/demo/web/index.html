@@ -126,6 +126,10 @@ function play(shuffled) {
   timer = setInterval(() => {
     if (i >= ev.length) {
       clearInterval(timer);
+      // per-candidate tokens only cover emissions that reached the store; the run's own totals are
+      // what the arms are compared on, so the counters land on them
+      if (data.right.decode_tokens) $('rTok').textContent = data.right.decode_tokens;
+      if (data.left.decode_tokens) $('lTok').textContent = data.left.decode_tokens;
       const dead = data.right.dead_slots;
       $('rVerdict').innerHTML = data.right.solved
         ? `<span class="ok">verified composition</span> — ${data.right.decode_tokens} decode tokens` +

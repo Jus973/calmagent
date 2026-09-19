@@ -116,6 +116,29 @@ def test_cache_reuse_across_runs_records_outcomes_and_marks_them(toy, monkeypatc
     assert all(o.detail.startswith("reused:") for o in second.outcomes())
 
 
+def test_phase1_stub_outcome_is_reused_in_phase2(toy, monkeypatch):
+    calls = _spy(monkeypatch)
+    store, comp = _good_store(toy)
+    sched = Scheduler(toy, store, reuse_class_outcomes=True)
+    asyncio.run(sched.stub_test(comp.binding["norm"]))       # `norm` calls nothing, so the stub context
+    calls.clear()                                            # is the same reachable content as the full one
+    asyncio.run(sched.run_full(comp))
+    assert "ToyTestNorm" not in [t for c in calls for t in c]
+
+
+def test_fail_fast_stops_a_composition_at_the_first_failing_class(toy, monkeypatch):
+    calls = _spy(monkeypatch)
+    store = Store()
+    comp = Composition.make({s: _add(toy, store, s, GOOD[s] if s != "get" else BAD["get"]) for s in GOOD})
+    sched = Scheduler(toy, store, fail_fast=True)
+    res, _, _ = asyncio.run(sched.run_full(comp))
+    assert all(len(c) == 1 for c in calls)                   # a class at a time, so one failure can end it
+    assert len(calls) <= len(toy.test_classes)
+    assert res["ToyTestGet"] != "pass"                       # the failure that ended it is still a fact
+    assert {o.test_id for o in store.outcomes()} == set(res)
+    assert comp.id not in verified(store, toy)
+
+
 @pytest.mark.parametrize("width", [1, 4])
 def test_parallel_search_derives_the_same_facts(toy, width):
     store = Store()

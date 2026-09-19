@@ -86,9 +86,10 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
     """Every slot concurrently; each sample is ingested the moment it returns.
 
     `on_emission` is called right after ingestion, so a caller can test a fill while later samples are
-    still decoding. `skip_slot` turns the flat budget into waves: sample index i is skipped for slots
-    the caller no longer wants more fills for (adaptive N). It costs the flat issue order, so it is
-    only used by latency-first callers, never by the experiment.
+    still decoding. `skip_slot` gives each slot its own chain instead of one flat gather: the slot draws
+    its next sample as soon as its previous one lands, and stops once the caller says it has enough
+    (adaptive N). It costs the flat issue order, so it is only used by latency-first callers, never by
+    the experiment.
     """
     t_start = t_start or time.monotonic()
     out: list[Emission] = []
@@ -111,9 +112,11 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
     if skip_slot is None:
         await asyncio.gather(*(one(slot, i) for i in range(n) for slot in task.slots))
     else:
-        for i in range(n):
-            wave = [slot for slot in task.slots if i == 0 or not skip_slot(slot.id)]
-            if not wave:
-                break
-            await asyncio.gather(*(one(slot, i) for slot in wave))
+        async def chain(slot) -> None:
+            for i in range(n):
+                if i and skip_slot(slot.id):       # re-checked per sample, so no slot waits on a wave
+                    return
+                await one(slot, i)
+
+        await asyncio.gather(*(chain(slot) for slot in task.slots))
     return sorted(out, key=lambda e: (task.slot(e.slot).order, e.sample_idx))

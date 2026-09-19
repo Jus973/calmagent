@@ -30,7 +30,6 @@ from calm_coder.store.store import Store
 from calm_coder.task import task_from_files
 
 console = Console(stderr=True)
-POLL_S = 0.05
 
 
 async def _pipelined(client: Client, task, store: Store, sched: Scheduler, *, n: int, seed: int,
@@ -40,28 +39,29 @@ async def _pipelined(client: Client, task, store: Store, sched: Scheduler, *, n:
     cancelling generation after the ∃ exit only costs facts nobody needed."""
     emissions: list[Emission] = []
     stubs: dict[str, asyncio.Task] = {}
+    landed = asyncio.Event()                       # a fill arrived: compose again without polling for it
 
     def on_emission(e: Emission) -> None:
         emissions.append(e)
         if e.fill_hash and e.fill_hash not in stubs:
             stubs[e.fill_hash] = asyncio.ensure_future(sched.stub_test(e.fill_hash))
+        landed.set()
 
     gen = asyncio.ensure_future(generate_fills(client, task, store, n=n, seed=seed, on_event=cb,
                                                on_emission=on_emission, skip_slot=sched.has_stub_pass))
     res: SearchResult | None = None
     try:
         while not gen.done():
-            if not all(store.defs_for_slot(s.id) for s in task.slots):
-                await asyncio.sleep(POLL_S)
-                continue
-            _, cands, fan_in, arrival = _budget_view(emissions, n)
-            res = await sched.search(cands, fan_in, arrival)
-            if res.verified_comp:
-                gen.cancel()
-                break
-            seen = len(emissions)                  # nothing new to compose until another fill lands
-            while len(emissions) == seen and not gen.done():
-                await asyncio.sleep(POLL_S)
+            landed.clear()                         # nothing new to compose until another fill lands
+            if all(store.defs_for_slot(s.id) for s in task.slots):
+                _, cands, fan_in, arrival = _budget_view(emissions, n)
+                res = await sched.search(cands, fan_in, arrival)
+                if res.verified_comp:
+                    gen.cancel()
+                    break
+            waiter = asyncio.ensure_future(landed.wait())
+            await asyncio.wait({waiter, gen}, return_when=asyncio.FIRST_COMPLETED)
+            waiter.cancel()
     finally:
         with contextlib.suppress(asyncio.CancelledError):
             await gen
@@ -88,7 +88,7 @@ async def solve(task, *, n: int, seed: int, live: bool, max_comps: int, events_o
         cb = view.on_event if view else None
         sched = Scheduler(task, store, max_comps=max_comps, on_event=cb,
                           width=1 if sequential else width, reuse_class_outcomes=not sequential,
-                          cache=OutcomeCache(cache) if cache else None)
+                          cache=OutcomeCache(cache) if cache else None, fail_fast=not sequential)
         async with Client() as client:
             if sequential:
                 emissions = await generate_fills(client, task, store, n=n, seed=seed, on_event=cb)

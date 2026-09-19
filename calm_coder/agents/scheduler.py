@@ -6,10 +6,11 @@ add_outcome. The policy decides *when* facts appear, never *which* facts are der
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, AsyncIterator, Callable, Mapping, Sequence
 
 from calm_coder.runner import tests as rt
 from calm_coder.runner.cache import OutcomeCache
@@ -49,12 +50,14 @@ class SearchResult:
 class Scheduler:
     def __init__(self, task: "Task", store: Store, *, max_comps: int = 64, per_class_timeout_s: float = 5,
                  wall_timeout_s: float = 20, on_event: Callable[[dict], None] | None = None,
-                 width: int = 1, reuse_class_outcomes: bool = False, cache: OutcomeCache | None = None):
+                 width: int = 1, reuse_class_outcomes: bool = False, cache: OutcomeCache | None = None,
+                 fail_fast: bool = False):
         self.task, self.store = task, store
         self.max_comps = max_comps
         self.per_class, self.wall = per_class_timeout_s, wall_timeout_s
         self.on_event = on_event
         self.width = max(1, width)
+        self.fail_fast = fail_fast
         self.reuse_class_outcomes = reuse_class_outcomes or cache is not None
         self.cache = cache
         # scheduling caches (not facts; facts live in the store)
@@ -157,9 +160,8 @@ class Scheduler:
         raw: dict[str, dict] = {t: {"result": r, "detail": d, "wall_ms": 0} for t, (r, d) in reused.items()}
         if pending:
             src = materialize(self.task, self.store, comp)
-            raw |= await run_tests_async(src, self.task.test_src, pending,
-                                         per_class_timeout_s=self.per_class, wall_timeout_s=self.wall)
-            for t in pending:
+            raw |= await self._run_classes(src, pending)
+            for t in [t for t in pending if t in raw]:
                 key = self.class_key(t, comp)
                 self._class_results[key] = (raw[t]["result"], raw[t].get("detail", "")[:512])
                 if self.cache is not None:
@@ -170,6 +172,53 @@ class Scheduler:
         self._full[comp.id] = (res, ms)
         self._details[comp.id] = {t: r.get("detail", "") for t, r in raw.items()}
         return res, ms, not pending
+
+    async def _race(self, batch: list[Composition]) -> AsyncIterator[tuple[Composition, tuple[dict[str, str], int, bool]]]:
+        """Run the batch concurrently, yielding each composition as it finishes so the ∃ exit doesn't wait
+        on the slowest one. Abandoning a run in flight only means its outcomes arrive later or not at all."""
+        if len(batch) == 1:
+            yield batch[0], await self.run_full(batch[0])
+            return
+
+        async def one(c: Composition) -> tuple[Composition, tuple[dict[str, str], int, bool]]:
+            return c, await self.run_full(c)
+
+        futs = [asyncio.ensure_future(one(c)) for c in batch]
+        try:
+            for fin in asyncio.as_completed(futs):
+                yield await fin
+        finally:
+            for f in futs:
+                f.cancel()
+            await asyncio.gather(*futs, return_exceptions=True)
+
+    async def _run_classes(self, src: str, pending: list[str]) -> dict[str, dict]:
+        """One subprocess per class, racing, stopping at the first non-pass: a composition needs *every*
+        class to pass, so once one doesn't, the rest only add facts nobody is waiting for. Off by default
+        (the experiment's trace rows need the full result map); `calm solve` turns it on."""
+        if not self.fail_fast or len(pending) == 1:
+            return await run_tests_async(src, self.task.test_src, pending,
+                                         per_class_timeout_s=self.per_class, wall_timeout_s=self.wall)
+
+        async def one(t: str) -> dict[str, dict]:
+            return await run_tests_async(src, self.task.test_src, [t],
+                                         per_class_timeout_s=self.per_class, wall_timeout_s=self.wall)
+
+        futs = [asyncio.ensure_future(one(t)) for t in pending]
+        out: dict[str, dict] = {}
+        try:
+            for fin in asyncio.as_completed(futs):
+                r = await fin
+                out |= r
+                if any(v["result"] != "pass" for v in r.values()):
+                    break
+        finally:
+            for f in futs:
+                f.cancel()
+            for r in await asyncio.gather(*futs, return_exceptions=True):   # already-finished races still count
+                if isinstance(r, dict):
+                    out |= r
+        return out
 
     def _callee_closure(self, slots: set[str], bindings: Mapping[str, str]) -> set[str]:
         """A failing slot also implicates every slot its bound fill calls (through helpers too)."""
@@ -217,7 +266,7 @@ class Scheduler:
         t_search = time.monotonic()
         while frontier and len(tried) < self.max_comps:
             # Frontier compositions are independent facts, so `width` of them race; the first verified
-            # one in batch order is the exit. Racing cannot change which facts are derivable.
+            # one to *finish* is the exit. Racing cannot change which facts are derivable.
             batch: list[Composition] = []
             while frontier and len(batch) < self.width and len(tried) + len(batch) < self.max_comps:
                 comp = frontier.popleft()
@@ -226,21 +275,22 @@ class Scheduler:
             if not batch:
                 break
             tried |= {c.id for c in batch}
-            runs = await asyncio.gather(*(self.run_full(c) for c in batch))
             expand: list[tuple[Composition, dict[str, str]]] = []
-            for comp, (res, ms, cached) in zip(batch, runs):
-                out.test_ms += ms
-                b = comp.binding
-                out.trace.append(TraceRow(
-                    comp_id=comp.id, bindings=b, results=res, wall_ms=ms, cached=cached,
-                    all_stub_pass=all(self._stub.get(h) == "pass" for h in b.values()),
-                    slot_level_pass=all(res.get(t) == "pass" for t in own),
-                    class_level_pass=all(res.get(t) == "pass" for t in class_level) if class_level else None,
-                ))
-                self._emit({"kind": "comp", "comp": comp, "results": res})
-                if out.verified_comp is None and comp.id in verified(self.store, task):   # ∃ verified — the exit
-                    out.verified_comp = comp.id
-                expand.append((comp, res))
+            async with contextlib.aclosing(self._race(batch)) as runs:
+                async for comp, (res, ms, cached) in runs:
+                    out.test_ms += ms
+                    b = comp.binding
+                    out.trace.append(TraceRow(
+                        comp_id=comp.id, bindings=b, results=res, wall_ms=ms, cached=cached,
+                        all_stub_pass=all(self._stub.get(h) == "pass" for h in b.values()),
+                        slot_level_pass=all(res.get(t) == "pass" for t in own),
+                        class_level_pass=all(res.get(t) == "pass" for t in class_level) if class_level else None,
+                    ))
+                    self._emit({"kind": "comp", "comp": comp, "results": res})
+                    if comp.id in verified(self.store, task):       # ∃ verified — the exit
+                        out.verified_comp = comp.id
+                        break
+                    expand.append((comp, res))
             if out.verified_comp is not None:
                 break
             for comp, res in expand:

@@ -63,6 +63,47 @@ Arms: **CALM** (N fills per method → stub-context method tests → composition
 
 <!-- RESULTS -->
 
+## v2: one store, several producers
+
+v1 asks each agent for one method. v2 drops that restriction: a whole-class sample is decomposed
+into its methods and every method lands in the same store, so pooling whole-class and per-method
+producers costs nothing and loses nothing — each sample's own composition is still evaluated as a
+whole, so v2 cannot do worse than best-of-N on the same samples. What the store then buys is where
+the next tokens go: the slots with no passing candidate are the only ones resampled, conditioned on
+the current best class and its failing test output. `wcr` is the fair baseline for that step —
+same feedback, same information, whole class regenerated.
+
+```bash
+python -m calm_coder.bench.experiment --arms c --N 8 --seeds 0 --name c_base
+python -m calm_coder.bench.experiment --arms v2,v2_pm,v2_f0,wcr --seeds 0 \
+    --budget-from runs/<c_base dir> --feedback F1 --name v2
+python -m analysis.final_report runs/<c_base dir> runs/<v2 dir>   # results/final.{md,json}
+```
+
+Every arm gets the same per-task decode budget: the tokens arm C spent at N=8, measured, not
+estimated. Feedback is capped and scrubbed (F0 test names only, F1 + exception type and message,
+F2 + the raising line); a test-source substring longer than 30 characters never reaches a prompt,
+which is a test, not a promise. Hypotheses are preregistered in `PREREG.md` and the report marks
+the failed ones as failed. `ARCHITECTURE.md` explains why the non-monotone reads (`best_class`,
+`dead_slots`) live outside `store/derive.py`.
+
+### Replay demo
+
+```bash
+python -m calm_coder.demo.export_web runs/<v2 dir> --task ClassEval_21 --arm v2
+python -m http.server -d calm_coder/demo/web 8000
+```
+
+Best-of-N on the left, the store on the right, same recorded run, no model server. "Shuffle and
+replay" replays the same events in a random order and prints the same store hash.
+
+### Limitations
+
+The benchmark's own tests are the verifier, so "solved" means "passes ClassEval's tests". Repair
+reads failure messages (F1 by default), so it is not a black-box method. ClassEval is 2023-era and
+may be in the model's training data. One model, one seed per arm unless stated, and the ablations
+are pilot-sized.
+
 ## Layout
 
 ```
@@ -72,7 +113,9 @@ calm_coder/agents/   fill (phase 0) scheduler (phases 1–2)     (the only place
 calm_coder/runner/   sandbox _run_tests tests                  (subprocess, temp cwd, per-class alarms)
 calm_coder/bench/    classeval baselines experiment metrics charts confluence
 calm_coder/viz/      live                                      (rich grid, replay, --replay-shuffled)
-calm_coder/demo/     task test_task git_baseline run_demo recorded/
+calm_coder/v2/       state decompose feedback producers harness       (v2: producers, repair)
+analysis/            pool_existing dead_slots final_report
+calm_coder/demo/     task test_task git_baseline run_demo recorded/ export_web web/
 calm_coder/cli.py    calm solve
 ```
 

@@ -1,0 +1,11 @@
+[project]
+name = "calm-coder"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["httpx", "rich", "datasets", "numpy", "matplotlib"]
+
+[project.optional-dependencies]
+dev = ["pytest", "hypothesis"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

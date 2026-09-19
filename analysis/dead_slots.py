@@ -24,6 +24,13 @@ from calm_coder.store.store import Store
 from calm_coder.v2 import state
 
 
+def _kind(failures) -> str:
+    """One label per dead slot: what a repair prompt would have to fix there."""
+    if not failures:
+        return "unattributed"
+    return "interface" if any(f.interface_error for f in failures) else "value"
+
+
 def analyze(task, events: list[dict]) -> dict:
     store = Store.from_events(events)
     comp = state.best_class(store, task)
@@ -32,8 +39,12 @@ def analyze(task, events: list[dict]) -> dict:
     return {"dead_slots": list(report), "best_class": comp.id if comp else None,
             "n_slots": len(task.slots), "report": report,
             "exc_types": Counter(f.exc_type for fs in failures.values() for f in fs),
-            "interface_errors": sum(1 for fs in failures.values() for f in fs if f.interface_error),
-            "value_errors": sum(1 for fs in failures.values() for f in fs if not f.interface_error)}
+            # Per slot, not per failure record: a slot with twenty failing candidates is still one
+            # slot, and a dead slot whose failures did not parse is unattributed, not "value".
+            "kind_by_slot": {slot: _kind(fs) for slot, fs in failures.items()},
+            "interface_errors": sum(1 for fs in failures.values() if _kind(fs) == "interface"),
+            "value_errors": sum(1 for fs in failures.values() if _kind(fs) == "value"),
+            "unattributed": sum(1 for fs in failures.values() if _kind(fs) == "unattributed")}
 
 
 def main() -> None:
@@ -49,10 +60,14 @@ def main() -> None:
     rows = {r["task_id"]: r for r in load_rows()}
     results = [r for r in _rows(d / "results.jsonl")
                if r["arm"] == a.arm and r.get("N") == a.N and r["seed"] == a.seed]
-    out, totals = [], Counter()
+    if not results:
+        raise SystemExit(f"no results in {d} for arm={a.arm} N={a.N} seed={a.seed}; "
+                         f"arms present: {sorted({r['arm'] for r in _rows(d / 'results.jsonl')})}")
+    out, totals, skipped = [], Counter(), []
     for r in sorted(results, key=lambda r: r["task_id"]):
         ev = _rows(d / "events" / f"{r['task_id']}__{a.arm}__s{a.seed}.jsonl")
         if not ev or r["task_id"] not in rows:
+            skipped.append(r["task_id"])
             continue
         info = analyze(task_from_row(rows[r["task_id"]]), ev)
         info["exc_types"] = dict(info["exc_types"])
@@ -65,12 +80,14 @@ def main() -> None:
             totals["one_dead_slot"] += len(info["dead_slots"]) == 1
             totals["interface_errors"] += info["interface_errors"]
             totals["value_errors"] += info["value_errors"]
+            totals["unattributed"] += info["unattributed"]
     (out_dir / "dead_slots.jsonl").write_text("".join(json.dumps(r) + "\n" for r in out))
     md = ["# Dead slots", "",
           f"{totals['unsolved']} of {totals['tasks']} tasks unsolved at N={a.N} ({a.arm}).",
           f"{totals['dead_slots']} dead slots in them; {totals['one_dead_slot']} unsolved tasks have exactly one.",
-          f"Failure kinds in dead slots: {totals['interface_errors']} interface/state, "
-          f"{totals['value_errors']} value.", "",
+          f"Dead slots by kind: {totals['interface_errors']} interface/state, "
+          f"{totals['value_errors']} value, {totals['unattributed']} unattributed.",
+          f"Skipped (no event log or task row): {', '.join(skipped) or 'none'}.", "",
           "| task | solved | dead slots | of | exception types |", "| --- | --- | --- | --- | --- |"]
     for r in out:
         md.append(f"| {r['task_id']} | {r['solved']} | {', '.join(r['dead_slots']) or '-'} | {r['n_slots']} | "

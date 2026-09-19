@@ -3,14 +3,20 @@
 Arm-agnostic on purpose: it reads results.jsonl, groups by arm (and N, for the arms that sweep a
 budget), and produces
 
-  * solve rate per arm with a Wilson interval, tasks as the unit of inference;
-  * every pairwise comparison against the configured baselines: paired McNemar (exact) and a
-    paired bootstrap difference with 10,000 resamples;
+  * solve rate per arm, tasks as the unit of inference: a Wilson interval where a task's outcome
+    is binary (one seed, or every seed agreeing) and a bootstrap interval over tasks otherwise,
+    because a seed-averaged task is not a Bernoulli trial and Wilson would read it as one;
+  * every pairwise comparison against the configured baselines: a paired bootstrap difference
+    with 10,000 resamples over the tasks both arms ran, and exact McNemar over the tasks where
+    both arms are unanimous across seeds (the rest are reported as ambiguous, never dropped
+    silently);
+  * per-arm coverage: how many tasks the arm ran, which of the union it is missing, and the
+    tasks the run excluded;
   * a systems table (decode tokens, prompt tokens, cached prompt tokens, requests, wall time);
   * for the v2 arms: repair rounds used, dead slots before and after, and what the budget bought.
 
 python -m analysis.final_report runs/<dir> [runs/<dir2> ...] [--baseline c --baseline calm]
-Writes results/final.{md,json} (and a copy inside the first run dir).
+Writes results/final.{md,json} and a copy under <first run dir>/analysis/ (run logs stay untouched).
 """
 from __future__ import annotations
 
@@ -26,6 +32,16 @@ from calm_coder.bench.metrics import mcnemar_exact, paired_bootstrap, wilson
 V2_ARMS = ("v2", "v2_pm", "v2_f0", "v2_f2", "wcr")
 
 
+def load_excluded(dirs: list[Path]) -> list[dict]:
+    """Tasks a run refused to attempt. They are not failures and they are not silence either."""
+    out = []
+    for d in dirs:
+        p = d / "excluded.jsonl"
+        if p.exists():
+            out += [json.loads(ln) for ln in p.read_text().splitlines() if ln.strip()]
+    return out
+
+
 def load(dirs: list[Path]) -> list[dict]:
     rows = []
     for d in dirs:
@@ -39,6 +55,15 @@ def load(dirs: list[Path]) -> list[dict]:
                 rows.append(r)
     # a resumed run may re-log a (task, arm, seed, N); the last copy wins
     return list({(r["task_id"], r["arm"], r["seed"], r.get("N")): r for r in rows}.values())
+
+
+def _mean_ci(v: np.ndarray, reps: int = 10_000, seed: int = 0) -> tuple[float, float]:
+    """Percentile bootstrap over tasks, for the case where a task's value is a seed mean."""
+    if not len(v):
+        return float("nan"), float("nan")
+    rng = np.random.default_rng(seed)
+    boots = v[rng.integers(0, len(v), size=(reps, len(v)))].mean(axis=1)
+    return float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))
 
 
 def top_n(rows: list[dict], arm: str) -> int | None:
@@ -66,35 +91,46 @@ def compute(rows: list[dict], baselines: list[str]) -> dict:
                  "N_per_arm": {a: top_n(rows, a) for a in arms}, "solve": {}, "paired": {}, "systems": {},
                  "v2": {}}
 
-    def per_task(arm: str) -> np.ndarray:
+    def seed_values(arm: str, t: str) -> list[bool]:
+        return [by_arm[arm][(t, s)] for s in seeds if (t, s) in by_arm[arm]]
+
+    def per_task(arm: str, over: list[str] | None = None) -> np.ndarray:
         """Mean over seeds per task: tasks, not samples, are the unit of inference."""
-        vals = []
-        for t in tasks:
-            xs = [by_arm[arm][(t, s)] for s in seeds if (t, s) in by_arm[arm]]
-            if xs:
-                vals.append(float(np.mean(xs)))
+        vals = [float(np.mean(xs)) for t in (over or tasks) if (xs := seed_values(arm, t))]
         return np.array(vals)
 
     for arm in arms:
         v = per_task(arm)
-        p, lo, hi = wilson(v.sum(), len(v))
-        out["solve"][arm] = {"rate": float(v.mean()) if len(v) else None, "wilson": [lo, hi],
-                             "k": float(v.sum()), "n": int(len(v))}
+        ran = [t for t in tasks if seed_values(arm, t)]
+        binary = bool(len(v)) and all(x in (0.0, 1.0) for x in v)
+        if binary:
+            _, lo, hi = wilson(v.sum(), len(v))
+            ci = "wilson"
+        else:
+            lo, hi = _mean_ci(v)
+            ci = "bootstrap"
+        out["solve"][arm] = {"rate": float(v.mean()) if len(v) else None, "ci": [lo, hi],
+                             "ci_kind": ci, "k": float(v.sum()), "n": int(len(v)),
+                             "seeds_per_task": sorted({len(seed_values(arm, t)) for t in ran}),
+                             "missing_tasks": [t for t in tasks if t not in ran]}
 
     for arm in arms:
         for base in baselines:
             if base == arm or base not in by_arm:
                 continue
-            common = sorted(set(by_arm[arm]) & set(by_arm[base]))
-            b = sum(1 for k in common if by_arm[arm][k] and not by_arm[base][k])
-            c = sum(1 for k in common if by_arm[base][k] and not by_arm[arm][k])
-            ct = sorted({t for t, _ in common})
-            a_v = np.array([np.mean([by_arm[arm][(t, s)] for s in seeds if (t, s) in by_arm[arm]]) for t in ct])
-            b_v = np.array([np.mean([by_arm[base][(t, s)] for s in seeds if (t, s) in by_arm[base]]) for t in ct])
+            ct = sorted({t for t, _ in set(by_arm[arm]) & set(by_arm[base])})
+            a_v, b_v = per_task(arm, ct), per_task(base, ct)
             diff, blo, bhi = paired_bootstrap(a_v, b_v)
-            out["paired"][f"{arm}-{base}"] = {"n_pairs": len(common), "arm_only": b, "base_only": c,
-                                              "mcnemar_p": mcnemar_exact(b, c),
-                                              "diff": diff, "bootstrap_ci": [blo, bhi]}
+            # McNemar is a test on discordant *pairs*, so a task only enters it when both arms
+            # gave the same answer on every seed; anything else is counted and reported instead.
+            firm = [t for t in ct if len(set(seed_values(arm, t))) == 1
+                    and len(set(seed_values(base, t))) == 1]
+            b = sum(1 for t in firm if seed_values(arm, t)[0] and not seed_values(base, t)[0])
+            c = sum(1 for t in firm if seed_values(base, t)[0] and not seed_values(arm, t)[0])
+            out["paired"][f"{arm}-{base}"] = {
+                "unit": "task", "n_tasks": len(ct), "mcnemar_tasks": len(firm),
+                "ambiguous_tasks": len(ct) - len(firm), "arm_only": b, "base_only": c,
+                "mcnemar_p": mcnemar_exact(b, c), "diff": diff, "bootstrap_ci": [blo, bhi]}
 
     for arm in arms:
         n = top_n(rows, arm)
@@ -128,19 +164,26 @@ def compute(rows: list[dict], baselines: list[str]) -> dict:
 
 def to_md(m: dict) -> str:
     L = ["# CALM Coder v2 — final report", "",
-         f"{m['n_tasks']} tasks, seeds {m['seeds']}.", "",
-         "## Solve rate (tasks are the unit of inference, Wilson 95%)", "",
-         "| arm | N | solve rate | 95% CI |", "| --- | --- | --- | --- |"]
+         f"{m['n_tasks']} tasks in the union, seeds {m['seeds']}, "
+         f"{len(m.get('excluded', []))} tasks excluded by the run.", "",
+         "## Solve rate (tasks are the unit of inference)", "",
+         "| arm | N | tasks | seeds/task | solve rate | 95% CI | interval | missing tasks |",
+         "| --- | --- | --- | --- | --- | --- | --- | --- |"]
     for arm, s in sorted(m["solve"].items(), key=lambda kv: -(kv[1]["rate"] or 0)):
-        lo, hi = s["wilson"]
-        L.append(f"| {arm} | {m['N_per_arm'].get(arm) or '-'} | {s['rate']:.2f} | [{lo:.2f}, {hi:.2f}] |")
-    L += ["", "## Paired comparisons", "",
-          "| comparison | pairs | arm only | baseline only | McNemar p | diff | bootstrap 95% CI |",
-          "| --- | --- | --- | --- | --- | --- | --- |"]
+        lo, hi = s["ci"]
+        miss = ", ".join(s["missing_tasks"]) or "-"
+        L.append(f"| {arm} | {m['N_per_arm'].get(arm) or '-'} | {s['n']} | "
+                 f"{','.join(str(x) for x in s['seeds_per_task']) or '-'} | {s['rate']:.2f} | "
+                 f"[{lo:.2f}, {hi:.2f}] | {s['ci_kind']} | {miss} |")
+    L += ["", "## Paired comparisons (unit: task)", "",
+          "| comparison | tasks | diff | bootstrap 95% CI | McNemar tasks | arm only | baseline only "
+          "| McNemar p | ambiguous |",
+          "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for k, p in sorted(m["paired"].items()):
         lo, hi = p["bootstrap_ci"]
-        L.append(f"| {k} | {p['n_pairs']} | {p['arm_only']} | {p['base_only']} | {p['mcnemar_p']:.3f} | "
-                 f"{p['diff']:+.3f} | [{lo:+.3f}, {hi:+.3f}] |")
+        L.append(f"| {k} | {p['n_tasks']} | {p['diff']:+.3f} | [{lo:+.3f}, {hi:+.3f}] | "
+                 f"{p['mcnemar_tasks']} | {p['arm_only']} | {p['base_only']} | "
+                 f"{p['mcnemar_p']:.3f} | {p['ambiguous_tasks']} |")
     L += ["", "## Systems", "",
           "| arm | tasks | decode tok | prompt tok | cached prompt tok | requests | median TTFV ms | over budget |",
           "| --- | --- | --- | --- | --- | --- | --- | --- |"]
@@ -171,11 +214,14 @@ def main() -> None:
     rows = load(dirs)
     m = compute(rows, a.baseline or ["c", "calm"])
     m["runs"] = [str(d) for d in dirs]
+    m["excluded"] = load_excluded(dirs)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "final.json").write_text(json.dumps(m, indent=1))
     (out / "final.md").write_text(to_md(m))
-    (dirs[0] / "final.md").write_text(to_md(m))
+    copy = dirs[0] / "analysis"          # a run directory's own logs are never written to
+    copy.mkdir(exist_ok=True)
+    (copy / "final.md").write_text(to_md(m))
     print(to_md(m))
 
 

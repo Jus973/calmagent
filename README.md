@@ -33,6 +33,15 @@ python -m calm_coder.cli solve path/to/skeleton.py --tests path/to/test_x.py --N
 
 Skeleton + unittest file in, a class that passes the tests out. Exit 0 on verified, 1 when the budget is exhausted.
 
+The default path is latency-first, not phase-by-phase: a fill is stub-tested the moment it decodes, a
+composition is tried as soon as every slot has one fill, `--width` compositions are tested at once, slots
+that already have a passing fill stop drawing samples, and generation is cancelled at the `∃` exit (late
+emissions are inert, so nothing is lost). `--cache outcomes.jsonl` reuses test results across runs: a test
+class's result depends only on the test module and the fills it can reach, both content hashes, so re-solving
+a class — or one sharing helpers — skips the subprocess. Reused results are marked `reused:` in the log and
+never counted as an execution. `--sequential` is the experiment's path (generate all N, then phase 1, then
+search); the experiment itself takes `--test-width` and records `test_wall_ms` next to `test_ms`.
+
 ## Setup
 
 ```bash

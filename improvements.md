@@ -33,6 +33,25 @@ Slot prompts share a byte-identical prefix with the slot name last. The spec fra
 ### 6. Persistent cross-run outcome cache
 Definition identity is a content hash and derivations are pure, so (composition, test) outcomes are stable forever. A persistent cross-run cache keyed by def hashes + test source hash skips test execution when re-solving a class or one sharing helpers. The store is already replay-safe and event-log-based.
 
+## Status
+
+Implemented in `calm solve` (default path) and, where reproducibility allows, in the experiment:
+
+| Niche | Where | Note |
+|---|---|---|
+| #1 parallel Phase 2 | `Scheduler(width=…)`, `search` | Frontier batches of `width` race; the first verified in batch order is the exit. Expansion still happens per composition, so the frontier is the same set. `--test-width` in the experiment; `SearchResult.test_wall_ms` measures the win. |
+| #1 per-class caching | `Scheduler.class_key`, `_reused` | Keyed by the test-module hash, the test class, and the fills it can reach (`test_slot_deps` closed over `_callee_closure`) plus which reachable slots are stubbed. A new composition re-runs only the classes that can see the swapped slot. |
+| #2 speculative testing | `generate_fills(on_emission=…)`, `cli._pipelined` | Stub tests start per fill as it lands; a composition search runs as soon as every slot has one fill, then again on each new fill. |
+| #3 latency-first CLI | `cli._pipelined` (default; `--sequential` opts out) | Generation is cancelled at the `∃` exit; in-flight tests are drained so their outcomes still land. |
+| #4 adaptive N | `generate_fills(skip_slot=…)` + `Scheduler.has_stub_pass` | Waves: a slot with a stub-passing fill draws no further samples. Scheduling only — it changes which facts exist, never which are derivable, so the experiment never uses it. |
+| #6 cross-run cache | `calm_coder/runner/cache.py`, `--cache` | Append-only JSONL keyed by the same content hash. Reused outcomes carry `reused:` in their detail; the log never claims an execution that didn't happen. |
+
+Not done: #5 (prefix-cache latency) needs a server that reports prefill/decode separately — nothing to
+implement here beyond metrics, and the laptop's Ollama doesn't expose them.
+
+Both reuse mechanisms only ever *add* outcomes the store would have derived anyway, so I1–I3 hold: the
+store stays grow-only, the keys are content hashes, and derivations still read sets.
+
 ## Honest caveat
 
 The decision log in `CLAUDE.md` measured the laptop reality: qwen2.5-coder:7b ~20 tok/s single-stream, ~25 tok/s aggregate, and 8 parallel sequences pushed the model off the GPU. On the laptop, generation is the wall and test parallelism competes for the same cores. Niches #2 and #3 (pipelining + early exit) are best for the laptop demo; #1, #5, #6 dominate on rented GPU compute.

@@ -97,3 +97,22 @@ class Task:
             fields=frozenset(init_fields),
             skeleton=skeleton,
         )
+
+
+def infer_slot_tests(task: Task) -> dict[str, str]:
+    """For tasks without methods_info: a test class is slot s's own test iff s is the only slot it calls.
+    Structural, never by name (§3.10). Slots without such a class get none (Phase 1 is then inconclusive)."""
+    from calm_coder.runner.tests import test_slot_deps
+    out: dict[str, str] = {}
+    for t in task.test_classes:
+        deps = test_slot_deps(task, t)
+        if len(deps) == 1:
+            out.setdefault(next(iter(deps)), t)
+    return out
+
+
+def task_from_files(skeleton_path, tests_path) -> Task:
+    from pathlib import Path
+    sk, tests = Path(skeleton_path), Path(tests_path)
+    t = Task.from_skeleton(task_id=sk.stem, skeleton=sk.read_text(), test_src=tests.read_text())
+    return Task(**{**t.__dict__, "slot_tests": infer_slot_tests(t)})

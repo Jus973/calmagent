@@ -1,0 +1,22 @@
+{"task_id": "ClassEval_5", "reason": "skeleton: expected one class, found 0"}
+{"task_id": "ClassEval_17", "reason": "reference_fails_run_0: {'CalendarTestGetUpcomingEvents': 'fail'}"}
+{"task_id": "ClassEval_22", "reason": "skeleton_syntax: unterminated triple-quoted string literal (detected at line 66) (<unknown>, line 66)"}
+{"task_id": "ClassEval_25", "reason": "reference_fails_run_0: {'CookiesUtilTestSetCookies': 'error'}"}
+{"task_id": "ClassEval_28", "reason": "non_stdlib_imports: ['pandas']"}
+{"task_id": "ClassEval_30", "reason": "non_stdlib_imports: ['numpy']"}
+{"task_id": "ClassEval_34", "reason": "non_stdlib_imports: ['docx']"}
+{"task_id": "ClassEval_38", "reason": "non_stdlib_imports: ['openpyxl']"}
+{"task_id": "ClassEval_43", "reason": "skeleton_syntax: invalid character '\u201c' (U+201C) (<unknown>, line 73)"}
+{"task_id": "ClassEval_44", "reason": "non_stdlib_imports: ['bs4', 'gensim']"}
+{"task_id": "ClassEval_45", "reason": "non_stdlib_imports: ['PIL']"}
+{"task_id": "ClassEval_46", "reason": "skeleton_syntax: invalid character '\u201d' (U+201D) (<unknown>, line 25)"}
+{"task_id": "ClassEval_48", "reason": "reference_fails_run_0: {'IpUtilTestGetHostname': 'fail'}"}
+{"task_id": "ClassEval_49", "reason": "reference_fails_run_0: {'JobMarketplaceTestMatchesRequirements': 'error', 'JobMarketplaceTestMain': 'error'}"}
+{"task_id": "ClassEval_51", "reason": "non_stdlib_imports: ['numpy']"}
+{"task_id": "ClassEval_52", "reason": "module_level_code: ['Expr', 'Expr', 'Expr']"}
+{"task_id": "ClassEval_57", "reason": "non_stdlib_imports: ['numpy']"}
+{"task_id": "ClassEval_58", "reason": "reference_fails_run_0: {'MinesweeperGameTestMain': 'fail'}"}
+{"task_id": "ClassEval_59", "reason": "non_stdlib_imports: ['numpy']"}
+{"task_id": "ClassEval_69", "reason": "non_stdlib_imports: ['PyPDF2', 'reportlab']"}
+{"task_id": "ClassEval_72", "reason": "slot_count: 10"}
+{"task_id": "ClassEval_93", "reason": "non_stdlib_imports: ['gensim', 'numpy']"}

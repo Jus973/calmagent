@@ -44,6 +44,19 @@ class RunDir:
         with open(self.path / name, "a") as f:
             f.write(json.dumps(row, default=str) + "\n")
 
+    def write_events(self, stem: str, events) -> Path:
+        """An attempt's event log, under a name no earlier attempt can be holding."""
+        for i in range(1000):
+            p = self.path / "events" / (f"{stem}.jsonl" if not i else f"{stem}__a{i}.jsonl")
+            try:
+                with open(p, "x") as f:
+                    for ev in events:
+                        f.write(json.dumps(ev) + "\n")
+                return p
+            except FileExistsError:
+                continue
+        raise RuntimeError(f"too many attempts for {stem}")
+
     def rows(self, name: str) -> list[dict]:
         p = self.path / name
         return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
@@ -135,9 +148,7 @@ async def run_calm(client: Client, task, seed: int, Ns: list[int], rd: RunDir, *
         rd.append("traces.jsonl", {"task_id": task.task_id, "arm": arm, "seed": seed, "N": n,
                                    "trace": [asdict(t) for t in res.trace]})
         rows.append(row)
-    with open(rd.path / "events" / f"{task.task_id}__{arm}__s{seed}.jsonl", "w") as f:
-        for ev in store.event_log():
-            f.write(json.dumps(ev) + "\n")
+    rd.write_events(f"{task.task_id}__{arm}__s{seed}", store.event_log())
     return rows
 
 
@@ -176,11 +187,13 @@ async def run_a_greedy(client: Client, task, seed: int, rd: RunDir) -> list[dict
 
 # ---------------------------------------------------------------- v2 / WCR arms
 
-def budgets_from(path: Path, arm: str = "c", N: int | None = None) -> dict[str, int]:
-    """Per-task decode budget = the decode tokens arm C spent at its largest N (§4 of the plan).
+def budgets_from(path: Path, arm: str = "c", N: int | None = None) -> dict[tuple[str, int | None], int]:
+    """Per-(task, seed) decode budget = the decode tokens arm C spent there at its largest N.
 
     Equal-token comparison is the whole point of the v2 arms, so the budget is read from a real C
-    run rather than estimated.
+    run rather than estimated, and matched seed to seed: the mean across C's seeds would hold half
+    of C's own runs to a budget they exceeded. `(task, None)` is the across-seed mean, used for a
+    seed C never ran.
     """
     rows = [json.loads(l) for l in (path / "results.jsonl").read_text().splitlines() if l.strip()]
     rows = [r for r in rows if r["arm"] == arm and (N is None or r["N"] == N)]
@@ -188,9 +201,17 @@ def budgets_from(path: Path, arm: str = "c", N: int | None = None) -> dict[str, 
         top = max(r["N"] for r in rows)
         rows = [r for r in rows if r["N"] == top]
     out: dict[str, list[int]] = defaultdict(list)
+    per: dict[tuple[str, int | None], int] = {}
     for r in rows:
-        out[r["task_id"]].append(int(r.get("completion_tokens") or 0))
-    return {k: round(sum(v) / len(v)) for k, v in out.items() if v}
+        tok = int(r.get("completion_tokens") or 0)
+        out[r["task_id"]].append(tok)
+        per[(r["task_id"], r["seed"])] = tok
+    per.update({(k, None): round(sum(v) / len(v)) for k, v in out.items() if v})
+    return per
+
+
+def budget_for(budgets: dict, task_id: str, seed: int) -> int | None:
+    return budgets.get((task_id, seed)) or budgets.get((task_id, None))
 
 
 async def run_v2_arm(client: Client, task, seed: int, rd: RunDir, *, arm: str, budget_tokens: int,
@@ -205,9 +226,7 @@ async def run_v2_arm(client: Client, task, seed: int, rd: RunDir, *, arm: str, b
         # producers number emissions by repair round; `seed` means the run's seed everywhere a log
         # is joined with results.jsonl, so the round moves to its own field here
         rd.append("emissions.jsonl", {**e, "seed": seed, "round": e["seed"]})
-    with open(rd.path / "events" / f"{task.task_id}__{arm}__s{seed}.jsonl", "w") as f:
-        for ev in res.store.event_log():
-            f.write(json.dumps(ev) + "\n")
+    rd.write_events(f"{task.task_id}__{arm}__s{seed}", res.store.event_log())
     row = dict(res.row)
     row["completion_tokens"] = row["decode_tokens"]     # metrics.py reads this name
     return [row]
@@ -248,7 +267,11 @@ async def main_async(a) -> Path:
     done = rd.done()
     budgets = budgets_from(Path(cfg["budget_from"])) if cfg.get("budget_from") else {}
     if budgets:
-        rd.append("budgets.jsonl", {"source": cfg["budget_from"], "budgets": budgets})
+        rd.append("budgets.jsonl", {"source": cfg["budget_from"], "unit": "decode tokens",
+                                    "matched": "per (task, seed), mean over seeds as fallback",
+                                    "budgets": [{"task_id": t, "seed": s, "tokens": v}
+                                                for (t, s), v in sorted(budgets.items(),
+                                                                        key=lambda kv: (kv[0][0], kv[0][1] is None, kv[0][1]))]})
     async with Client() as client:
         cfg_client = client.config()
         if not (rd.path / "client.json").exists():
@@ -273,7 +296,7 @@ async def main_async(a) -> Path:
                         elif arm == "a_greedy":
                             rows = await run_a_greedy(client, task, seed, rd)
                         elif arm in V2_ARMS:
-                            b = budgets.get(task.task_id) or cfg.get("budget_tokens")
+                            b = budget_for(budgets, task.task_id, seed) or cfg.get("budget_tokens")
                             if not b:
                                 raise ValueError("v2 arms need --budget-from <C run> or --budget-tokens")
                             rows = await run_v2_arm(client, task, seed, rd, arm=arm, budget_tokens=b,

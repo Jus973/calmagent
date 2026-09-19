@@ -63,7 +63,9 @@ python -m http.server -d calm_coder/demo/web 8000
   outnumber `repair_n`, the round asks for one sample per slot and therefore spends more than the
   baseline round; the budget still caps it, and the row records `samples_per_target`.
 * `dead_slots` falls back to blame-based attribution for slots without their own test class; on
-  tasks where class-level tests dominate this can target more slots than strictly necessary.
+  tasks where class-level tests dominate this can target more slots than strictly necessary. When
+  nothing names a slot at all the task is bucketed as unattributed and excluded from the
+  "one dead slot" statistic.
 * Prompt-token accounting depends on the server reporting `prompt_tokens_details.cached_tokens`;
   Ollama does not, so cache counters are `null` there and the prefix claim rests on the prompt
   construction test rather than on measured cache hits.

@@ -3,6 +3,7 @@ import asyncio
 import json
 import random
 import textwrap
+from dataclasses import replace
 
 import httpx
 import pytest
@@ -305,3 +306,48 @@ def test_two_v2_runs_with_the_same_seeds_agree(toy):
         r = asyncio.run(run_v2(c, toy, budget_tokens=10_000, k=2, repair_n=2, rounds=3, warm=False))
         return r.row["verified_comp"], sorted(d.hash for d in r.store.defs())
     assert once() == once()
+
+
+# ------------------------------------------------------------------ policy reads
+def _outcome(comp: Composition, test_id: str, result: str, detail: str = ""):
+    from calm_coder.store.defs import Outcome
+    return Outcome(test_id=test_id, comp_id=comp.id, result=result, detail=detail,
+                   bindings=tuple(sorted(comp.binding.items())))
+
+
+def test_best_class_breaks_ties_by_comp_id(toy):
+    """A tie has to resolve the same way in every replica, so it resolves on content."""
+    store = Store()
+    comps = [Composition.make({"put": "a" * 64, "get": g, "norm": "c" * 64})
+             for g in ("b" * 64, "d" * 64)]
+    for c in comps:
+        store.add_outcome(_outcome(c, "ToyTestPut", "pass"))
+        store.add_outcome(_outcome(c, "ToyTestGet", "fail", "boom"))
+    assert state.best_class(store, toy).id == min(c.id for c in comps)
+
+
+def test_add_def_keeps_the_first_body_for_a_hash(toy):
+    """add_def is an idempotent set insert: a second write of the same hash changes nothing."""
+    from calm_coder.store.defs import Definition
+    d = Definition(hash="h" * 64, kind="fill", slot="get", name="get", canonical_src="def get(self): pass",
+                   raw_src="def get(self): pass", slot_refs=frozenset(), helper_refs=frozenset(),
+                   unresolved_refs=frozenset(), is_static=False)
+    store = Store()
+    assert store.add_def(d)
+    assert not store.add_def(replace(d, raw_src="def get(self): return 1", canonical_src="x"))
+    assert [x.canonical_src for x in store.defs()] == ["def get(self): pass"]
+    assert len(store.event_log()) == 1
+
+
+def test_a_class_failure_that_blames_no_slot_is_reported_as_a_guess():
+    """Repair has to aim somewhere, but "every slot is dead" is not a measurement."""
+    from calm_coder.task import Task
+    from tests.conftest import TOY_SKELETON
+    src = ("import unittest\n\nclass ToyTestAll(unittest.TestCase):\n"
+           "    def test_all(self):\n        self.assertTrue(Toy())\n")
+    toy = Task.from_skeleton(task_id="toy", skeleton=TOY_SKELETON, test_src=src, slot_tests={})
+    store = Store()
+    comp = Composition.make({s.id: f"{i}" * 64 for i, s in enumerate(toy.slots)})
+    store.add_outcome(_outcome(comp, toy.test_classes[0], "fail", "nothing here names a method"))
+    assert state.unattributed(store, toy, comp)
+    assert all(v["unattributed"] for v in state.dead_slot_report(store, toy, comp).values())

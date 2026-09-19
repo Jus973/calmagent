@@ -65,7 +65,10 @@ live here, read only immutable sets, and are used exclusively to decide what to 
 * `best_class` — the fully bound composition with the most passing test classes; ties broken by
   fewest failures then lowest composition id, so it is deterministic given the store contents.
 * `dead_slots` — slots no candidate has ever passed the method-level test class for, plus (for slots
-  with no own test class) the slots blamed by the current class's failures.
+  with no own test class) the slots blamed by the current class's failures. When a class fails and
+  nothing names a slot, repair still has to aim somewhere and every slot is targeted — but that is
+  a guess, so `unattributed()` says so and `dead_slot_report`/`analysis/dead_slots.py` bucket the
+  task separately instead of reporting it as "N dead slots".
 
 ## Feedback levels (`calm_coder/v2/feedback.py`)
 
@@ -101,10 +104,13 @@ one primes a prefix no later request has), and its tokens are charged to the bud
   regenerates the whole class and the verdict comes from the samples themselves. No recombination,
   so the arms differ only in where new tokens are spent.
 
-Budgets come from a real arm-C run (`--budget-from`), so "equal tokens" is measured, not estimated.
+Budgets come from a real arm-C run (`--budget-from`), so "equal tokens" is measured, not estimated,
+and matched per `(task, seed)` — the mean over C's seeds would hold half of C's own runs to a
+budget they exceeded. The across-seed mean is the fallback for a seed C never ran, and
+`budgets.jsonl` records which was used.
 
 ## Determinism
 
-Sampling seeds are `hash(task_id, arm, slot, round, sample_idx)`. Everything after generation is a
+Sampling seeds are `hash(run_seed, task_id, arm, slot, round, sample_idx)`. Everything after generation is a
 function of the store's contents, and the event log replays into an identical store under any
 permutation — including `best_class` and `dead_slots`, which the replay test checks explicitly.

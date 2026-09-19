@@ -110,8 +110,24 @@ def dead_slots(store: Store, task: "Task", comp: Composition | None = None) -> t
         elif slot.id in blamed:
             out.append(slot.id)
     if not out and comp is not None and failing_tests(store, task, comp):
+        # Nothing is attributable: the class fails but no slot owns the failure. Targeting every
+        # slot is a scheduling guess, so `unattributed_slots` names it as one rather than letting
+        # it be read as "this task has N dead slots".
         out = sorted(blamed) or [s.id for s in task.slots]
     return tuple(sorted(out))
+
+
+def unattributed(store: Store, task: "Task", comp: Composition | None = None) -> bool:
+    """True when the dead slots are the fallback guess, not slots a failure actually blames."""
+    comp = comp if comp is not None else best_class(store, task)
+    if comp is None or not failing_tests(store, task, comp):
+        return False
+    owned = any(task.slot_tests.get(s.id) is not None and not passing_candidates(store, task, s.id)
+                for s in task.slots)
+    blamed = set()
+    for t, (_, detail) in failing_tests(store, task, comp).items():
+        blamed |= blamed_slots(task, t, detail)
+    return not owned and not blamed
 
 
 def slot_failures(store: Store, task: "Task", slot: str, comp: Composition | None) -> list[Failure]:
@@ -146,6 +162,7 @@ def slot_candidates(store: Store, task: "Task", slots: Sequence[str] | None = No
 def dead_slot_report(store: Store, task: "Task", comp: Composition | None = None) -> dict[str, Mapping]:
     """Per dead slot: how many distinct candidates exist and what their failures look like."""
     comp = comp if comp is not None else best_class(store, task)
+    guess = unattributed(store, task, comp)
     out = {}
     for slot in dead_slots(store, task, comp):
         fs = slot_failures(store, task, slot, comp)
@@ -154,5 +171,6 @@ def dead_slot_report(store: Store, task: "Task", comp: Composition | None = None
             "exc_types": sorted({f.exc_type for f in fs}),
             "interface_error": any(f.interface_error for f in fs),
             "has_own_test": task.slot_tests.get(slot) is not None,
+            "unattributed": guess,
         }
     return out

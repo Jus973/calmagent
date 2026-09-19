@@ -270,6 +270,35 @@ def test_replay_of_a_v2_run_is_order_independent(toy, client):
         assert state.best_class(s, toy) == state.best_class(base, toy)
 
 
+def test_the_run_seed_changes_what_is_sampled(toy):
+    """Two seeds of an arm must be two samples of it, not the same run logged twice."""
+    def seeds(run_seed: int):
+        c = Client("http://fake/v1", "fake", no_n=False, transport=httpx.MockTransport(fake_server([])))
+        r = asyncio.run(run_v2(c, toy, budget_tokens=10_000, seed=run_seed, k=2, repair_n=2,
+                               rounds=3, warm=False))
+        return [e["sample_seed"] for e in r.emissions]
+    assert seeds(0) and not set(seeds(0)) & set(seeds(1))
+
+
+def test_the_warmup_prompt_is_a_prefix_of_the_requests_it_warms(toy, client):
+    """A served prompt includes its system message, so a warm-up without one warms nothing."""
+    asyncio.run(run_v2(client, toy, budget_tokens=10_000, k=2, repair_n=2, rounds=3, warm=True))
+    def ser(c):
+        return "\n".join(f"{m['role']}:{m['content']}" for m in c["messages"])
+    warms = [c for c in client.calls if c["max_tokens"] == 1]
+    assert len(warms) >= 2
+    for w in warms:
+        after = client.calls[client.calls.index(w) + 1]
+        assert ser(after).startswith(ser(w)), ser(w)[:200]
+
+
+def test_a_repair_round_asks_for_as_many_samples_as_the_baseline(toy, client):
+    """`repair_n` is a round total in both arms, so the targeted round is split across dead slots."""
+    v2 = asyncio.run(run_v2(client, toy, budget_tokens=10_000, k=2, repair_n=4, rounds=1, warm=False))
+    rnd = next(r for r in v2.row["rounds"] if r["producer"] == "repair")
+    assert rnd["samples_per_target"] * len(rnd["targets"]) == 4
+
+
 def test_two_v2_runs_with_the_same_seeds_agree(toy):
     def once():
         c = Client("http://fake/v1", "fake", no_n=False, transport=httpx.MockTransport(fake_server([])))

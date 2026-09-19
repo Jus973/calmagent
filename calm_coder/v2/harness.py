@@ -7,7 +7,8 @@ WCR  the fair baseline: same k samples, same feedback level, same budget, but ea
      recombination, so the only difference between the arms is where new tokens are spent.
 
 Both arms test every sample's own composition before anything else: that is the no-loss property.
-A pooled run can therefore never do worse than the samples it pooled.
+A pooled run can therefore never do worse than the samples it pooled, except for samples whose
+context a composition cannot carry (`ClassIngest.dropped`, §3.5); those are counted, not assumed.
 """
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable
 
 from calm_coder.agents.scheduler import Scheduler
+from calm_coder.serve.prompts import CLASS_SYSTEM, SLOT_SYSTEM
 from calm_coder.store.defs import Composition
 from calm_coder.store.derive import verified
 from calm_coder.store.store import Store
@@ -76,12 +78,12 @@ async def run_v2(client: "Client", task: "Task", *, budget_tokens: int, seed: in
     t0 = time.monotonic()
 
     if warm:
-        _acc(row, await warmup(client, task, budget))
-    wc = await WholeClassProducer(client, k=k, arm=arm).produce(task, store, budget)
+        _acc(row, await warmup(client, task, budget, CLASS_SYSTEM))
+    wc = await WholeClassProducer(client, k=k, arm=arm, run_seed=seed).produce(task, store, budget)
     _acc(row, wc)
     emissions += wc.emissions
     if per_method:
-        pm = await PerMethodProducer(client, n=k, arm=arm).produce(task, store, budget)
+        pm = await PerMethodProducer(client, n=k, arm=arm, run_seed=seed).produce(task, store, budget)
         _acc(row, pm)
         emissions += pm.emissions
     row["gen_ms"] = int((time.monotonic() - t0) * 1000)
@@ -112,12 +114,12 @@ async def run_v2(client: "Client", task: "Task", *, budget_tokens: int, seed: in
     for r in range(1, rounds + 1):
         if row["solved"] or budget.exhausted:
             break
-        rp = RepairProducer(client, n=repair_n, arm=arm, rnd=r, level=level)
+        rp = RepairProducer(client, n=repair_n, arm=arm, rnd=r, run_seed=seed, level=level)
         dead_before = list(state.dead_slots(store, task))
         if not dead_before:
             break
         if warm:
-            _acc(row, await warmup(client, task, budget))
+            _acc(row, await warmup(client, task, budget, SLOT_SYSTEM))
         pr = await rp.produce(task, store, budget)
         if not pr.emissions:
             break
@@ -125,7 +127,7 @@ async def run_v2(client: "Client", task: "Task", *, budget_tokens: int, seed: in
         emissions += pr.emissions
         await search_round()
         row["rounds"].append({"round": r, "producer": "repair", "targets": list(rp.targets),
-                              "dead_before": dead_before, "dead_after": list(state.dead_slots(store, task)),
+                              "samples_per_target": rp.per_slot, "dead_before": dead_before, "dead_after": list(state.dead_slots(store, task)),
                               "decode_tokens": row["decode_tokens"], "solved": row["solved"]})
 
     row["dead_slots"] = list(state.dead_slots(store, task))
@@ -137,7 +139,7 @@ async def run_v2(client: "Client", task: "Task", *, budget_tokens: int, seed: in
 
 
 async def run_wcr(client: "Client", task: "Task", *, budget_tokens: int, seed: int = 0,
-                  k: int = DEFAULT_K, repair_n: int = DEFAULT_K, rounds: int = DEFAULT_ROUNDS,
+                  k: int = DEFAULT_K, repair_n: int = DEFAULT_REPAIR_N, rounds: int = DEFAULT_ROUNDS,
                   level: Level = "F1", max_comps: int = 64, warm: bool = True,
                   arm: str = "wcr", store: Store | None = None,
                   on_event: Callable[[dict], None] | None = None) -> RunResult:
@@ -149,14 +151,15 @@ async def run_wcr(client: "Client", task: "Task", *, budget_tokens: int, seed: i
     t0 = time.monotonic()
 
     if warm:
-        _acc(row, await warmup(client, task, budget))
-    wc = await WholeClassProducer(client, k=k, arm=arm).produce(task, store, budget)
+        _acc(row, await warmup(client, task, budget, CLASS_SYSTEM))
+    wc = await WholeClassProducer(client, k=k, arm=arm, run_seed=seed).produce(task, store, budget)
     _acc(row, wc)
     emissions += wc.emissions
     row["gen_ms"] = int((time.monotonic() - t0) * 1000)
     await _test_seed_comps(sched, wc.seed_comps)
     row["seed_comps"] = len(wc.seed_comps)
     row["solved"] = bool(verified(store, task))
+    row["seed_comp_solved"] = row["solved"]          # the same field the v2 arm reports (§6.3)
     row["verified_comp"] = next(iter(sorted(verified(store, task))), None)
     row["rounds"].append({"round": 0, "producer": "whole_class", "dead_after": list(state.dead_slots(store, task)),
                           "decode_tokens": row["decode_tokens"], "solved": row["solved"]})
@@ -165,9 +168,9 @@ async def run_wcr(client: "Client", task: "Task", *, budget_tokens: int, seed: i
         if row["solved"] or budget.exhausted:
             break
         if warm:
-            _acc(row, await warmup(client, task, budget))
-        pr = await WholeClassRepairProducer(client, n=repair_n, arm=arm, rnd=r, level=level) \
-            .produce(task, store, budget)
+            _acc(row, await warmup(client, task, budget, CLASS_SYSTEM))
+        pr = await WholeClassRepairProducer(client, n=repair_n, arm=arm, rnd=r, run_seed=seed,
+                                            level=level).produce(task, store, budget)
         if not pr.emissions:
             break
         _acc(row, pr)
@@ -180,6 +183,7 @@ async def run_wcr(client: "Client", task: "Task", *, budget_tokens: int, seed: i
                               "decode_tokens": row["decode_tokens"], "solved": row["solved"]})
 
     row["dead_slots"] = list(state.dead_slots(store, task))
+    row["dead_slot_report"] = dict(state.dead_slot_report(store, task))
     row["over_budget"] = budget.used > budget.decode_tokens
     if row["solved"]:
         row["ttfv_ms"] = int((time.monotonic() - t0) * 1000)

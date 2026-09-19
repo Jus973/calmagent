@@ -74,6 +74,16 @@ def shared_prefix(task: "Task") -> str:
     return _skeleton(task)
 
 
+def warmup_messages(task: "Task", system: str) -> list[dict]:
+    """The prompt every request of one family shares, stopped at the end of the skeleton block.
+
+    A served prompt is the system message and the user message together, so a warm-up that omits
+    the system message primes a prefix no later request has. It carries the family's own system
+    message for that reason: `CLASS_SYSTEM` warms whole-class requests, `SLOT_SYSTEM` slot ones.
+    """
+    return [{"role": "system", "content": system}, {"role": "user", "content": shared_prefix(task)}]
+
+
 def slot_repair_messages(task: "Task", slot_id: str, current_class: str, feedback: str) -> list[dict]:
     """Targeted repair: skeleton, then the current best class, then the one slot to rewrite.
 

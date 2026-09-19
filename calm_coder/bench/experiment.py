@@ -82,14 +82,14 @@ def _budget_view(emissions: list[Emission], n: int):
 
 
 async def run_calm(client: Client, task, seed: int, Ns: list[int], rd: RunDir, *, max_comps: int,
-                   arm: str = "calm", on_event=None) -> list[dict]:
+                   arm: str = "calm", on_event=None, test_width: int = 1) -> list[dict]:
     store = Store()
     t_start = time.monotonic()
     emissions = await generate_fills(client, task, store, n=max(Ns), seed=seed, arm=arm, t_start=t_start,
                                      on_event=on_event)
     for e in emissions:
         rd.append("emissions.jsonl", e.to_json())
-    sched = Scheduler(task, store, max_comps=max_comps, on_event=on_event)
+    sched = Scheduler(task, store, max_comps=max_comps, on_event=on_event, width=test_width)
     rows = []
     phase1_ms = 0
     stub: dict[str, str] = {}
@@ -125,7 +125,9 @@ async def run_calm(client: Client, task, seed: int, Ns: list[int], rd: RunDir, *
             "solved": res.verified_comp is not None, "verified_comp": res.verified_comp,
             "unsolvable_reason": res.unsolvable_reason,
             "ttfv_ms": gen_ms + phase1_ms + res.test_ms if res.verified_comp else None,
+            "ttfv_wall_ms": gen_ms + phase1_ms + res.test_wall_ms if res.verified_comp else None,
             "gen_ms": gen_ms, "phase1_ms": phase1_ms, "test_ms": res.test_ms,
+            "test_wall_ms": res.test_wall_ms, "test_width": sched.width,
             "comps_tested": len(res.trace),
             "completion_tokens": sum(e.completion_tokens for e in used),
             "prompt_tokens": sum(e.prompt_tokens for e in used),
@@ -253,6 +255,7 @@ async def main_async(a) -> Path:
                "tasks": a.tasks.split(",") if a.tasks else None, "max_comps": a.max_comps,
                "budget_from": a.budget_from, "budget_tokens": a.budget_tokens, "feedback": a.feedback,
                "k": a.k, "repair_n": a.repair_n, "rounds": a.rounds,
+               "test_width": a.test_width,
                "sampling": SAMPLING, "per_class_timeout_s": 5, "wall_timeout_s": 20,
                "model": os.environ.get("CALM_MODEL"), "base_url": os.environ.get("CALM_BASE_URL"),
                "no_n": os.environ.get("CALM_NO_N"),
@@ -290,7 +293,8 @@ async def main_async(a) -> Path:
                     t0 = time.monotonic()
                     try:
                         if arm == "calm":
-                            rows = await run_calm(client, task, seed, cfg["Ns"], rd, max_comps=cfg["max_comps"])
+                            rows = await run_calm(client, task, seed, cfg["Ns"], rd, max_comps=cfg["max_comps"],
+                                                  test_width=cfg.get("test_width", 1))
                         elif arm == "c":
                             rows = await run_c(client, task, seed, cfg["Ns"], rd)
                         elif arm == "a_greedy":
@@ -340,6 +344,8 @@ def main() -> None:
     ap.add_argument("--k", type=int, default=DEFAULT_K, help="whole-class samples before the first repair round")
     ap.add_argument("--repair-n", type=int, default=DEFAULT_REPAIR_N)
     ap.add_argument("--rounds", type=int, default=DEFAULT_ROUNDS)
+    ap.add_argument("--test-width", type=int, default=1,
+                   help="compositions tested at once per task (affects when facts appear, not which)")
     ap.add_argument("--out", default="runs")
     ap.add_argument("--name", default="main")
     ap.add_argument("--resume")

@@ -15,7 +15,10 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 RUNNER = str(Path(__file__).with_name("_run_tests.py"))
-_POOL = ThreadPoolExecutor(max_workers=os.cpu_count() or 4)
+# Each worker only waits on a child process, so the pool is sized above cpu_count: a search testing
+# `width` compositions of several classes each would otherwise queue behind cpu_count runs.
+WORKERS = int(os.environ.get("CALM_TEST_WORKERS") or max(8, 2 * (os.cpu_count() or 4)))
+_POOL = ThreadPoolExecutor(max_workers=WORKERS)
 
 
 def run_tests(module_src: str, test_src: str, test_classes: list[str], *,

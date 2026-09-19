@@ -8,11 +8,14 @@
 * v2 (this branch):
   * producer-agnostic layer — `WholeClassProducer`, `PerMethodProducer`, `RepairProducer`,
     `WholeClassRepairProducer`, all writing through `add_def`/`add_outcome` only;
-  * whole-class decomposition with the no-loss guarantee (each sample's own composition is
-    evaluated first);
+  * whole-class decomposition, no-loss up to carryable context: each sample's own composition is
+    evaluated first and the module context its methods read (imports, constants, module-level
+    helpers) is carried into the lifted definitions; a rewritten constructor or class attributes
+    cannot be carried and are reported in `ClassIngest.dropped`;
   * policy reads outside `derive.py`: verdict facts, deterministic `best_class`, `dead_slots`;
   * feedback levels F0/F1/F2 with a scrubber that keeps test source out of F0/F1;
-  * prefix-aligned prompts, per-task warm-up, per-task decode budgets, `n`-batched requests;
+  * prefix-aligned prompts, per-task warm-up carrying its family's system message, per-task decode
+    budgets, `n`-batched requests, run-seeded sampling identities;
   * arms `v2`, `v2_pm`, `v2_f0`, `v2_f2`, `wcr` in the experiment driver, budgets read from a real
     arm-C run;
   * analyses: `analysis/pool_existing.py`, `analysis/dead_slots.py`, `analysis/final_report.py`;
@@ -27,6 +30,9 @@
   `--arms v2,v2_pm,v2_f0,wcr --budget-from <C run>`, then `analysis/final_report.py`.
 * Phase 0 recon numbers: `analysis/pool_existing.py` and `analysis/dead_slots.py` are written but
   have not been run against `runs/` yet.
+* PREREG H6 (prompt tokens vs the v1 layout) and the solve-rate/token curve beyond the per-arm N
+  sweep are not implemented; the report does not claim them.
+* Lint: `ruff` is not installed in this environment, so only `pytest` has been run.
 * The demo's two recorded logs — the exporter and page are tested against a mock-model run, but
   the logs to ship are exported from the real run once it exists.
 
@@ -52,6 +58,10 @@ python -m http.server -d calm_coder/demo/web 8000
 
 ## Open questions
 
+* A repair round's `repair_n` is split across dead slots (`repair_n // len(dead_slots)`, at least
+  one sample each) so a targeted round costs about what a WCR round costs. When dead slots
+  outnumber `repair_n`, the round asks for one sample per slot and therefore spends more than the
+  baseline round; the budget still caps it, and the row records `samples_per_target`.
 * `dead_slots` falls back to blame-based attribution for slots without their own test class; on
   tasks where class-level tests dominate this can target more slots than strictly necessary.
 * Prompt-token accounting depends on the server reporting `prompt_tokens_details.cached_tokens`;

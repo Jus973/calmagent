@@ -43,8 +43,18 @@ equal tokens rather than at equal request counts.
 
 A whole-class sample is parsed, split per declared slot (non-slot functions ride along as helpers),
 and inserted as ordinary definitions. The sample's own slot bindings are returned, and the harness
-evaluates that exact composition before anything else. So pooling can only add: every class the
-whole-class baseline would have tested is still tested, byte for byte. `tests/test_v2.py` pins this.
+evaluates that exact composition before anything else, so pooling can only add.
+
+A method lifted out of a class is only equal to the method as sampled together with the module
+context it reads, so the sample's own imports, module constants and module-level helpers are
+carried into the lifted definitions (transitively, and only the ones a given method reads).
+
+The claim is therefore no-loss **up to carryable context**, not unconditionally. Two things a
+composition cannot represent: a sample that rewrites the skeleton's `__init__` (the constructor is
+the shared contract every other fill is written against) and class attributes. Those are reported
+in `ClassIngest.dropped` so such a sample is never silently counted as an equivalent composition.
+`tests/test_v2.py` pins both halves: a composition that runs like its sample, and a rewritten
+constructor showing up as dropped context.
 
 ## Policy reads (`calm_coder/v2/state.py`)
 
@@ -75,14 +85,17 @@ of ≥24 characters that also occurs in the test source before a `Failure` is bu
 
 Every prompt for a task is `STATIC_INSTRUCTIONS + SKELETON_BLOCK + VARIABLE_SUFFIX`; nothing
 variable precedes the skeleton, and within a repair round every dead slot additionally shares the
-current-class block. One warm-up request per task primes the prefix before the fan-out, and its
-tokens are charged to the budget like any other.
+current-class block. One warm-up request per task primes the prefix before the fan-out, carrying
+the system message of the family it warms (a served prompt is system + user, so a warm-up without
+one primes a prefix no later request has), and its tokens are charged to the budget like any other.
 
 ## Arms (`calm_coder/v2/harness.py`)
 
 * **V2** — k whole-class samples → store → test each sample's own composition → recombination
-  search → up to 3 rounds of targeted repair of dead slots (one request per dead slot, n samples
-  each) → stop on the first verified composition or when the budget is gone.
+  search → up to 3 rounds of targeted repair of dead slots (one request per dead slot;
+  `repair_n` is the round's *total* sample count, split `repair_n // len(dead_slots)` per slot,
+  so a targeted round asks for as many samples as a WCR round does) → stop on the first verified
+  composition or when the budget is gone.
 * **V2+PM** — the same, with per-method samples pooled in as well.
 * **WCR** — the fair repair baseline: same k samples, same feedback, same budget, but each round
   regenerates the whole class and the verdict comes from the samples themselves. No recombination,

@@ -1,0 +1,161 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CALM Coder — replay</title>
+<style>
+  :root { color-scheme: dark; --g:#3fb950; --r:#f85149; --y:#d29922; --dim:#8b949e; --line:#30363d; }
+  body { margin:0; background:#0d1117; color:#e6edf3; font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  h1 { font-size:15px; margin:0; font-weight:600; }
+  select, button { background:#161b22; color:#e6edf3; border:1px solid var(--line); border-radius:6px; padding:5px 10px; font:inherit; }
+  button:hover { border-color:#6e7681; cursor:pointer; }
+  main { display:grid; grid-template-columns:1fr 1.6fr; gap:1px; background:var(--line); min-height:70vh; }
+  section { background:#0d1117; padding:16px 20px; }
+  h2 { font-size:13px; margin:0 0 12px; color:var(--dim); font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+  .sample { display:flex; align-items:center; gap:10px; margin:6px 0; }
+  .bar { height:10px; background:#21262d; border-radius:5px; overflow:hidden; flex:1; }
+  .bar > i { display:block; height:100%; width:0; background:var(--dim); transition:width .25s linear; }
+  .pass > i { background:var(--g); } .fail > i { background:var(--r); }
+  .cols { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
+  .col { min-width:132px; flex:1; border:1px solid var(--line); border-radius:8px; padding:8px; }
+  .col.dead { border-color:var(--r); box-shadow:0 0 0 1px var(--r) inset; }
+  .col.live { border-color:var(--g); }
+  .col h3 { font-size:12px; margin:0 0 6px; overflow:hidden; text-overflow:ellipsis; }
+  .cand { font-size:11px; color:var(--dim); padding:2px 4px; border-radius:4px; background:#161b22; margin:3px 0; }
+  .cand.new { background:#1f6feb33; color:#e6edf3; }
+  .cand.repair { background:#d2992233; }
+  .light { display:inline-block; width:8px; height:8px; border-radius:50%; background:#30363d; margin-right:6px; }
+  .light.pass { background:var(--g); } .light.fail { background:var(--r); }
+  .counters { display:flex; gap:18px; margin-top:14px; color:var(--dim); font-size:12px; flex-wrap:wrap; }
+  .counters b { color:#e6edf3; font-weight:600; }
+  .log { margin-top:14px; height:150px; overflow:auto; font-size:11px; color:var(--dim); border-top:1px solid var(--line); padding-top:8px; }
+  .verdict { margin-top:12px; font-weight:600; }
+  .ok { color:var(--g); } .bad { color:var(--r); } .note { color:var(--y); }
+  footer { padding:12px 20px; border-top:1px solid var(--line); color:var(--dim); font-size:12px; }
+  code { background:#161b22; padding:1px 5px; border-radius:4px; }
+</style>
+
+<header>
+  <h1>CALM Coder — recorded replay</h1>
+  <select id="pick"></select>
+  <button id="play">replay</button>
+  <button id="shuffle">shuffle and replay</button>
+  <span id="hash" class="note"></span>
+</header>
+
+<main>
+  <section>
+    <h2 id="leftLabel">best-of-N</h2>
+    <div id="samples"></div>
+    <div class="counters">
+      <span>decode <b id="lTok">0</b></span><span>prompt <b id="lPrompt">–</b></span><span>elapsed <b id="lMs">0</b>ms</span>
+    </div>
+    <div class="verdict" id="lVerdict"></div>
+  </section>
+
+  <section>
+    <h2 id="rightLabel">CALM Coder</h2>
+    <div class="cols" id="cols"></div>
+    <div class="counters">
+      <span>decode <b id="rTok">0</b></span><span>prompt <b id="rPrompt">–</b></span>
+      <span>cached prompt <b id="rCached">–</b></span><span>requests <b id="rReq">–</b></span>
+      <span>elapsed <b id="rMs">0</b>ms</span>
+    </div>
+    <div class="verdict" id="rVerdict"></div>
+    <div class="log" id="log"></div>
+  </section>
+</main>
+
+<footer>
+  Every event below was replayed from a run's append-only log. Shuffling the arrival order changes nothing the
+  store derives — the store hash under <code>shuffle and replay</code> is the same number every time.
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+let data = null, timer = null;
+
+async function loadIndex() {
+  const names = await fetch('logs/index.json').then(r => r.json()).catch(() => []);
+  $('pick').innerHTML = names.map(n => `<option>${n}</option>`).join('') || '<option>no logs exported</option>';
+  if (names.length) load(names[0]);
+}
+async function load(name) {
+  data = await fetch('logs/' + name).then(r => r.json());
+  reset();
+}
+
+function reset() {
+  clearInterval(timer);
+  $('leftLabel').textContent = data.left.label;
+  $('rightLabel').textContent = data.right.label + (data.right.feedback ? ' · ' + data.right.feedback : '');
+  $('samples').innerHTML = data.left.samples.map(s =>
+    `<div class="sample"><span>#${s.idx}</span><span class="bar" id="s${s.idx}"><i></i></span>
+     <span class="dim">${s.tokens} tok</span></div>`).join('');
+  $('cols').innerHTML = data.slots.map(s =>
+    `<div class="col" id="c-${s}"><h3><span class="light" id="l-${s}"></span>${s}</h3><div id="d-${s}"></div></div>`).join('');
+  $('log').innerHTML = '';
+  ['lTok','rTok','lMs','rMs'].forEach(i => $(i).textContent = '0');
+  $('lPrompt').textContent = data.left.prompt_tokens ?? '–';
+  $('rPrompt').textContent = data.right.prompt_tokens ?? '–';
+  $('rCached').textContent = data.right.cached_tokens ?? '–';
+  $('rReq').textContent = data.right.requests ?? '–';
+  $('lVerdict').textContent = ''; $('rVerdict').textContent = '';
+  $('hash').textContent = 'store ' + data.store_hash;
+}
+
+function play(shuffled) {
+  reset();
+  const ev = data.right.events.slice();
+  if (shuffled) for (let i = ev.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [ev[i], ev[j]] = [ev[j], ev[i]]; }
+
+  // left pane: samples fill up, then land red or green
+  let lTok = 0, t0 = performance.now();
+  data.left.samples.forEach((s, k) => setTimeout(() => {
+    const el = $('s' + s.idx); el.firstElementChild.style.width = '100%';
+    el.parentElement.className = 'sample';
+    el.className = 'bar ' + (s.passed === true ? 'pass' : s.passed === false ? 'fail' : '');
+    lTok += s.tokens; $('lTok').textContent = lTok; $('lMs').textContent = Math.round(performance.now() - t0);
+    if (k === data.left.samples.length - 1)
+      $('lVerdict').innerHTML = data.left.solved
+        ? '<span class="ok">a sample passed</span>'
+        : '<span class="bad">no single sample passes — the correct methods inside them are thrown away</span>';
+  }, 140 * (k + 1)));
+
+  // right pane: the store grows, per-slot lights, repair rounds
+  let i = 0, rTok = 0, seen = new Set();
+  timer = setInterval(() => {
+    if (i >= ev.length) {
+      clearInterval(timer);
+      const dead = data.right.dead_slots;
+      $('rVerdict').innerHTML = data.right.solved
+        ? `<span class="ok">verified composition</span> — ${data.right.decode_tokens} decode tokens` +
+          (data.right.budget_tokens ? ` of a ${data.right.budget_tokens} budget` : '')
+        : `<span class="bad">not verified</span>${dead.length ? ' — dead: ' + dead.join(', ') : ''}`;
+      $('hash').textContent = 'store ' + data.store_hash + (shuffled ? ' (shuffled order, same hash)' : '');
+      return;
+    }
+    const e = ev[i++];
+    if (e.kind === 'def') {
+      const box = $('d-' + e.slot);
+      if (box && !seen.has(e.hash)) {
+        seen.add(e.hash);
+        const cls = e.producer && e.producer.includes('repair') ? 'cand repair' : 'cand new';
+        box.insertAdjacentHTML('beforeend', `<div class="${cls}">${e.hash}${e.round ? ' r' + e.round : ''}</div>`);
+        if (e.producer && e.producer.includes('repair')) $('c-' + e.slot).classList.add('dead');
+      }
+      if (e.tokens) { rTok += e.tokens; $('rTok').textContent = rTok; }
+    } else {
+      const slot = Object.keys(data.slot_tests).find(s => data.slot_tests[s] === e.test);
+      if (slot && $('l-' + slot)) $('l-' + slot).className = 'light ' + (e.result === 'pass' ? 'pass' : 'fail');
+      if (slot && e.result === 'pass') { $('c-' + slot).classList.remove('dead'); $('c-' + slot).classList.add('live'); }
+      $('log').insertAdjacentHTML('afterbegin', `<div>${e.test} · ${e.comp} · ${e.result}</div>`);
+    }
+    $('rMs').textContent = Math.round(performance.now() - t0);
+  }, 60);
+}
+
+$('pick').onchange = e => load(e.target.value);
+$('play').onclick = () => play(false);
+$('shuffle').onclick = () => play(true);
+loadIndex();
+</script>

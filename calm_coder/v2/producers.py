@@ -56,6 +56,18 @@ class Budget:
         self.used += n
 
 
+# A request can only be stopped at max_tokens, so the budget is enforced before it is sent: the
+# round's per-sample cap is the remaining budget split over the samples it is about to ask for.
+# Below MIN_TOKENS a sample cannot produce a usable method, so the round is skipped instead.
+MIN_TOKENS = 32
+
+
+def cap_tokens(budget: Budget, samples: int, max_tokens: int) -> int:
+    """Per-sample max_tokens for a round of `samples` samples, or 0 if the budget cannot fund it."""
+    per = budget.remaining // max(1, samples)
+    return min(max_tokens, per) if per >= MIN_TOKENS else 0
+
+
 @dataclass
 class ProduceResult:
     producer: str
@@ -75,6 +87,8 @@ async def warmup(client: "Client", task: "Task", budget: Budget) -> ProduceResul
     Requests that arrive in the same scheduling step are not guaranteed to share a prefix that is
     still being computed; this removes the question. Its tokens are counted like any other.
     """
+    if budget.exhausted:
+        return ProduceResult(producer="warmup")
     (s,) = await client.sample([{"role": "user", "content": shared_prefix(task)}], n=1,
                                temperature=0.0, max_tokens=1, seed=0)
     budget.spend(s.completion_tokens)
@@ -105,10 +119,12 @@ def _emission(task: "Task", arm: str, slot: str, rnd: int, idx: int, s, t_start:
                     t_done_ms=int((time.monotonic() - t_start) * 1000), finish_reason=s.finish_reason)
 
 
-def _totals(res: ProduceResult, emissions: Sequence[Emission]) -> ProduceResult:
+def _totals(res: ProduceResult, emissions: Sequence[Emission], requests: int) -> ProduceResult:
+    """`requests` counts prompts the producer issued, not samples: a server that honours `n`
+    computes the shared prefix once per prompt, which is the number the prefix claim is about."""
     res.decode_tokens += sum(e.completion_tokens for e in emissions)
     res.prompt_tokens += sum(e.prompt_tokens for e in emissions)
-    res.requests += len(emissions)
+    res.requests += requests
     cached = [e.cached_tokens for e in emissions if e.cached_tokens is not None]
     if cached:
         res.cached_tokens = (res.cached_tokens or 0) + sum(cached)
@@ -130,11 +146,14 @@ class WholeClassProducer:
     async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
         t_start = time.monotonic()
         res = ProduceResult(producer=self.name)
+        max_tokens = cap_tokens(budget, self.k, self.max_tokens)
+        if not max_tokens:
+            return res
 
         emissions = await _sample_group(self.client, task, self.arm, SPINE, self.rnd, self.k,
                                         whole_class_messages(task), t_start,
                                         temperature=self.temperature, top_p=self.top_p,
-                                        max_tokens=self.max_tokens)
+                                        max_tokens=max_tokens)
         for e in emissions:
             ing = ingest_class_sample(task, store, e.text,
                                       {"producer": self.name, "arm": self.arm, "round": self.rnd,
@@ -146,7 +165,7 @@ class WholeClassProducer:
             if ing.complete and not ing.error:
                 res.seed_comps.append(dict(ing.bindings))
         budget.spend(sum(e.completion_tokens for e in emissions))
-        return _totals(res, emissions)
+        return _totals(res, emissions, 1)
 
 
 class PerMethodProducer:
@@ -163,20 +182,23 @@ class PerMethodProducer:
     async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
         t_start = time.monotonic()
         res = ProduceResult(producer=self.name)
+        max_tokens = cap_tokens(budget, self.n * len(task.slots), self.max_tokens)
+        if not max_tokens:
+            return res
 
         groups = await asyncio.gather(*(
             _sample_group(self.client, task, self.arm, s.id, self.rnd, self.n,
                           slot_messages(task, s.id), t_start, temperature=self.temperature,
-                          top_p=self.top_p, max_tokens=self.max_tokens)
+                          top_p=self.top_p, max_tokens=max_tokens)
             for s in task.slots))
         emissions = sorted((e for g in groups for e in g),
                            key=lambda e: (task.slot(e.slot).order, e.sample_idx))
         for e in emissions:
-            ingest(task, store, e)
+            ingest(task, store, e, extra={"producer": self.name, "round": self.rnd})
             if e.fill_hash:
                 res.new_fills.append(e.fill_hash)
         budget.spend(sum(e.completion_tokens for e in emissions))
-        return _totals(res, emissions)
+        return _totals(res, emissions, len(task.slots))
 
 
 class RepairProducer:
@@ -203,6 +225,9 @@ class RepairProducer:
         self.targets = targets
         if not targets:
             return res
+        max_tokens = cap_tokens(budget, self.n * len(targets), self.max_tokens)
+        if not max_tokens:
+            return res
         current = state.class_source(store, task, comp)
         # Every request of this round shares everything up to the end of the current-class block.
         prompts = {slot: slot_repair_messages(
@@ -212,15 +237,15 @@ class RepairProducer:
 
         groups = await asyncio.gather(*(
             _sample_group(self.client, task, self.arm, slot, self.rnd, self.n, prompts[slot], t_start,
-                          temperature=self.temperature, top_p=self.top_p, max_tokens=self.max_tokens)
+                          temperature=self.temperature, top_p=self.top_p, max_tokens=max_tokens)
             for slot in targets))
         emissions = sorted((e for g in groups for e in g), key=lambda e: (e.slot, e.sample_idx))
         for e in emissions:
-            ingest(task, store, e)
+            ingest(task, store, e, extra={"producer": self.name, "round": self.rnd})
             if e.fill_hash:
                 res.new_fills.append(e.fill_hash)
         budget.spend(sum(e.completion_tokens for e in emissions))
-        return _totals(res, emissions)
+        return _totals(res, emissions, len(targets))
 
 
 class WholeClassRepairProducer:
@@ -239,6 +264,9 @@ class WholeClassRepairProducer:
     async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
         t_start = time.monotonic()
         res = ProduceResult(producer=self.name)
+        max_tokens = cap_tokens(budget, self.n, self.max_tokens)
+        if not max_tokens:
+            return res
         comp = state.best_class(store, task)
         current = state.class_source(store, task, comp)
         failures = [f for slot in state.dead_slots(store, task, comp)
@@ -252,7 +280,7 @@ class WholeClassRepairProducer:
 
         emissions = await _sample_group(self.client, task, self.arm, SPINE, self.rnd, self.n, messages,
                                         t_start, temperature=self.temperature, top_p=self.top_p,
-                                        max_tokens=self.max_tokens)
+                                        max_tokens=max_tokens)
         for e in emissions:
             ing = ingest_class_sample(task, store, e.text,
                                       {"producer": self.name, "arm": self.arm, "round": self.rnd,
@@ -263,4 +291,4 @@ class WholeClassRepairProducer:
             if ing.complete and not ing.error:
                 res.seed_comps.append(dict(ing.bindings))
         budget.spend(sum(e.completion_tokens for e in emissions))
-        return _totals(res, emissions)
+        return _totals(res, emissions, 1)

@@ -172,6 +172,14 @@ def test_v2_repairs_the_dead_slot(toy, client):
 def test_v2_respects_the_budget(toy, client):
     res = asyncio.run(run_v2(client, toy, budget_tokens=1, k=2, repair_n=2, rounds=3, warm=False))
     assert [r["producer"] for r in res.row["rounds"]] == ["whole_class"]   # no repair round is funded
+    assert res.row["decode_tokens"] == 0 and not res.row["over_budget"]    # nor the first round
+
+
+def test_the_budget_caps_a_round_before_it_is_sent(toy, client):
+    """max_tokens is the only lever that stops a request, so it carries the remaining budget."""
+    res = asyncio.run(run_v2(client, toy, budget_tokens=200, k=2, repair_n=2, rounds=3, warm=False))
+    assert [c["max_tokens"] for c in client.calls][0] == 100               # 200 // 2 samples
+    assert res.row["decode_tokens"] <= 200 and not res.row["over_budget"]
 
 
 def test_wcr_baseline_gets_the_same_feedback(toy, client):

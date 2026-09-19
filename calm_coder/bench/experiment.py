@@ -202,7 +202,9 @@ async def run_v2_arm(client: Client, task, seed: int, rd: RunDir, *, arm: str, b
                        rounds=rounds, level=kw.pop("level", level), max_comps=max_comps, arm=arm,
                        on_event=on_event, **kw)
     for e in res.emissions:
-        rd.append("emissions.jsonl", e)
+        # producers number emissions by repair round; `seed` means the run's seed everywhere a log
+        # is joined with results.jsonl, so the round moves to its own field here
+        rd.append("emissions.jsonl", {**e, "seed": seed, "round": e["seed"]})
     with open(rd.path / "events" / f"{task.task_id}__{arm}__s{seed}.jsonl", "w") as f:
         for ev in res.store.event_log():
             f.write(json.dumps(ev) + "\n")

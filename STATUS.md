@@ -18,6 +18,7 @@
   * analyses: `analysis/pool_existing.py`, `analysis/dead_slots.py`, `analysis/final_report.py`;
   * tests: prefix alignment, leak guard (F0/F1/F2), no-loss decomposition, replay determinism,
     budget enforcement, repair of a dead slot, report statistics.
+  * replay-first demo page (`calm_coder/demo/web/`) fed by `calm_coder.demo.export_web`.
 * Docs: `ARCHITECTURE.md`, `PREREG.md`.
 
 ## Not done
@@ -26,7 +27,8 @@
   `--arms v2,v2_pm,v2_f0,wcr --budget-from <C run>`, then `analysis/final_report.py`.
 * Phase 0 recon numbers: `analysis/pool_existing.py` and `analysis/dead_slots.py` are written but
   have not been run against `runs/` yet.
-* Phase 5 replay-first demo page.
+* The demo's two recorded logs — the exporter and page are tested against a mock-model run, but
+  the logs to ship are exported from the real run once it exists.
 
 ## How to run
 
@@ -42,6 +44,10 @@ python -m calm_coder.bench.experiment --arms v2,v2_pm,v2_f0,wcr --seeds 0 \
 python -m analysis.pool_existing runs/<earlier run>
 python -m analysis.dead_slots runs/<earlier run>
 python -m analysis.final_report runs/<c_base dir> runs/<v2 dir>
+
+# 4. demo: export a recorded task, then serve the page (no model server involved)
+python -m calm_coder.demo.export_web runs/<v2 dir> --task ClassEval_21 --arm v2
+python -m http.server -d calm_coder/demo/web 8000
 ```
 
 ## Open questions

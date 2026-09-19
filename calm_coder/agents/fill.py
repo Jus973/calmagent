@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Mapping
 
 from calm_coder.serve.extract import ExtractError, extract_functions
 from calm_coder.serve.prompts import SAMPLING, slot_messages
@@ -48,7 +48,8 @@ def sample_seed(seed: int, slot_order: int, idx: int) -> int:
     return seed * 10_000 + slot_order * 100 + idx
 
 
-def ingest(task: "Task", store: Store, e: Emission, on_event: Callable[[dict], None] | None = None) -> None:
+def ingest(task: "Task", store: Store, e: Emission, on_event: Callable[[dict], None] | None = None,
+           extra: Mapping[str, object] | None = None) -> None:
     """Extract -> definitions -> store. Extraction failure is recorded as a positive fact."""
     slot = task.slot(e.slot)
     fns = extract_functions(e.text, class_name=task.class_name)
@@ -58,7 +59,8 @@ def ingest(task: "Task", store: Store, e: Emission, on_event: Callable[[dict], N
         store.add_outcome(Outcome("__extract__", cid, "error", detail=fns.reason))
         return
     meta = {"agent_id": f"{e.slot}#{e.sample_idx}", "seed": e.sample_seed, "sample_idx": e.sample_idx,
-            "arm": e.arm, "ts": time.time(), "completion_tokens": e.completion_tokens}
+            "arm": e.arm, "ts": time.time(), "completion_tokens": e.completion_tokens,
+            **(extra or {})}
     defs = emission_to_defs(task, slot, fns, meta, log=e.log)
     exact = emission_to_defs(task, slot, fns, meta, alpha=False)
     if not defs:

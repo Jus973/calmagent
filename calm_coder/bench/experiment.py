@@ -27,9 +27,12 @@ from calm_coder.serve.prompts import SAMPLING
 from calm_coder.store.derive import reachable
 from calm_coder.store.defs import Composition
 from calm_coder.store.store import Store
+from calm_coder.v2.harness import DEFAULT_K, DEFAULT_REPAIR_N, DEFAULT_ROUNDS, run_v2, run_wcr
 
 console = Console(stderr=True)
 RESULTS = ("pass", "fail", "error", "timeout", "inconclusive")
+V2_ARMS = {"v2": {}, "v2_pm": {"per_method": True}, "v2_f0": {"level": "F0"}, "v2_f2": {"level": "F2"},
+           "wcr": {}}
 
 
 class RunDir:
@@ -40,6 +43,19 @@ class RunDir:
     def append(self, name: str, row: dict) -> None:
         with open(self.path / name, "a") as f:
             f.write(json.dumps(row, default=str) + "\n")
+
+    def write_events(self, stem: str, events) -> Path:
+        """An attempt's event log, under a name no earlier attempt can be holding."""
+        for i in range(1000):
+            p = self.path / "events" / (f"{stem}.jsonl" if not i else f"{stem}__a{i}.jsonl")
+            try:
+                with open(p, "x") as f:
+                    for ev in events:
+                        f.write(json.dumps(ev) + "\n")
+                return p
+            except FileExistsError:
+                continue
+        raise RuntimeError(f"too many attempts for {stem}")
 
     def rows(self, name: str) -> list[dict]:
         p = self.path / name
@@ -134,9 +150,7 @@ async def run_calm(client: Client, task, seed: int, Ns: list[int], rd: RunDir, *
         rd.append("traces.jsonl", {"task_id": task.task_id, "arm": arm, "seed": seed, "N": n,
                                    "trace": [asdict(t) for t in res.trace]})
         rows.append(row)
-    with open(rd.path / "events" / f"{task.task_id}__{arm}__s{seed}.jsonl", "w") as f:
-        for ev in store.event_log():
-            f.write(json.dumps(ev) + "\n")
+    rd.write_events(f"{task.task_id}__{arm}__s{seed}", store.event_log())
     return rows
 
 
@@ -173,6 +187,53 @@ async def run_a_greedy(client: Client, task, seed: int, rd: RunDir) -> list[dict
              "extract_errors": int(bool(s.extract_error)), "requests": 1}]
 
 
+# ---------------------------------------------------------------- v2 / WCR arms
+
+def budgets_from(path: Path, arm: str = "c", N: int | None = None) -> dict[tuple[str, int | None], int]:
+    """Per-(task, seed) decode budget = the decode tokens arm C spent there at its largest N.
+
+    Equal-token comparison is the whole point of the v2 arms, so the budget is read from a real C
+    run rather than estimated, and matched seed to seed: the mean across C's seeds would hold half
+    of C's own runs to a budget they exceeded. `(task, None)` is the across-seed mean, used for a
+    seed C never ran.
+    """
+    rows = [json.loads(l) for l in (path / "results.jsonl").read_text().splitlines() if l.strip()]
+    rows = [r for r in rows if r["arm"] == arm and (N is None or r["N"] == N)]
+    if N is None and rows:
+        top = max(r["N"] for r in rows)
+        rows = [r for r in rows if r["N"] == top]
+    out: dict[str, list[int]] = defaultdict(list)
+    per: dict[tuple[str, int | None], int] = {}
+    for r in rows:
+        tok = int(r.get("completion_tokens") or 0)
+        out[r["task_id"]].append(tok)
+        per[(r["task_id"], r["seed"])] = tok
+    per.update({(k, None): round(sum(v) / len(v)) for k, v in out.items() if v})
+    return per
+
+
+def budget_for(budgets: dict, task_id: str, seed: int) -> int | None:
+    return budgets.get((task_id, seed)) or budgets.get((task_id, None))
+
+
+async def run_v2_arm(client: Client, task, seed: int, rd: RunDir, *, arm: str, budget_tokens: int,
+                     k: int, repair_n: int, rounds: int, level: str, max_comps: int,
+                     on_event=None) -> list[dict]:
+    kw = dict(V2_ARMS[arm])
+    runner = run_wcr if arm == "wcr" else run_v2
+    res = await runner(client, task, budget_tokens=budget_tokens, seed=seed, k=k, repair_n=repair_n,
+                       rounds=rounds, level=kw.pop("level", level), max_comps=max_comps, arm=arm,
+                       on_event=on_event, **kw)
+    for e in res.emissions:
+        # producers number emissions by repair round; `seed` means the run's seed everywhere a log
+        # is joined with results.jsonl, so the round moves to its own field here
+        rd.append("emissions.jsonl", {**e, "seed": seed, "round": e["seed"]})
+    rd.write_events(f"{task.task_id}__{arm}__s{seed}", res.store.event_log())
+    row = dict(res.row)
+    row["completion_tokens"] = row["decode_tokens"]     # metrics.py reads this name
+    return [row]
+
+
 # ---------------------------------------------------------------- driver
 
 async def main_async(a) -> Path:
@@ -192,6 +253,8 @@ async def main_async(a) -> Path:
         cfg = {"arms": a.arms.split(","), "Ns": sorted({int(x) for x in a.Ns.split(",")} | {a.N}),
                "seeds": [int(x) for x in a.seeds.split(",")], "subset": str(a.subset), "limit": a.limit,
                "tasks": a.tasks.split(",") if a.tasks else None, "max_comps": a.max_comps,
+               "budget_from": a.budget_from, "budget_tokens": a.budget_tokens, "feedback": a.feedback,
+               "k": a.k, "repair_n": a.repair_n, "rounds": a.rounds,
                "test_width": a.test_width,
                "sampling": SAMPLING, "per_class_timeout_s": 5, "wall_timeout_s": 20,
                "model": os.environ.get("CALM_MODEL"), "base_url": os.environ.get("CALM_BASE_URL"),
@@ -205,6 +268,13 @@ async def main_async(a) -> Path:
     if cfg.get("limit"):
         tasks = tasks[: cfg["limit"]]
     done = rd.done()
+    budgets = budgets_from(Path(cfg["budget_from"])) if cfg.get("budget_from") else {}
+    if budgets:
+        rd.append("budgets.jsonl", {"source": cfg["budget_from"], "unit": "decode tokens",
+                                    "matched": "per (task, seed), mean over seeds as fallback",
+                                    "budgets": [{"task_id": t, "seed": s, "tokens": v}
+                                                for (t, s), v in sorted(budgets.items(),
+                                                                        key=lambda kv: (kv[0][0], kv[0][1] is None, kv[0][1]))]})
     async with Client() as client:
         cfg_client = client.config()
         if not (rd.path / "client.json").exists():
@@ -229,6 +299,16 @@ async def main_async(a) -> Path:
                             rows = await run_c(client, task, seed, cfg["Ns"], rd)
                         elif arm == "a_greedy":
                             rows = await run_a_greedy(client, task, seed, rd)
+                        elif arm in V2_ARMS:
+                            b = budget_for(budgets, task.task_id, seed) or cfg.get("budget_tokens")
+                            if not b:
+                                raise ValueError("v2 arms need --budget-from <C run> or --budget-tokens")
+                            rows = await run_v2_arm(client, task, seed, rd, arm=arm, budget_tokens=b,
+                                                    k=cfg.get("k") or DEFAULT_K,
+                                                    repair_n=cfg.get("repair_n") or DEFAULT_REPAIR_N,
+                                                    rounds=cfg.get("rounds") or DEFAULT_ROUNDS,
+                                                    level=cfg.get("feedback") or "F1",
+                                                    max_comps=cfg["max_comps"])
                         else:
                             raise ValueError(f"unknown arm {arm}")
                     except Exception as e:  # a task that doesn't fit is excluded and logged, never special-cased
@@ -258,6 +338,12 @@ def main() -> None:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--tasks")
     ap.add_argument("--max-comps", type=int, default=64)
+    ap.add_argument("--budget-from", help="run dir whose arm-C decode tokens set each task's v2 budget")
+    ap.add_argument("--budget-tokens", type=int, help="flat per-task decode budget when --budget-from is absent")
+    ap.add_argument("--feedback", default="F1", choices=["F0", "F1", "F2"])
+    ap.add_argument("--k", type=int, default=DEFAULT_K, help="whole-class samples before the first repair round")
+    ap.add_argument("--repair-n", type=int, default=DEFAULT_REPAIR_N)
+    ap.add_argument("--rounds", type=int, default=DEFAULT_ROUNDS)
     ap.add_argument("--test-width", type=int, default=1,
                    help="compositions tested at once per task (affects when facts appear, not which)")
     ap.add_argument("--out", default="runs")

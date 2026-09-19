@@ -64,6 +64,55 @@ def incremental_messages(task: "Task", filled: Mapping[str, str], slot_id: str) 
     ]
 
 
+def shared_prefix(task: "Task") -> str:
+    """Everything every request for a task has in common, up to the end of the skeleton block.
+
+    Nothing variable may appear before this: no method name, sample index, round, or feedback.
+    Slot, repair and whole-class-repair prompts all start with it (§5.1 of the v2 plan), so a
+    server with prefix caching computes it once per task.
+    """
+    return _skeleton(task)
+
+
+def warmup_messages(task: "Task", system: str) -> list[dict]:
+    """The prompt every request of one family shares, stopped at the end of the skeleton block.
+
+    A served prompt is the system message and the user message together, so a warm-up that omits
+    the system message primes a prefix no later request has. It carries the family's own system
+    message for that reason: `CLASS_SYSTEM` warms whole-class requests, `SLOT_SYSTEM` slot ones.
+    """
+    return [{"role": "system", "content": system}, {"role": "user", "content": shared_prefix(task)}]
+
+
+def slot_repair_messages(task: "Task", slot_id: str, current_class: str, feedback: str) -> list[dict]:
+    """Targeted repair: skeleton, then the current best class, then the one slot to rewrite.
+
+    Ordering matters: within a round every dead slot of a task shares everything up to the end of
+    CURRENT_CLASS_BLOCK, so only the last block differs.
+    """
+    body = [shared_prefix(task)]
+    if current_class:
+        body.append("The current implementation of the class is:\n"
+                    f"```python\n{current_class.strip()}\n```")
+    if feedback:
+        body.append(feedback)
+    body.append(f"Rewrite only `{slot_id}`, keeping its signature. Output that method alone.")
+    return [{"role": "system", "content": SLOT_SYSTEM}, {"role": "user", "content": "\n\n".join(body)}]
+
+
+def whole_class_repair_messages(task: "Task", current_class: str, feedback: str) -> list[dict]:
+    """The fair baseline for repair: same information, whole class regenerated."""
+    body = [shared_prefix(task)]
+    if current_class:
+        body.append("The current implementation of the class is:\n"
+                    f"```python\n{current_class.strip()}\n```")
+    if feedback:
+        body.append(feedback)
+    body.append("Rewrite the whole class so that it is correct. "
+                "Output one Python code block containing the full class.")
+    return [{"role": "system", "content": CLASS_SYSTEM}, {"role": "user", "content": "\n\n".join(body)}]
+
+
 def repair_messages(task: "Task", slot_id: str, failure: str) -> list[dict]:
     """Still emits a fresh definition; nothing is edited."""
     tb = "\n".join(failure.splitlines()[-REPAIR_MAX_LINES:])

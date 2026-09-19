@@ -80,8 +80,16 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
                          arm: str = "calm", t_start: float | None = None,
                          temperature: float = SAMPLING["temperature"], top_p: float = SAMPLING["top_p"],
                          max_tokens: int = SAMPLING["max_tokens_slot"],
-                         on_event: Callable[[dict], None] | None = None) -> list[Emission]:
-    """Every slot concurrently; each sample is ingested the moment it returns."""
+                         on_event: Callable[[dict], None] | None = None,
+                         on_emission: Callable[[Emission], None] | None = None,
+                         skip_slot: Callable[[str], bool] | None = None) -> list[Emission]:
+    """Every slot concurrently; each sample is ingested the moment it returns.
+
+    `on_emission` is called right after ingestion, so a caller can test a fill while later samples are
+    still decoding. `skip_slot` turns the flat budget into waves: sample index i is skipped for slots
+    the caller no longer wants more fills for (adaptive N). It costs the flat issue order, so it is
+    only used by latency-first callers, never by the experiment.
+    """
     t_start = t_start or time.monotonic()
     out: list[Emission] = []
 
@@ -96,7 +104,16 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
                      t_done_ms=int((time.monotonic() - t_start) * 1000), finish_reason=s.finish_reason)
         ingest(task, store, e, on_event)
         out.append(e)
+        if on_emission:
+            on_emission(e)
 
     # Issue sample 0 of every slot first, then sample 1, ...: nested prefixes (N=1,2,4) finish early.
-    await asyncio.gather(*(one(slot, i) for i in range(n) for slot in task.slots))
+    if skip_slot is None:
+        await asyncio.gather(*(one(slot, i) for i in range(n) for slot in task.slots))
+    else:
+        for i in range(n):
+            wave = [slot for slot in task.slots if i == 0 or not skip_slot(slot.id)]
+            if not wave:
+                break
+            await asyncio.gather(*(one(slot, i) for slot in wave))
     return sorted(out, key=lambda e: (task.slot(e.slot).order, e.sample_idx))

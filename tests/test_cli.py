@@ -26,7 +26,9 @@ def test_demo_slot_tests_inferred_structurally():
                             "keys_with_prefix": "KVStoreTestKeysWithPrefix"}
 
 
-def test_cli_solve_demo_with_fake_model(tmp_path, monkeypatch):
+@pytest.mark.parametrize("flags", [[], ["--sequential"], ["--width", "3"]],
+                         ids=["pipelined", "sequential", "wide"])
+def test_cli_solve_demo_with_fake_model(tmp_path, monkeypatch, flags):
     def h(req):
         body = json.loads(req.content)
         name = re.search(r"Implement `(\w+)` now\.$", body["messages"][-1]["content"]).group(1)
@@ -36,7 +38,7 @@ def test_cli_solve_demo_with_fake_model(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "Client", lambda: Client("http://fake/v1", "fake", no_n=True, transport=httpx.MockTransport(h)))
     out = tmp_path / "kv.py"
     rc = cli.main(["solve", str(DEMO / "task.py"), "--tests", str(DEMO / "test_task.py"), "--N", "2",
-                   "--out", str(out), "--events", str(tmp_path / "ev.jsonl")])
+                   "--out", str(out), "--events", str(tmp_path / "ev.jsonl"), *flags])
     assert rc == 0
     t = task_from_files(DEMO / "task.py", DEMO / "test_task.py")
     res = run_tests(out.read_text(), t.test_src, list(t.test_classes))

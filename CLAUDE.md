@@ -445,6 +445,8 @@ Rehearsal: `temperature=0.7`, fixed seed per agent (T=0 would make all 4 fills i
 - 2026-09-19 — Cyclic/self-recursive helpers: members are canonicalized with SCC-internal refs set to a placeholder, SCC hash = sha256 of sorted pre-forms, member hash = sha256(scc_hash|rank). Rank ties broken by name (the only name-dependent step).
 - 2026-09-19 — `Task` lives in `calm_coder/task.py` (shared by bench/classeval.py and cli.py). Its `fields` (self.x assigned in `__init__`) are excluded from `unresolved_refs`.
 - 2026-09-19 — Dev machine is an Apple M4 with 16 GB, no NVIDIA GPU: vLLM is not available locally. Local serving = Ollama or mlx_lm.server (`CALM_NO_N=1`); main run on Runpod if offered. RLIMIT_AS is a no-op on macOS (the sandbox ignores that error; wall + CPU limits still apply).
+- 2026-09-19 — Ollama 0.21 ignores `n` on /v1/chat/completions and returns no `cached_tokens`: run with `CALM_NO_N=1`; sample i gets seed+i; cached_tokens stays null. With server-side n>1, usage is per request, so prompt tokens are charged to sample 0 and completion tokens are split across choices by text length (flagged `tokens_estimated`).
+- 2026-09-19 — `extract_class` on bare methods (no class in output) splices them into the skeleton's class so the constructor is kept; `extract_functions` strips `<think>` blocks (Qwen3).
 - OPEN — Hardware and model (decide at the pilot, §6.2). Record here.
 - OPEN — `MAX_COMPS` (64) and `per_class_timeout_s` (5) — revisit after the pilot.
 - OPEN — Whether to include `field_refs` in the mismatch analysis.

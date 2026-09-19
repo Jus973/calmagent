@@ -1,0 +1,2 @@
+[console_scripts]
+calm = calm_coder.cli:main

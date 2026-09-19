@@ -1,0 +1,9 @@
+httpx
+rich
+datasets
+numpy
+matplotlib
+
+[dev]
+pytest
+hypothesis

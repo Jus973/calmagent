@@ -9,3 +9,9 @@ dev = ["pytest", "hypothesis"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["calm_coder*"]
+
+[project.scripts]
+calm = "calm_coder.cli:main"

@@ -206,8 +206,14 @@ async def main_async(a) -> Path:
         cfg_client = client.config()
         if not (rd.path / "client.json").exists():
             (rd.path / "client.json").write_text(json.dumps({**cfg_client, "metrics_start": await client.metrics_snapshot()}))
-        for seed in cfg["seeds"]:
-            for i, (_, task) in enumerate(tasks):
+        jobs = [(seed, i, task) for seed in cfg["seeds"] for i, (_, task) in enumerate(tasks)]
+        queue: asyncio.Queue = asyncio.Queue()
+        for j in jobs:
+            queue.put_nowait(j)
+
+        async def worker() -> None:
+            while not queue.empty():
+                seed, i, task = queue.get_nowait()
                 for arm in cfg["arms"]:
                     if (task.task_id, arm, seed) in done:
                         continue
@@ -232,6 +238,8 @@ async def main_async(a) -> Path:
                     console.print(f"[{i + 1}/{len(tasks)}] {task.task_id} {arm} s{seed} N={top['N']} "
                                   f"solved={top['solved']} tok={top['completion_tokens']} "
                                   f"{time.monotonic() - t0:.0f}s")
+
+        await asyncio.gather(*(worker() for _ in range(max(1, a.workers))))
         (rd.path / "client_end.json").write_text(json.dumps({"metrics_end": await client.metrics_snapshot()}))
     return rd.path
 
@@ -249,6 +257,7 @@ def main() -> None:
     ap.add_argument("--out", default="runs")
     ap.add_argument("--name", default="main")
     ap.add_argument("--resume")
+    ap.add_argument("--workers", type=int, default=1, help="tasks in flight at once (one process, one writer)")
     a = ap.parse_args()
     print(asyncio.run(main_async(a)))
 

@@ -60,8 +60,11 @@ class Run:
         self.d = d
         self.config = json.loads((d / "config.json").read_text())
         self.results = _rows(d, "results.jsonl")
-        self.emissions = _rows(d, "emissions.jsonl")
-        self.class_samples = _rows(d, "class_samples.jsonl")
+        # An arm interrupted mid-task is redone on resume; keep the last copy of each re-logged sample.
+        self.emissions = list({(e["task_id"], e["arm"], e["seed"], e["slot"], e["sample_idx"]): e
+                               for e in _rows(d, "emissions.jsonl")}.values())
+        self.class_samples = list({(e["task_id"], e["arm"], e["seed"], e["sample_idx"]): e
+                                   for e in _rows(d, "class_samples.jsonl")}.values())
         self.excluded = _rows(d, "excluded.jsonl")
         self.by = {(r["task_id"], r["arm"], r["seed"], r["N"]): r for r in self.results}
         self.Ns = sorted({r["N"] for r in self.results if r["arm"] == "calm"})

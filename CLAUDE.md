@@ -456,6 +456,7 @@ Rehearsal: `temperature=0.7`, fixed seed per agent (T=0 would make all 4 fills i
 - 2026-09-19 — Cuts applied (§8 order): baseline B, repair arm, D3 viz, OpenAI/Cognition/Runpod sponsor items, seeds 1–2, subset 50→30 (throughput: ~10 min/task for all three arms on the M4). Nested N ∈ {1,2,4,8} kept (free). `calm solve` kept (≈1h, Warp track).
 - 2026-09-19 — Demo reality check: with qwen2.5-coder:7b at T=0.7 and T=1.0, the four whole-class agents write correct but differently worded code, so the two merge orders produce different kv.py files that both pass the tests. The demo claims only what it shows ("output depends on merge order"); no failing variant was cherry-picked or hand-written.
 - 2026-09-19 — CLI tasks have no methods_info, so a test class is a slot's own test iff that slot is the only one it calls (structural, not by name).
+- 2026-09-19 — Throughput: the experiment runs K tasks concurrently in one process (`--workers 3`, single writer, append-only). Greedy and CALM test phases left the 4 server slots idle. Cost: TTFV now includes contention from other tasks' requests, for both arms alike. Tasks 1–4 of the pilot ran with 1 worker. `OLLAMA_NUM_PARALLEL=8` with 32k context is NOT usable on the 16 GB M4: the 7.6 GB KV cache pushed all 29 layers off the GPU (CPU-only). Keep 4 × 4096.
 - OPEN — Hardware and model (decide at the pilot, §6.2). Record here.
 - OPEN — `MAX_COMPS` (64) and `per_class_timeout_s` (5) — revisit after the pilot.
 - OPEN — Whether to include `field_refs` in the mismatch analysis.

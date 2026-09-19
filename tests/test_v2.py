@@ -8,6 +8,7 @@ import httpx
 import pytest
 
 from calm_coder.serve.client import Client
+from calm_coder.serve.extract import extract_class
 from calm_coder.serve.prompts import (
     shared_prefix, slot_messages, slot_repair_messages, whole_class_messages,
     whole_class_repair_messages,
@@ -18,7 +19,7 @@ from calm_coder.store.materialize import materialize
 from calm_coder.store.store import Store
 from calm_coder.v2 import state
 from calm_coder.v2.decompose import ingest_class_sample
-from calm_coder.v2.feedback import Failure, parse_failure, render
+from calm_coder.v2.feedback import LEAK_WINDOW, REDACTED, Failure, parse_failure, render
 from calm_coder.v2.harness import run_v2, run_wcr
 
 GOOD = {
@@ -118,7 +119,7 @@ def failures(toy, leaky_traceback):
 def test_f0_and_f1_never_carry_test_source(toy, failures):
     for level in ("F0", "F1"):
         out = render(failures, level, slot_id="get")
-        assert _longest_common_substring(out, toy.test_src) < 30, (level, out)
+        assert _longest_common_substring(out, toy.test_src) <= LEAK_WINDOW, (level, out)
     assert "KeyError" not in render(failures, "F0")
     assert "KeyError" in render(failures, "F1")
 
@@ -129,6 +130,20 @@ def test_f2_adds_only_the_raising_line(toy, failures, leaky_traceback):
     extra = [ln.strip() for ln in f2.splitlines() if ln not in f1.splitlines()]
     assert extra == [f"raised at: {line}"]
     assert f2.count(line) == 1
+
+
+@pytest.mark.parametrize("expected", [
+    "NAME    | AGE\n--------+----\nalice   | 30\nbob     | 41\n",      # real newlines -> \n in the repr
+    {"zulu": 1, "alpha": "beta", "gamma": "delta", "omega": "final-value"},
+])
+def test_the_leak_guard_survives_repr_reformatting(expected):
+    """An expected value written across several source lines is one escaped line in the message."""
+    src = ("class T(unittest.TestCase):\n    def test_x(self):\n"
+           f"        self.assertEqual(out, {expected!r})\n")
+    f = parse_failure("ToyTestGet", f"AssertionError: 'wrong' != {expected!r}\n", src)
+    out = render([f], "F1", slot_id="get")
+    assert _longest_common_substring(out, src) <= LEAK_WINDOW, out
+    assert REDACTED in out
 
 
 def test_f1_truncates_to_three_failures_of_300_chars(toy):
@@ -149,6 +164,56 @@ def test_whole_class_sample_survives_decomposition(toy):
     t = ns["Toy"]()
     t.put(" A ", 1)
     assert t.get("a") == 1 and ns["Toy"].norm(" Ab ") == "ab"
+
+
+SAMPLE_WITH_PRELUDE = '''
+import string
+
+PAD = "-"
+
+def _clean(key):
+    return key.strip(string.whitespace + PAD)
+
+class Toy:
+    """A toy."""
+
+    def __init__(self):
+        self.items = {}
+
+    def put(self, key, value):
+        self.items[self.norm(key)] = value
+
+    def get(self, key):
+        return self.items[self.norm(key)]
+
+    def norm(key):
+        return _clean(key).lower()
+'''
+
+
+def _run_class(src: str):
+    ns: dict = {}
+    exec(compile(src, "<m>", "exec"), ns)
+    t = ns["Toy"]()
+    t.put(" -A- ", 1)
+    return t.get("a"), ns["Toy"].norm(" Ab ")
+
+
+def test_a_samples_own_composition_behaves_like_the_sample(toy):
+    """No-loss is a claim about the program, so the sample's imports and module code come along."""
+    store = Store()
+    text = f"```python\n{SAMPLE_WITH_PRELUDE}\n```"
+    ing = ingest_class_sample(toy, store, text, {"seed": 1})
+    assert ing.complete and not ing.error and not ing.dropped
+    src = materialize(toy, store, Composition.make(ing.bindings))
+    assert _run_class(src) == _run_class(extract_class(text, toy)) == (1, "ab")
+
+
+def test_context_a_composition_cannot_carry_is_recorded(toy):
+    """The skeleton owns the constructor, so a sample that rewrites it is not its own composition."""
+    src = SAMPLE_WITH_PRELUDE.replace("self.items = {}", "self.items = {}\n        self.n = 0")
+    ing = ingest_class_sample(toy, Store(), f"```python\n{src}\n```", {"seed": 1})
+    assert ing.dropped == ["__init__"]
 
 
 def test_v2_run_keeps_every_sample_composition(toy, client):

@@ -19,8 +19,10 @@ LEVELS: tuple[Level, ...] = ("F0", "F1", "F2")
 
 MAX_ITEMS = 3
 MAX_CHARS = 300
-LEAK_WINDOW = 24       # no run of this many characters of test source may reach an F0/F1 prompt
+LEAK_WINDOW = 20       # no run of this many characters of test source may reach an F0/F1 prompt
 REDACTED = "<...>"
+_ESCAPED = {"n": " ", "t": " ", "r": " "}
+_DROP = set("'\"`\\ ")
 
 _FRAME = re.compile(r'^  File "[^"]*", line \d+, in (\S+)$')
 _EXC = re.compile(r"^(\w+(?:\.\w+)*Error|\w*Exception|AssertionError|\w+):(.*)$")
@@ -40,6 +42,31 @@ class Failure:
         return self.exc_type in ("AttributeError", "KeyError", "TypeError", "NameError", "IndexError")
 
 
+def _normalize(s: str) -> tuple[str, list[int]]:
+    """Comparable form of a source line and of its own repr, plus a map back to `s`.
+
+    A failure message shows an expected value through `repr`, so the same characters that are a
+    newline and an indent in the test file are `\\n` and nothing in the message. Comparing raw
+    bytes therefore misses exactly the leaks that matter, so both sides are compared with escape
+    sequences, whitespace and quoting removed.
+    """
+    out: list[str] = []
+    idx: list[int] = []
+    i, n = 0, len(s)
+    while i < n:
+        c, step = s[i], 1
+        if c == "\\" and i + 1 < n and s[i + 1] in _ESCAPED:
+            c, step = " ", 2
+        if c in _DROP or c.isspace():
+            i += step
+            continue
+        out.append(c)
+        idx.append(i)
+        i += step
+    idx.append(n)
+    return "".join(out), idx
+
+
 def scrub(text: str, test_src: str, *, window: int = LEAK_WINDOW) -> str:
     """Remove any run of >= `window` characters that also occurs in the test source.
 
@@ -49,18 +76,28 @@ def scrub(text: str, test_src: str, *, window: int = LEAK_WINDOW) -> str:
     """
     if not text or not test_src:
         return text
-    grams = {test_src[i:i + window] for i in range(max(0, len(test_src) - window + 1))}
-    out, i, n = [], 0, len(text)
+    ntext, imap = _normalize(text)
+    nsrc, _ = _normalize(test_src)
+    grams = {nsrc[i:i + window] for i in range(max(0, len(nsrc) - window + 1))}
+    spans: list[tuple[int, int]] = []
+    i, n = 0, len(ntext)
     while i < n:
-        if i + window <= n and text[i:i + window] in grams:
+        if i + window <= n and ntext[i:i + window] in grams:
             j = i + window
-            while j < n and text[i:j + 1][-window:] in grams:
+            while j < n and ntext[j - window + 1:j + 1] in grams:
                 j += 1
-            out.append(REDACTED)
+            spans.append((imap[i], imap[j]))
             i = j
         else:
-            out.append(text[i])
             i += 1
+    if not spans:
+        return text
+    out, pos = [], 0
+    for a, b in spans:
+        out.append(text[pos:a])
+        out.append(REDACTED)
+        pos = b
+    out.append(text[pos:])
     return "".join(out)
 
 

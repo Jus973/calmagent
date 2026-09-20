@@ -16,3 +16,4 @@ include = ["calm_coder*", "calm_proxy*"]
 [project.scripts]
 calm = "calm_coder.cli:main"
 calm-proxy = "calm_proxy.cli:main"
+calm-run = "calm_proxy.run:main"

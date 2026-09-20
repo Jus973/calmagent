@@ -1,0 +1,8 @@
+<returncode>4</returncode>
+<output>
+ERROR: not found: /private/var/folders/t6/jvvhv8c57_v8vk080l2q57zc0000gn/T/bench_ClassEval_7_b7jus7jv/ClassEval_7/tests/test_solution.py::TestSolution::test_example
+(no match in any of [<Module test_solution.py>])
+
+
+no tests ran in 0.00s
+</output>

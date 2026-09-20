@@ -1,0 +1,27 @@
+THOUGHT: The test failures indicate that the `caesar_cipher`, `vigenere_cipher`, and `rail_fence_cipher` methods are not implemented correctly or are returning `None` instead of the expected results.
+
+Let's start by implementing the `caesar_cipher` method. I'll create a simple implementation that shifts characters within the alphabet while handling edge cases like empty strings and non-alphabetic characters.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+class EncryptionUtils:
+    def __init__(self, key):
+        self.key = key
+
+    def caesar_cipher(self, text, shift):
+        if not text:
+            return ""
+
+        result = []
+        for char in text:
+            if char.isalpha():
+                shift_amount = shift % 26
+                base = ord('a') if char.islower() else ord('A')
+                shifted_char = chr((ord(char) - base + shift_amount) % 26 + base)
+                result.append(shifted_char)
+            else:
+                result.append(char)
+
+        return ''.join(result)
+EOF
+```

@@ -1,0 +1,13 @@
+THOUGHT: The `solution.py` file contains the implementation of the `BalancedBrackets` class. Let's review the methods to identify any issues.
+
+The `clear_expr` method should remove all characters from the expression, but it currently does not modify the `expr` attribute. The `check_balanced_brackets` method should return a boolean value indicating whether the brackets in the expression are balanced, but it currently returns `None`.
+
+Let's update the methods to fix these issues.
+
+```mswea_bash_command
+nano solution.py
+```
+
+In the `clear_expr` method, we can set the `expr` attribute to an empty string. In the `check_balanced_brackets` method, we can use a stack to check for balanced brackets and return the appropriate boolean value.
+
+After making these changes, save the file and run the tests again to verify that they pass.

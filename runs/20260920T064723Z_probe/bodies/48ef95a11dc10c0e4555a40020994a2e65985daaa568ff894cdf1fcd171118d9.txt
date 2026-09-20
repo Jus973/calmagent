@@ -1,0 +1,5 @@
+THOUGHT: I see that the `solution.py` file is present in the root directory. The next step is to create a script to reproduce the issue and then edit the source code to resolve it.
+
+```mswea_bash_command
+python -m pytest -q --tb=short tests/test_solution.py::TestSolution::test_example
+```

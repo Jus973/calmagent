@@ -1,0 +1,226 @@
+<returncode>1</returncode>
+<output>
+FF...FFFFFFFFFFFFFFF.                                                    [100%]
+=================================== FAILURES ===================================
+__________________ EightPuzzleTestFindBlank.test_find_blank_1 __________________
+
+self = <tests.test_solution.EightPuzzleTestFindBlank testMethod=test_find_blank_1>
+
+    def test_find_blank_1(self):
+        state = [[2, 3, 4], [5, 8, 1], [6, 0, 7]]
+        eightPuzzle = EightPuzzle(state)
+>       self.assertEqual(eightPuzzle.find_blank(state), (2, 1))
+E       AssertionError: None != (2, 1)
+
+tests/test_solution.py:9: AssertionError
+__________________ EightPuzzleTestFindBlank.test_find_blank_2 __________________
+
+self = <tests.test_solution.EightPuzzleTestFindBlank testMethod=test_find_blank_2>
+
+    def test_find_blank_2(self):
+        state = [[2, 3, 4], [5, 0, 1], [6, 8, 7]]
+        eightPuzzle = EightPuzzle(state)
+>       self.assertEqual(eightPuzzle.find_blank(state), (1, 1))
+E       AssertionError: None != (1, 1)
+
+tests/test_solution.py:14: AssertionError
+_______________________ EightPuzzleTestMove.test_move_1 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_1>
+
+    def test_move_1(self):
+        result = self.eightPuzzle.move(self.initial_state, 'up')
+        expected = [[2, 0, 4], [5, 3, 1], [6, 8, 7]]
+>       self.assertEqual(result, expected)
+E       AssertionError: None != [[2, 0, 4], [5, 3, 1], [6, 8, 7]]
+
+tests/test_solution.py:40: AssertionError
+_______________________ EightPuzzleTestMove.test_move_2 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_2>
+
+    def test_move_2(self):
+        result = self.eightPuzzle.move(self.initial_state, 'down')
+        expected = [[2, 3, 4], [5, 8, 1], [6, 0, 7]]
+>       self.assertEqual(result, expected)
+E       AssertionError: None != [[2, 3, 4], [5, 8, 1], [6, 0, 7]]
+
+tests/test_solution.py:45: AssertionError
+_______________________ EightPuzzleTestMove.test_move_3 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_3>
+
+    def test_move_3(self):
+        result = self.eightPuzzle.move(self.initial_state, 'left')
+        expected = [[2, 3, 4], [0, 5, 1], [6, 8, 7]]
+>       self.assertEqual(result, expected)
+E       AssertionError: None != [[2, 3, 4], [0, 5, 1], [6, 8, 7]]
+
+tests/test_solution.py:50: AssertionError
+_______________________ EightPuzzleTestMove.test_move_4 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_4>
+
+    def test_move_4(self):
+        result = self.eightPuzzle.move(self.initial_state, 'right')
+        expected = [[2, 3, 4], [5, 1, 0], [6, 8, 7]]
+>       self.assertEqual(result, expected)
+E       AssertionError: None != [[2, 3, 4], [5, 1, 0], [6, 8, 7]]
+
+tests/test_solution.py:55: AssertionError
+_______________________ EightPuzzleTestMove.test_move_5 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_5>
+
+    def test_move_5(self):
+        result = self.eightPuzzle.move(self.initial_state, '???')
+        expected = [[2, 3, 4], [5, 0, 1], [6, 8, 7]]
+>       self.assertEqual(result, expected)
+E       AssertionError: None != [[2, 3, 4], [5, 0, 1], [6, 8, 7]]
+
+tests/test_solution.py:60: AssertionError
+__________ EightPuzzleTestGetPossibleMoves.test_get_possible_moves_1 ___________
+
+self = <tests.test_solution.EightPuzzleTestGetPossibleMoves testMethod=test_get_possible_moves_1>
+
+    def test_get_possible_moves_1(self):
+        eightPuzzle = EightPuzzle(None)
+        state = [[2, 3, 4], [5, 0, 1], [6, 8, 7]]
+        result = eightPuzzle.get_possible_moves(state)
+        expected = ['up', 'down', 'left', 'right']
+>       for direction in result:
+E       TypeError: 'NoneType' object is not iterable
+
+tests/test_solution.py:69: TypeError
+__________ EightPuzzleTestGetPossibleMoves.test_get_possible_moves_2 ___________
+
+self = <tests.test_solution.EightPuzzleTestGetPossibleMoves testMethod=test_get_possible_moves_2>
+
+    def test_get_possible_moves_2(self):
+        eightPuzzle = EightPuzzle(None)
+        state = [[2, 3, 4], [5, 8, 1], [6, 0, 7]]
+        result = eightPuzzle.get_possible_moves(state)
+        expected = ['up', 'left', 'right']
+>       for direction in result:
+E       TypeError: 'NoneType' object is not iterable
+
+tests/test_solution.py:77: TypeError
+__________ EightPuzzleTestGetPossibleMoves.test_get_possible_moves_3 ___________
+
+self = <tests.test_solution.EightPuzzleTestGetPossibleMoves testMethod=test_get_possible_moves_3>
+
+    def test_get_possible_moves_3(self):
+        eightPuzzle = EightPuzzle(None)
+        state = [[2, 0, 4], [5, 3, 1], [6, 8, 7]]
+        result = eightPuzzle.get_possible_moves(state)
+        expected = ['down', 'left', 'right']
+>       for direction in result:
+E       TypeError: 'NoneType' object is not iterable
+
+tests/test_solution.py:85: TypeError
+__________ EightPuzzleTestGetPossibleMoves.test_get_possible_moves_4 ___________
+
+self = <tests.test_solution.EightPuzzleTestGetPossibleMoves testMethod=test_get_possible_moves_4>
+
+    def test_get_possible_moves_4(self):
+        eightPuzzle = EightPuzzle(None)
+        state = [[2, 3, 4], [5, 1, 0], [6, 8, 7]]
+        result = eightPuzzle.get_possible_moves(state)
+        expected = ['up', 'down', 'left']
+>       for direction in result:
+E       TypeError: 'NoneType' object is not iterable
+
+tests/test_solution.py:93: TypeError
+__________ EightPuzzleTestGetPossibleMoves.test_get_possible_moves_5 ___________
+
+self = <tests.test_solution.EightPuzzleTestGetPossibleMoves testMethod=test_get_possible_moves_5>
+
+    def test_get_possible_moves_5(self):
+        eightPuzzle = EightPuzzle(None)
+        state = [[2, 3, 4], [0, 5, 1], [6, 8, 7]]
+        result = eightPuzzle.get_possible_moves(state)
+        expected = ['up', 'down', 'right']
+>       for direction in result:
+E       TypeError: 'NoneType' object is not iterable
+
+tests/test_solution.py:101: TypeError
+______________________ EightPuzzleTestSolve.test_solve_1 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_1>
+
+    def test_solve_1(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [7, 0, 8]])
+        result = eightPuzzle.solve()
+        expected = ['right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['right']
+
+tests/test_solution.py:110: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_2 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_2>
+
+    def test_solve_2(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 0, 6], [7, 5, 8]])
+        result = eightPuzzle.solve()
+        expected = ['down', 'right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['down', 'right']
+
+tests/test_solution.py:116: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_3 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_3>
+
+    def test_solve_3(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [0, 4, 5], [6, 7, 8]])
+        result = eightPuzzle.solve()
+        expected = ['right', 'right', 'down', 'left', 'left', 'up', 'right', 'down', 'right', 'up', 'left', 'left', 'down', 'right', 'right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['right', 'right', 'down', 'left', 'left'[76 chars]ght']
+
+tests/test_solution.py:122: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_4 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_4>
+
+    def test_solve_4(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [7, 8, 0]])
+        result = eightPuzzle.solve()
+        expected = []
+>       self.assertEqual(result, expected)
+E       AssertionError: None != []
+
+tests/test_solution.py:128: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_5 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_5>
+
+    def test_solve_5(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [0, 7, 8]])
+        result = eightPuzzle.solve()
+        expected = ['right', 'right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['right', 'right']
+
+tests/test_solution.py:134: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::EightPuzzleTestFindBlank::test_find_blank_1 - ...
+FAILED tests/test_solution.py::EightPuzzleTestFindBlank::test_find_blank_2 - ...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_1 - AssertionEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_2 - AssertionEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_3 - AssertionEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_4 - AssertionEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_5 - AssertionEr...
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_1
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_2
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_3
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_4
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_5
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_1 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_2 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_3 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_4 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_5 - Assertion...
+17 failed, 4 passed in 0.05s
+</output>

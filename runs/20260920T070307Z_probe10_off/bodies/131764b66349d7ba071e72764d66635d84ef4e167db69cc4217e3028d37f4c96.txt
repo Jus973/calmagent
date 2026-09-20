@@ -1,0 +1,5 @@
+THOUGHT: Now that I have implemented a basic structure for the `CurrencyConverter` class, let's run the tests again to see if we have made progress.
+
+```mswea_bash_command
+python -m pytest -q
+```

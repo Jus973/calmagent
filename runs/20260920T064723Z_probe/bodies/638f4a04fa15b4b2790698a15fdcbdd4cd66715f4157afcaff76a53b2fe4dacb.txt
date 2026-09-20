@@ -1,0 +1,7 @@
+THOUGHT: The test failures indicate that the `clear_expr` and `check_balanced_brackets` methods are not working as expected. Specifically, the `clear_expr` method is not removing characters from the expression, and the `check_balanced_brackets` method is returning `None` instead of a boolean value.
+
+Let's open the `solution.py` file to inspect the implementation of these methods.
+
+```mswea_bash_command
+nano solution.py
+```

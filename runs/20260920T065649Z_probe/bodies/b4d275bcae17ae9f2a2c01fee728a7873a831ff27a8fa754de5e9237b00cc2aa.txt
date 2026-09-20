@@ -1,0 +1,202 @@
+<returncode>1</returncode>
+<output>
+FFFFFFFFFFFFFFF                                                          [100%]
+=================================== FAILURES ===================================
+________________ BalancedBracketsTestClearExpr.test_clear_expr _________________
+
+self = <tests.test_solution.BalancedBracketsTestClearExpr testMethod=test_clear_expr>
+
+    def test_clear_expr(self):
+        b = BalancedBrackets("a(b)c")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "()")
+E       AssertionError: 'a(b)c' != '()'
+E       - a(b)c
+E       + ()
+
+tests/test_solution.py:10: AssertionError
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_2 ________________
+
+self = <tests.test_solution.BalancedBracketsTestClearExpr testMethod=test_clear_expr_2>
+
+    def test_clear_expr_2(self):
+        b = BalancedBrackets("a(b){c}")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "(){}")
+E       AssertionError: 'a(b){c}' != '(){}'
+E       - a(b){c}
+E       ? - -  -
+E       + (){}
+
+tests/test_solution.py:15: AssertionError
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_3 ________________
+
+self = <tests.test_solution.BalancedBracketsTestClearExpr testMethod=test_clear_expr_3>
+
+    def test_clear_expr_3(self):
+        b = BalancedBrackets("[a](b){c}")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "[](){}")
+E       AssertionError: '[a](b){c}' != '[](){}'
+E       - [a](b){c}
+E       ?  -  -  -
+E       + [](){}
+
+tests/test_solution.py:20: AssertionError
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_4 ________________
+
+self = <tests.test_solution.BalancedBracketsTestClearExpr testMethod=test_clear_expr_4>
+
+    def test_clear_expr_4(self):
+        b = BalancedBrackets("[a(b){c}")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "[(){}")
+E       AssertionError: '[a(b){c}' != '[(){}'
+E       - [a(b){c}
+E       ?  - -  -
+E       + [(){}
+
+tests/test_solution.py:25: AssertionError
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_5 ________________
+
+self = <tests.test_solution.BalancedBracketsTestClearExpr testMethod=test_clear_expr_5>
+
+    def test_clear_expr_5(self):
+        b = BalancedBrackets("a(b){c}]")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "(){}]")
+E       AssertionError: 'a(b){c}]' != '(){}]'
+E       - a(b){c}]
+E       ? - -  -
+E       + (){}]
+
+tests/test_solution.py:30: AssertionError
+____ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets ____
+
+self = <tests.test_solution.BalancedBracketsTestCheckBalancedBrackets testMethod=test_check_balanced_brackets>
+
+    def test_check_balanced_brackets(self):
+        b = BalancedBrackets("a(b)c")
+>       self.assertEqual(b.check_balanced_brackets(), True)
+E       AssertionError: None != True
+
+tests/test_solution.py:36: AssertionError
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_2 ___
+
+self = <tests.test_solution.BalancedBracketsTestCheckBalancedBrackets testMethod=test_check_balanced_brackets_2>
+
+    def test_check_balanced_brackets_2(self):
+        b = BalancedBrackets("a(b){c}")
+>       self.assertEqual(b.check_balanced_brackets(), True)
+E       AssertionError: None != True
+
+tests/test_solution.py:40: AssertionError
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_3 ___
+
+self = <tests.test_solution.BalancedBracketsTestCheckBalancedBrackets testMethod=test_check_balanced_brackets_3>
+
+    def test_check_balanced_brackets_3(self):
+        b = BalancedBrackets("[a](b){c}")
+>       self.assertEqual(b.check_balanced_brackets(), True)
+E       AssertionError: None != True
+
+tests/test_solution.py:44: AssertionError
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_4 ___
+
+self = <tests.test_solution.BalancedBracketsTestCheckBalancedBrackets testMethod=test_check_balanced_brackets_4>
+
+    def test_check_balanced_brackets_4(self):
+        b = BalancedBrackets("[a(b){c}")
+>       self.assertEqual(b.check_balanced_brackets(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:48: AssertionError
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_5 ___
+
+self = <tests.test_solution.BalancedBracketsTestCheckBalancedBrackets testMethod=test_check_balanced_brackets_5>
+
+    def test_check_balanced_brackets_5(self):
+        b = BalancedBrackets("a(b{c}]")
+>       self.assertEqual(b.check_balanced_brackets(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:52: AssertionError
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_6 ___
+
+self = <tests.test_solution.BalancedBracketsTestCheckBalancedBrackets testMethod=test_check_balanced_brackets_6>
+
+    def test_check_balanced_brackets_6(self):
+        b = BalancedBrackets("a(b{c]]")
+>       self.assertEqual(b.check_balanced_brackets(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:56: AssertionError
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_7 ___
+
+self = <tests.test_solution.BalancedBracketsTestCheckBalancedBrackets testMethod=test_check_balanced_brackets_7>
+
+    def test_check_balanced_brackets_7(self):
+        b = BalancedBrackets("[a)(b){c}")
+>       self.assertEqual(b.check_balanced_brackets(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:60: AssertionError
+______________________ BalancedBracketsTestMain.test_main ______________________
+
+self = <tests.test_solution.BalancedBracketsTestMain testMethod=test_main>
+
+    def test_main(self):
+        b = BalancedBrackets("a(b)c")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "()")
+E       AssertionError: 'a(b)c' != '()'
+E       - a(b)c
+E       + ()
+
+tests/test_solution.py:67: AssertionError
+_____________________ BalancedBracketsTestMain.test_main_2 _____________________
+
+self = <tests.test_solution.BalancedBracketsTestMain testMethod=test_main_2>
+
+    def test_main_2(self):
+        b = BalancedBrackets("[a(b){c}")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "[(){}")
+E       AssertionError: '[a(b){c}' != '[(){}'
+E       - [a(b){c}
+E       ?  - -  -
+E       + [(){}
+
+tests/test_solution.py:73: AssertionError
+_____________________ BalancedBracketsTestMain.test_main_3 _____________________
+
+self = <tests.test_solution.BalancedBracketsTestMain testMethod=test_main_3>
+
+    def test_main_3(self):
+        b = BalancedBrackets("a(b{c}]")
+        b.clear_expr()
+>       self.assertEqual(b.expr, "({}]")
+E       AssertionError: 'a(b{c}]' != '({}]'
+E       - a(b{c}]
+E       ? - - -
+E       + ({}]
+
+tests/test_solution.py:79: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_2
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_3
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_4
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_5
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_2
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_3
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_4
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_5
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_6
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_7
+FAILED tests/test_solution.py::BalancedBracketsTestMain::test_main - Assertio...
+FAILED tests/test_solution.py::BalancedBracketsTestMain::test_main_2 - Assert...
+FAILED tests/test_solution.py::BalancedBracketsTestMain::test_main_3 - Assert...
+15 failed in 0.03s
+</output>

@@ -1,0 +1,5 @@
+THOUGHT: Now that I have implemented the `vigenere_cipher` method, let me run the tests again to see if it resolves the failures.
+
+```mswea_bash_command
+python -m pytest -q
+```

@@ -1,0 +1,76 @@
+<returncode>1</returncode>
+<output>
+FFFF................F                                                    [100%]
+=================================== FAILURES ===================================
+____ BinaryDataProcessorTestCleanNonBinaryChars.test_clean_non_binary_chars ____
+
+self = <tests.test_solution.BinaryDataProcessorTestCleanNonBinaryChars testMethod=test_clean_non_binary_chars>
+
+    def test_clean_non_binary_chars(self):
+        bdp = BinaryDataProcessor("01101000daf3e4r01100101011011000110110001101111")
+>       self.assertEqual(bdp.binary_string, "0110100001100101011011000110110001101111")
+E       AssertionError: '01101000daf3e4r01100101011011000110110001101111' != '0110100001100101011011000110110001101111'
+E       - 01101000daf3e4r01100101011011000110110001101111
+E       ?         -------
+E       + 0110100001100101011011000110110001101111
+
+tests/test_solution.py:8: AssertionError
+___ BinaryDataProcessorTestCleanNonBinaryChars.test_clean_non_binary_chars_2 ___
+
+self = <tests.test_solution.BinaryDataProcessorTestCleanNonBinaryChars testMethod=test_clean_non_binary_chars_2>
+
+    def test_clean_non_binary_chars_2(self):
+        bdp = BinaryDataProcessor("01101000daf3e4r01100101011011addf0110001d1111")
+>       self.assertEqual(bdp.binary_string, "011010000110010101101101100011111")
+E       AssertionError: '01101000daf3e4r01100101011011addf0110001d1111' != '011010000110010101101101100011111'
+E       - 01101000daf3e4r01100101011011addf0110001d1111
+E       ?         -------              ----       -
+E       + 011010000110010101101101100011111
+
+tests/test_solution.py:12: AssertionError
+___ BinaryDataProcessorTestCleanNonBinaryChars.test_clean_non_binary_chars_3 ___
+
+self = <tests.test_solution.BinaryDataProcessorTestCleanNonBinaryChars testMethod=test_clean_non_binary_chars_3>
+
+    def test_clean_non_binary_chars_3(self):
+        bdp = BinaryDataProcessor("0sd1000daf3e4r01100101011011addf0110001d1111")
+>       self.assertEqual(bdp.binary_string, "010000110010101101101100011111")
+E       AssertionError: '0sd1000daf3e4r01100101011011addf0110001d1111' != '010000110010101101101100011111'
+E       - 0sd1000daf3e4r01100101011011addf0110001d1111
+E       ?  --    -------              ----       -
+E       + 010000110010101101101100011111
+
+tests/test_solution.py:16: AssertionError
+___ BinaryDataProcessorTestCleanNonBinaryChars.test_clean_non_binary_chars_4 ___
+
+self = <tests.test_solution.BinaryDataProcessorTestCleanNonBinaryChars testMethod=test_clean_non_binary_chars_4>
+
+    def test_clean_non_binary_chars_4(self):
+        bdp = BinaryDataProcessor("sdsdf")
+>       self.assertEqual(bdp.binary_string, "")
+E       AssertionError: 'sdsdf' != ''
+E       - sdsdf
+E       +
+
+tests/test_solution.py:20: AssertionError
+____________________ BinaryDataProcessorTestMain.test_main _____________________
+
+self = <tests.test_solution.BinaryDataProcessorTestMain testMethod=test_main>
+
+    def test_main(self):
+        bdp = BinaryDataProcessor("01101000daf3e4r01100101011011000110110001101111")
+>       self.assertEqual(bdp.binary_string, "0110100001100101011011000110110001101111")
+E       AssertionError: '01101000daf3e4r01100101011011000110110001101111' != '0110100001100101011011000110110001101111'
+E       - 01101000daf3e4r01100101011011000110110001101111
+E       ?         -------
+E       + 0110100001100101011011000110110001101111
+
+tests/test_solution.py:92: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::BinaryDataProcessorTestCleanNonBinaryChars::test_clean_non_binary_chars
+FAILED tests/test_solution.py::BinaryDataProcessorTestCleanNonBinaryChars::test_clean_non_binary_chars_2
+FAILED tests/test_solution.py::BinaryDataProcessorTestCleanNonBinaryChars::test_clean_non_binary_chars_3
+FAILED tests/test_solution.py::BinaryDataProcessorTestCleanNonBinaryChars::test_clean_non_binary_chars_4
+FAILED tests/test_solution.py::BinaryDataProcessorTestMain::test_main - Asser...
+5 failed, 16 passed in 0.02s
+</output>

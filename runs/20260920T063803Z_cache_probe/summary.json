@@ -1,0 +1,11 @@
+{
+  "model": "qwen2.5-coder:7b",
+  "prompt_tokens": 4317,
+  "cold_ms_per_prompt_token": 5.956,
+  "warm_ms_per_prompt_token": 0.059,
+  "cache_speedup_on_prompt_eval": 100.9,
+  "evicted_by_one_interleaved_request": true,
+  "front_churn_costs_full_reprefill": true,
+  "cached_tokens_reported_by_server": false,
+  "note": "cached_tokens is absent from Ollama /v1 usage; prompt_eval_count does not shrink on a cache hit. prompt_eval_duration is the only cache instrument here."
+}

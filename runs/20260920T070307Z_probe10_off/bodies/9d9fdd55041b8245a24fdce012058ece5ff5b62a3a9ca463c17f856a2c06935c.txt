@@ -1,0 +1,244 @@
+<returncode>1</returncode>
+<warning>
+The output of your last command was too long.
+Please try a different command that produces less output.
+If you're looking at a file you can try use head, tail or sed to view a smaller number of lines selectively.
+If you're using grep or find and it produced too much output, you can use a more selective search pattern.
+If you really need to see something from the full command's output, you can redirect output to a file and then search in that file.
+</warning><output_head>
+FFFFFFFFFFFFFFFFFFFFF                                                    [100%]
+=================================== FAILURES ===================================
+______________________ ComplexCalculatorTestAdd.test_add _______________________
+
+self = <tests.test_solution.ComplexCalculatorTestAdd testMethod=test_add>
+
+    def test_add(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.add(1+2j, 3+4j), (4+6j))
+E       AssertionError: None != (4+6j)
+
+tests/test_solution.py:8: AssertionError
+_____________________ ComplexCalculatorTestAdd.test_add_2 ______________________
+
+self = <tests.test_solution.ComplexCalculatorTestAdd testMethod=test_add_2>
+
+    def test_add_2(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.add(-1 - 2j, -3 - 4j), (-4 - 6j))
+E       AssertionError: None != (-4-6j)
+
+tests/test_solution.py:12: AssertionError
+_____________________ ComplexCalculatorTestAdd.test_add_3 ______________________
+
+self = <tests.test_solution.ComplexCalculatorTestAdd testMethod=test_add_3>
+
+    def test_add_3(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.add(1-2j, 3-4j), (4-6j))
+E       AssertionError: None != (4-6j)
+
+tests/test_solution.py:16: AssertionError
+_____________________ ComplexCalculatorTestAdd.test_add_4 ______________________
+
+self = <tests.test_solution.ComplexCalculatorTestAdd testMethod=test_add_4>
+
+    def test_add_4(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.add(-1+2j, -3+4j), (-4+6j))
+E       AssertionError: None != (-4+6j)
+
+tests/test_solution.py:20: AssertionError
+_____________________ ComplexCalculatorTestAdd.test_add_5 ______________________
+
+self = <tests.test_solution.ComplexCalculatorTestAdd testMethod=test_add_5>
+
+    def test_add_5(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.add(1+2j, -1-2j), (0+0j))
+E       AssertionError: None != 0j
+
+tests/test_solution.py:24: AssertionError
+_________________ ComplexCalculatorTestSubtract.test_subtract __________________
+
+self = <tests.test_solution.ComplexCalculatorTestSubtract testMethod=test_subtract>
+
+    def test_subtract(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.subtract(1+2j, 3+4j), (-2-2j))
+E       AssertionError: None != (-2-2j)
+
+tests/test_solution.py:29: AssertionError
+________________ ComplexCalculatorTestSubtract.test_subtract_2 _________________
+
+self = <tests.test_solution.ComplexCalculatorTestSubtract testMethod=test_subtract_2>
+
+    def test_subtract_2(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.subtract(-1-2j, -3-4j), (2+2j))
+E       AssertionError: None != (2+2j)
+
+tests/test_solution.py:33: AssertionError
+________________ ComplexCalculatorTestSubtract.test_subtract_3 _________________
+
+self = <tests.test_solution.ComplexCalculatorTestSubtract testMethod=test_subtract_3>
+
+    def test_subtract_3(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.subtract(1-2j, 3-4j), (-2+2j))
+E       AssertionError: None != (-2+2j)
+
+tests/test_solution.py:37: AssertionError
+________________ ComplexCalculatorTestSubtract.test_subtract_4 _________________
+
+self = <tests.test_solution.ComplexCalculatorTestSubtract testMethod=test_subtract_4>
+
+    def test_subtract_4(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.subtract(-1+2j, -3+4j), (2-2j))
+E       AssertionError: None != (2-2j)
+
+tests/test_solution.py:41: AssertionError
+________________ ComplexCalculatorTestSubtract.test_subtract_5 _________________
+
+self = <tests.test_solution.ComplexCalculatorTestSubtract testMethod=test_subtract_5>
+
+    def test_subtract_5(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.subtract(1+2j, 1+2j), (0+0j))
+E       AssertionError: None != 0j
+
+tests/test_solution.py:45: AssertionError
+_________________ ComplexCalculatorTestMultiply.test_multiply __________________
+
+self = <tests.test_solution.ComplexCalculatorTestMultiply testMethod=test_multiply>
+
+    def test_multiply(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.multiply(1+2j, 3+4j), (-5+10j))
+E       AssertionError: None != (-5+10j)
+
+tests/test_solution.py:50: AssertionError
+________________ ComplexCalculatorTestMultiply.test_multiply_2 _________________
+
+self = <tests.test_solution.ComplexCalculatorTestMultiply testMethod=test_multiply_2>
+
+    def test_multiply_2(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.multiply(-1-2j, -3-4j), (-5+10j))
+E       AssertionError: None != (-5+10j)
+
+tests/test_solution.py:54: AssertionError
+________________ ComplexCalculatorTestMultiply.test_multiply_3 _________________
+
+self = <t
+</output_head>
+<elided_chars>
+304 characters elided
+</elided_chars>
+<output_tail>
+ertionError
+________________ ComplexCalculatorTestMultiply.test_multiply_4 _________________
+
+self = <tests.test_solution.ComplexCalculatorTestMultiply testMethod=test_multiply_4>
+
+    def test_multiply_4(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.multiply(-1+2j, -3+4j), (-5-10j))
+E       AssertionError: None != (-5-10j)
+
+tests/test_solution.py:62: AssertionError
+________________ ComplexCalculatorTestMultiply.test_multiply_5 _________________
+
+self = <tests.test_solution.ComplexCalculatorTestMultiply testMethod=test_multiply_5>
+
+    def test_multiply_5(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.multiply(1+2j, -1-2j), (3-4j))
+E       AssertionError: None != (3-4j)
+
+tests/test_solution.py:66: AssertionError
+___________________ ComplexCalculatorTestDivide.test_divide ____________________
+
+self = <tests.test_solution.ComplexCalculatorTestDivide testMethod=test_divide>
+
+    def test_divide(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.divide(1+2j, 3+4j), (0.44+0.08j))
+E       AssertionError: None != (0.44+0.08j)
+
+tests/test_solution.py:71: AssertionError
+__________________ ComplexCalculatorTestDivide.test_divide_2 ___________________
+
+self = <tests.test_solution.ComplexCalculatorTestDivide testMethod=test_divide_2>
+
+    def test_divide_2(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.divide(-1-2j, -3-4j), (0.44+0.08j))
+E       AssertionError: None != (0.44+0.08j)
+
+tests/test_solution.py:75: AssertionError
+__________________ ComplexCalculatorTestDivide.test_divide_3 ___________________
+
+self = <tests.test_solution.ComplexCalculatorTestDivide testMethod=test_divide_3>
+
+    def test_divide_3(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.divide(1-2j, 3-4j), (0.44-0.08j))
+E       AssertionError: None != (0.44-0.08j)
+
+tests/test_solution.py:79: AssertionError
+__________________ ComplexCalculatorTestDivide.test_divide_4 ___________________
+
+self = <tests.test_solution.ComplexCalculatorTestDivide testMethod=test_divide_4>
+
+    def test_divide_4(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.divide(-1+2j, -3+4j), (0.44-0.08j))
+E       AssertionError: None != (0.44-0.08j)
+
+tests/test_solution.py:83: AssertionError
+__________________ ComplexCalculatorTestDivide.test_divide_5 ___________________
+
+self = <tests.test_solution.ComplexCalculatorTestDivide testMethod=test_divide_5>
+
+    def test_divide_5(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.divide(1+2j, -1-2j), (-1+0j))
+E       AssertionError: None != (-1+0j)
+
+tests/test_solution.py:87: AssertionError
+_____________________ ComplexCalculatorTestMain.test_main ______________________
+
+self = <tests.test_solution.ComplexCalculatorTestMain testMethod=test_main>
+
+    def test_main(self):
+        complexCalculator = ComplexCalculator()
+>       self.assertEqual(complexCalculator.add(1+2j, 3+4j), (4+6j))
+E       AssertionError: None != (4+6j)
+
+tests/test_solution.py:92: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::ComplexCalculatorTestAdd::test_add - Assertion...
+FAILED tests/test_solution.py::ComplexCalculatorTestAdd::test_add_2 - Asserti...
+FAILED tests/test_solution.py::ComplexCalculatorTestAdd::test_add_3 - Asserti...
+FAILED tests/test_solution.py::ComplexCalculatorTestAdd::test_add_4 - Asserti...
+FAILED tests/test_solution.py::ComplexCalculatorTestAdd::test_add_5 - Asserti...
+FAILED tests/test_solution.py::ComplexCalculatorTestSubtract::test_subtract
+FAILED tests/test_solution.py::ComplexCalculatorTestSubtract::test_subtract_2
+FAILED tests/test_solution.py::ComplexCalculatorTestSubtract::test_subtract_3
+FAILED tests/test_solution.py::ComplexCalculatorTestSubtract::test_subtract_4
+FAILED tests/test_solution.py::ComplexCalculatorTestSubtract::test_subtract_5
+FAILED tests/test_solution.py::ComplexCalculatorTestMultiply::test_multiply
+FAILED tests/test_solution.py::ComplexCalculatorTestMultiply::test_multiply_2
+FAILED tests/test_solution.py::ComplexCalculatorTestMultiply::test_multiply_3
+FAILED tests/test_solution.py::ComplexCalculatorTestMultiply::test_multiply_4
+FAILED tests/test_solution.py::ComplexCalculatorTestMultiply::test_multiply_5
+FAILED tests/test_solution.py::ComplexCalculatorTestDivide::test_divide - Ass...
+FAILED tests/test_solution.py::ComplexCalculatorTestDivide::test_divide_2 - A...
+FAILED tests/test_solution.py::ComplexCalculatorTestDivide::test_divide_3 - A...
+FAILED tests/test_solution.py::ComplexCalculatorTestDivide::test_divide_4 - A...
+FAILED tests/test_solution.py::ComplexCalculatorTestDivide::test_divide_5 - A...
+FAILED tests/test_solution.py::ComplexCalculatorTestMain::test_main - Asserti...
+21 failed in 0.04s
+
+</output_tail>

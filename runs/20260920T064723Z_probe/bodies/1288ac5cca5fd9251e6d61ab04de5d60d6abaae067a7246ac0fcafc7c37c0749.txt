@@ -1,0 +1,104 @@
+<returncode>1</returncode>
+<output>
+FFFFFFFFFFFFFFF                                                          [100%]
+=================================== FAILURES ===================================
+________________ BalancedBracketsTestClearExpr.test_clear_expr _________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:10: in test_clear_expr
+    self.assertEqual(b.expr, "()")
+E   AssertionError: 'a(b)c' != '()'
+E   - a(b)c
+E   + ()
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_2 ________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:15: in test_clear_expr_2
+    self.assertEqual(b.expr, "(){}")
+E   AssertionError: 'a(b){c}' != '(){}'
+E   - a(b){c}
+E   ? - -  -
+E   + (){}
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_3 ________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:20: in test_clear_expr_3
+    self.assertEqual(b.expr, "[](){}")
+E   AssertionError: '[a](b){c}' != '[](){}'
+E   - [a](b){c}
+E   ?  -  -  -
+E   + [](){}
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_4 ________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:25: in test_clear_expr_4
+    self.assertEqual(b.expr, "[(){}")
+E   AssertionError: '[a(b){c}' != '[(){}'
+E   - [a(b){c}
+E   ?  - -  -
+E   + [(){}
+_______________ BalancedBracketsTestClearExpr.test_clear_expr_5 ________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:30: in test_clear_expr_5
+    self.assertEqual(b.expr, "(){}]")
+E   AssertionError: 'a(b){c}]' != '(){}]'
+E   - a(b){c}]
+E   ? - -  -
+E   + (){}]
+____ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets ____
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:36: in test_check_balanced_brackets
+    self.assertEqual(b.check_balanced_brackets(), True)
+E   AssertionError: None != True
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_2 ___
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:40: in test_check_balanced_brackets_2
+    self.assertEqual(b.check_balanced_brackets(), True)
+E   AssertionError: None != True
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_3 ___
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:44: in test_check_balanced_brackets_3
+    self.assertEqual(b.check_balanced_brackets(), True)
+E   AssertionError: None != True
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_4 ___
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:48: in test_check_balanced_brackets_4
+    self.assertEqual(b.check_balanced_brackets(), False)
+E   AssertionError: None != False
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_5 ___
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:52: in test_check_balanced_brackets_5
+    self.assertEqual(b.check_balanced_brackets(), False)
+E   AssertionError: None != False
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_6 ___
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:56: in test_check_balanced_brackets_6
+    self.assertEqual(b.check_balanced_brackets(), False)
+E   AssertionError: None != False
+___ BalancedBracketsTestCheckBalancedBrackets.test_check_balanced_brackets_7 ___
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:60: in test_check_balanced_brackets_7
+    self.assertEqual(b.check_balanced_brackets(), False)
+E   AssertionError: None != False
+______________________ BalancedBracketsTestMain.test_main ______________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:67: in test_main
+    self.assertEqual(b.expr, "()")
+E   AssertionError: 'a(b)c' != '()'
+E   - a(b)c
+E   + ()
+_____________________ BalancedBracketsTestMain.test_main_2 _____________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:73: in test_main_2
+    self.assertEqual(b.expr, "[(){}")
+E   AssertionError: '[a(b){c}' != '[(){}'
+E   - [a(b){c}
+E   ?  - -  -
+E   + [(){}
+_____________________ BalancedBracketsTestMain.test_main_3 _____________________
+/Users/justinzhang/Documents/github/calmagent/bench_agent/tasks/ClassEval_7/tests/test_solution.py:79: in test_main_3
+    self.assertEqual(b.expr, "({}]")
+E   AssertionError: 'a(b{c}]' != '({}]'
+E   - a(b{c}]
+E   ? - - -
+E   + ({}]
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_2
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_3
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_4
+FAILED tests/test_solution.py::BalancedBracketsTestClearExpr::test_clear_expr_5
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_2
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_3
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_4
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_5
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_6
+FAILED tests/test_solution.py::BalancedBracketsTestCheckBalancedBrackets::test_check_balanced_brackets_7
+FAILED tests/test_solution.py::BalancedBracketsTestMain::test_main - Assertio...
+FAILED tests/test_solution.py::BalancedBracketsTestMain::test_main_2 - Assert...
+FAILED tests/test_solution.py::BalancedBracketsTestMain::test_main_3 - Assert...
+15 failed in 0.03s
+</output>

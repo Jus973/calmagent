@@ -1,0 +1,5 @@
+THOUGHT: I have edited `solution.py` to implement the necessary changes for the `clear_expr` and `check_balanced_brackets` methods. Let me run the tests again to verify if the issues are resolved.
+
+```mswea_bash_command
+python -m pytest -q
+```

@@ -1,0 +1,152 @@
+<returncode>1</returncode>
+<output>
+......FFFFFFFFFFFF                                                       [100%]
+=================================== FAILURES ===================================
+____________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher ____________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher>
+
+    def test_vigenere_cipher(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher("abc"), "kfa")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'vigenere_cipher'
+
+tests/test_solution.py:35: AttributeError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_2 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_2>
+
+    def test_vigenere_cipher_2(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher("hello"), "rijvs")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'vigenere_cipher'
+
+tests/test_solution.py:39: AttributeError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_3 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_3>
+
+    def test_vigenere_cipher_3(self):
+        encryption_utils = EncryptionUtils("longkey")
+>       self.assertEqual(encryption_utils.vigenere_cipher("AbCdEfG"), "LpPjOjE")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'vigenere_cipher'
+
+tests/test_solution.py:43: AttributeError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_4 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_4>
+
+    def test_vigenere_cipher_4(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher("Hello, World! 123"), "Rijvs, Uyvjn! 123")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'vigenere_cipher'
+
+tests/test_solution.py:47: AttributeError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_5 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_5>
+
+    def test_vigenere_cipher_5(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher(""), "")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'vigenere_cipher'
+
+tests/test_solution.py:51: AttributeError
+__________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher ___________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher>
+
+    def test_rail_fence_cipher(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("abc", 2), "acb")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'rail_fence_cipher'
+
+tests/test_solution.py:57: AttributeError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_2 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_2>
+
+    def test_rail_fence_cipher_2(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("hello", 2), "hloel")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'rail_fence_cipher'
+
+tests/test_solution.py:61: AttributeError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_3 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_3>
+
+    def test_rail_fence_cipher_3(self):
+        encryption_utils = EncryptionUtils("longkey")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("AbCdEfG", 2), "ACEGbdf")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'rail_fence_cipher'
+
+tests/test_solution.py:65: AttributeError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_4 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_4>
+
+    def test_rail_fence_cipher_4(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("Hello, World! 123", 2), "Hlo ol!13el,Wrd 2")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'rail_fence_cipher'
+
+tests/test_solution.py:69: AttributeError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_5 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_5>
+
+    def test_rail_fence_cipher_5(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("", 2), "")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'rail_fence_cipher'
+
+tests/test_solution.py:73: AttributeError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_6 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_6>
+
+    def test_rail_fence_cipher_6(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("abcdefg", 3), "aebdfcg")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'rail_fence_cipher'
+
+tests/test_solution.py:77: AttributeError
+______________________ EncryptionUtilsTestMain.test_main _______________________
+
+self = <tests.test_solution.EncryptionUtilsTestMain testMethod=test_main>
+
+    def test_main(self):
+        encryption_utils = EncryptionUtils("key")
+        self.assertEqual(encryption_utils.caesar_cipher("abc", 1), "bcd")
+>       self.assertEqual(encryption_utils.vigenere_cipher("abc"), "kfa")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EncryptionUtils' object has no attribute 'vigenere_cipher'
+
+tests/test_solution.py:84: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_2
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_3
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_4
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_5
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_2
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_3
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_4
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_5
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_6
+FAILED tests/test_solution.py::EncryptionUtilsTestMain::test_main - Attribute...
+12 failed, 6 passed in 0.03s
+</output>

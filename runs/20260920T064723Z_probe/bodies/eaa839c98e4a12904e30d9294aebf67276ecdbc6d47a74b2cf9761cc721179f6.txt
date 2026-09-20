@@ -1,0 +1,4 @@
+<returncode>1</returncode>
+<output>
+TERM environment variable not set.
+</output>

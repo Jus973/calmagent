@@ -1,0 +1,5 @@
+THOUGHT: I see that `solution.py` is the file I need to edit. Let me create a script to reproduce the issue by running the tests.
+
+```mswea_bash_command
+python -m pytest -q
+```

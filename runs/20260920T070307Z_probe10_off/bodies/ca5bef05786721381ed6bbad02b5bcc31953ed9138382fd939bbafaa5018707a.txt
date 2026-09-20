@@ -1,0 +1,84 @@
+<returncode>1</returncode>
+<output>
+.........F.....FFFFF.                                                    [100%]
+=================================== FAILURES ===================================
+_______________________ EightPuzzleTestMove.test_move_5 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_5>
+
+    def test_move_5(self):
+        result = self.eightPuzzle.move(self.initial_state, '???')
+        expected = [[2, 3, 4], [5, 0, 1], [6, 8, 7]]
+>       self.assertEqual(result, expected)
+E       AssertionError: None != [[2, 3, 4], [5, 0, 1], [6, 8, 7]]
+
+tests/test_solution.py:60: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_1 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_1>
+
+    def test_solve_1(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [7, 0, 8]])
+        result = eightPuzzle.solve()
+        expected = ['right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['right']
+
+tests/test_solution.py:110: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_2 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_2>
+
+    def test_solve_2(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 0, 6], [7, 5, 8]])
+        result = eightPuzzle.solve()
+        expected = ['down', 'right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['down', 'right']
+
+tests/test_solution.py:116: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_3 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_3>
+
+    def test_solve_3(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [0, 4, 5], [6, 7, 8]])
+        result = eightPuzzle.solve()
+        expected = ['right', 'right', 'down', 'left', 'left', 'up', 'right', 'down', 'right', 'up', 'left', 'left', 'down', 'right', 'right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['right', 'right', 'down', 'left', 'left'[76 chars]ght']
+
+tests/test_solution.py:122: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_4 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_4>
+
+    def test_solve_4(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [7, 8, 0]])
+        result = eightPuzzle.solve()
+        expected = []
+>       self.assertEqual(result, expected)
+E       AssertionError: None != []
+
+tests/test_solution.py:128: AssertionError
+______________________ EightPuzzleTestSolve.test_solve_5 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_5>
+
+    def test_solve_5(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [0, 7, 8]])
+        result = eightPuzzle.solve()
+        expected = ['right', 'right']
+>       self.assertEqual(result, expected)
+E       AssertionError: None != ['right', 'right']
+
+tests/test_solution.py:134: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_5 - AssertionEr...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_1 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_2 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_3 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_4 - Assertion...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_5 - Assertion...
+6 failed, 15 passed in 0.03s
+</output>

@@ -1,0 +1,229 @@
+<returncode>1</returncode>
+<warning>
+The output of your last command was too long.
+Please try a different command that produces less output.
+If you're looking at a file you can try use head, tail or sed to view a smaller number of lines selectively.
+If you're using grep or find and it produced too much output, you can use a more selective search pattern.
+If you really need to see something from the full command's output, you can redirect output to a file and then search in that file.
+</warning><output_head>
+FFFFF.FFFFFFFFFF.FFFFF.F                                                 [100%]
+=================================== FAILURES ===================================
+_________________ CurrencyConverterTestConvert.test_convert_1 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_1>
+
+    def test_convert_1(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'CNY', 'USD')
+>       self.assertEqual(res, 10.0)
+E       AssertionError: None != 10.0
+
+tests/test_solution.py:10: AssertionError
+_________________ CurrencyConverterTestConvert.test_convert_2 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_2>
+
+    def test_convert_2(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'USD', 'USD')
+>       self.assertEqual(res, 64)
+E       AssertionError: None != 64
+
+tests/test_solution.py:15: AssertionError
+_________________ CurrencyConverterTestConvert.test_convert_3 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_3>
+
+    def test_convert_3(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'CNY', 'GBP')
+>       self.assertAlmostEqual(res, 7.1999999999999)
+E       TypeError: unsupported operand type(s) for -: 'NoneType' and 'float'
+
+tests/test_solution.py:20: TypeError
+_________________ CurrencyConverterTestConvert.test_convert_4 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_4>
+
+    def test_convert_4(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'USD', 'GBP')
+>       self.assertAlmostEqual(res, 46.08)
+E       TypeError: unsupported operand type(s) for -: 'NoneType' and 'float'
+
+tests/test_solution.py:25: TypeError
+_________________ CurrencyConverterTestConvert.test_convert_5 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_5>
+
+    def test_convert_5(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'USD', 'CAD')
+>       self.assertAlmostEqual(res, 78.72)
+E       TypeError: unsupported operand type(s) for -: 'NoneType' and 'float'
+
+tests/test_solution.py:30: TypeError
+_ CurrencyConverterTestGetSupportedCurrencies.test_get_supported_currencies_1 __
+
+self = <tests.test_solution.CurrencyConverterTestGetSupportedCurrencies testMethod=test_get_supported_currencies_1>
+
+    def test_get_supported_currencies_1(self):
+        cc = CurrencyConverter()
+        res = cc.get_supported_currencies()
+>       self.assertEqual(res, ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY'])
+E       AssertionError: None != ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY']
+
+tests/test_solution.py:42: AssertionError
+_ CurrencyConverterTestGetSupportedCurrencies.test_get_supported_currencies_2 __
+
+self = <tests.test_solution.CurrencyConverterTestGetSupportedCurrencies testMethod=test_get_supported_currencies_2>
+
+    def test_get_supported_currencies_2(self):
+        cc = CurrencyConverter()
+        res = cc.get_supported_currencies()
+>       self.assertEqual(res, ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY'])
+E       AssertionError: None != ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY']
+
+tests/test_solution.py:47: AssertionError
+_ CurrencyConverterTestGetSupportedCurrencies.test_get_supported_currencies_3 __
+
+self = <tests.test_solution.CurrencyConverterTestGetSupportedCurrencies testMethod=test_get_supported_currencies_3>
+
+    def test_get_supported_currencies_3(self):
+        cc = CurrencyConverter()
+        res = cc.get_supported_currencies()
+>       self.assertEqual(res, ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY'])
+E       AssertionError: None != ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY']
+
+tests/test_solution.py:52: AssertionError
+_ CurrencyConverterTestGetSupportedCurrencies.test_get_supported_currencies_4 __
+
+self = <tests.test_solution.CurrencyConverterTestGetSupportedCurrencies testMethod=test_get_supported_currencies_4>
+
+    def test_get_supported_currencies_4(self):
+        cc = CurrencyConverter()
+        res = cc.get_supported_currencies()
+>       self.assertEqual(res, ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY'])
+E       AssertionError: None != ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY']
+
+tests/test_solution.py:57: AssertionError
+_ CurrencyConverterTestGetSupportedCurrencies.test_get_supported_currencies_5 __
+
+self = <tests.test_solution.CurrencyConverterTestGetSupportedCurrencies testMethod=test_get_supported_currencies_5>
+
+    def test_get_supported_currencies_5(self):
+        cc = CurrencyConverter()
+        res = cc.get_supported_currencies()
+>       self.assertEqual(res, ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY'])
+E       AssertionError: None != ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CNY']
+
+tests/test_solution.py:62: AssertionError
+________ CurrencyConverterTestAddCurrencyRate.test_add_currency_rate_1 _________
+
+self = <tests.test_solution.Currenc
+</output_head>
+<elided_chars>
+1795 characters elided
+</elided_chars>
+<output_tail>
+rrencyConverterTestAddCurrencyRate testMethod=test_add_currency_rate_5>
+
+    def test_add_currency_rate_5(self):
+        cc = CurrencyConverter()
+        cc.add_currency_rate('ddd', 4.0)
+>       self.assertEqual(cc.rates['ddd'], 4.0)
+                         ^^^^^^^^^^^^^^^
+E       KeyError: 'ddd'
+
+tests/test_solution.py:89: KeyError
+_____ CurrencyConverterTestUpdateCurrencyRate.test_update_currency_rate_1 ______
+
+self = <tests.test_solution.CurrencyConverterTestUpdateCurrencyRate testMethod=test_update_currency_rate_1>
+
+    def test_update_currency_rate_1(self):
+        cc = CurrencyConverter()
+        cc.update_currency_rate('CNY', 7.18)
+>       self.assertEqual(cc.rates['CNY'], 7.18)
+E       AssertionError: 6.4 != 7.18
+
+tests/test_solution.py:101: AssertionError
+_____ CurrencyConverterTestUpdateCurrencyRate.test_update_currency_rate_2 ______
+
+self = <tests.test_solution.CurrencyConverterTestUpdateCurrencyRate testMethod=test_update_currency_rate_2>
+
+    def test_update_currency_rate_2(self):
+        cc = CurrencyConverter()
+        cc.update_currency_rate('CNY', 1.0)
+>       self.assertEqual(cc.rates['CNY'], 1.0)
+E       AssertionError: 6.4 != 1.0
+
+tests/test_solution.py:106: AssertionError
+_____ CurrencyConverterTestUpdateCurrencyRate.test_update_currency_rate_3 ______
+
+self = <tests.test_solution.CurrencyConverterTestUpdateCurrencyRate testMethod=test_update_currency_rate_3>
+
+    def test_update_currency_rate_3(self):
+        cc = CurrencyConverter()
+        cc.update_currency_rate('CNY', 2.0)
+>       self.assertEqual(cc.rates['CNY'], 2.0)
+E       AssertionError: 6.4 != 2.0
+
+tests/test_solution.py:111: AssertionError
+_____ CurrencyConverterTestUpdateCurrencyRate.test_update_currency_rate_4 ______
+
+self = <tests.test_solution.CurrencyConverterTestUpdateCurrencyRate testMethod=test_update_currency_rate_4>
+
+    def test_update_currency_rate_4(self):
+        cc = CurrencyConverter()
+        cc.update_currency_rate('CNY', 3.0)
+>       self.assertEqual(cc.rates['CNY'], 3.0)
+E       AssertionError: 6.4 != 3.0
+
+tests/test_solution.py:116: AssertionError
+_____ CurrencyConverterTestUpdateCurrencyRate.test_update_currency_rate_5 ______
+
+self = <tests.test_solution.CurrencyConverterTestUpdateCurrencyRate testMethod=test_update_currency_rate_5>
+
+    def test_update_currency_rate_5(self):
+        cc = CurrencyConverter()
+        cc.update_currency_rate('CNY', 4.0)
+>       self.assertEqual(cc.rates['CNY'], 4.0)
+E       AssertionError: 6.4 != 4.0
+
+tests/test_solution.py:121: AssertionError
+_________________ CurrencyConverterTest.test_currencyconverter _________________
+
+self = <tests.test_solution.CurrencyConverterTest testMethod=test_currencyconverter>
+
+    def test_currencyconverter(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'CNY', 'USD')
+>       self.assertEqual(res, 10.0)
+E       AssertionError: None != 10.0
+
+tests/test_solution.py:133: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_1
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_2
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_3
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_4
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_5
+FAILED tests/test_solution.py::CurrencyConverterTestGetSupportedCurrencies::test_get_supported_currencies_1
+FAILED tests/test_solution.py::CurrencyConverterTestGetSupportedCurrencies::test_get_supported_currencies_2
+FAILED tests/test_solution.py::CurrencyConverterTestGetSupportedCurrencies::test_get_supported_currencies_3
+FAILED tests/test_solution.py::CurrencyConverterTestGetSupportedCurrencies::test_get_supported_currencies_4
+FAILED tests/test_solution.py::CurrencyConverterTestGetSupportedCurrencies::test_get_supported_currencies_5
+FAILED tests/test_solution.py::CurrencyConverterTestAddCurrencyRate::test_add_currency_rate_1
+FAILED tests/test_solution.py::CurrencyConverterTestAddCurrencyRate::test_add_currency_rate_2
+FAILED tests/test_solution.py::CurrencyConverterTestAddCurrencyRate::test_add_currency_rate_3
+FAILED tests/test_solution.py::CurrencyConverterTestAddCurrencyRate::test_add_currency_rate_4
+FAILED tests/test_solution.py::CurrencyConverterTestAddCurrencyRate::test_add_currency_rate_5
+FAILED tests/test_solution.py::CurrencyConverterTestUpdateCurrencyRate::test_update_currency_rate_1
+FAILED tests/test_solution.py::CurrencyConverterTestUpdateCurrencyRate::test_update_currency_rate_2
+FAILED tests/test_solution.py::CurrencyConverterTestUpdateCurrencyRate::test_update_currency_rate_3
+FAILED tests/test_solution.py::CurrencyConverterTestUpdateCurrencyRate::test_update_currency_rate_4
+FAILED tests/test_solution.py::CurrencyConverterTestUpdateCurrencyRate::test_update_currency_rate_5
+FAILED tests/test_solution.py::CurrencyConverterTest::test_currencyconverter
+21 failed, 3 passed in 0.05s
+
+</output_tail>

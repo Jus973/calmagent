@@ -1,0 +1,7 @@
+THOUGHT: The test file `test_solution.py` contains several test cases for the `BalancedBrackets` class. However, the error message indicates that the test case `test_example` is not found. This suggests that there might be a typo or an incorrect reference to the test method.
+
+Let's run all the tests in the `tests/test_solution.py` file to see if any of them fail and identify the issue.
+
+```mswea_bash_command
+python -m pytest -q --tb=short tests/test_solution.py
+```

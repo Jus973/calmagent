@@ -1,0 +1,28 @@
+THOUGHT: The test failures indicate that the `clear_expr` method is still not correctly removing all characters from the expression.
+
+I will further edit `solution.py` to ensure that the `clear_expr` method properly resets the expression to an empty string.
+
+```mswea_bash_command
+cat <<'EOF' > solution.py
+class BalancedBrackets:
+    def __init__(self, expr):
+        self.expr = expr
+
+    def clear_expr(self):
+        self.expr = ""
+
+    def check_balanced_brackets(self):
+        stack = []
+        mapping = {")": "(", "}": "{", "]": "["}
+        for char in self.expr:
+            if char in mapping.values():
+                stack.append(char)
+            elif char in mapping.keys():
+                if not stack or mapping[char] != stack.pop():
+                    return False
+        return len(stack) == 0
+
+    def main(self):
+        print("Hello, World!")
+EOF
+```

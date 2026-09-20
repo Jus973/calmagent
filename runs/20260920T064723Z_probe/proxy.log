@@ -1,0 +1,20 @@
+trace proxy on http://127.0.0.1:8999 -> http://127.0.0.1:11434, trace -> runs/20260920T064723Z_probe/trace.jsonl
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 56493)
+Traceback (most recent call last):
+  File "/Users/justinzhang/.pyenv/versions/3.11.14/lib/python3.11/socketserver.py", line 691, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/Users/justinzhang/.pyenv/versions/3.11.14/lib/python3.11/socketserver.py", line 361, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/Users/justinzhang/.pyenv/versions/3.11.14/lib/python3.11/socketserver.py", line 755, in __init__
+    self.handle()
+  File "/Users/justinzhang/.pyenv/versions/3.11.14/lib/python3.11/http/server.py", line 438, in handle
+    self.handle_one_request()
+  File "/Users/justinzhang/.pyenv/versions/3.11.14/lib/python3.11/http/server.py", line 404, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/justinzhang/.pyenv/versions/3.11.14/lib/python3.11/socket.py", line 718, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [Errno 54] Connection reset by peer
+----------------------------------------

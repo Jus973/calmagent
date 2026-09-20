@@ -1,0 +1,5 @@
+THOUGHT: The error message indicates that the `TERM` environment variable is not set. This can cause issues with certain terminal-based tools, including `nano`. Let's try using a different text editor or setting the `TERM` environment variable.
+
+```mswea_bash_command
+export TERM=xterm-256color && nano solution.py
+```

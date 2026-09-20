@@ -1,0 +1,5 @@
+THOUGHT: The error indicates that the test case `test_example` is not found. This could be due to several reasons, such as the test file or method name being incorrect. Let's verify the test file and method names.
+
+```mswea_bash_command
+cat tests/test_solution.py
+```

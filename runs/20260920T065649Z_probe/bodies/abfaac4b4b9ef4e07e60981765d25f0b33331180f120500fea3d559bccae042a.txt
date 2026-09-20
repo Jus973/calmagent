@@ -1,0 +1,5 @@
+THOUGHT: I have edited `solution.py` to ensure that the `clear_expr` method properly resets the expression to an empty string. Let me run the tests again to verify if the issues are resolved.
+
+```mswea_bash_command
+python -m pytest -q
+```

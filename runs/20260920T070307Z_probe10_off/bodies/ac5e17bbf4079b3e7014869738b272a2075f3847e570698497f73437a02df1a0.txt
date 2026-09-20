@@ -1,0 +1,4 @@
+<returncode>1</returncode>
+<output>
+sed: 1: "s/return amount * (self ...": bad flag in substitute command: 'r'
+</output>

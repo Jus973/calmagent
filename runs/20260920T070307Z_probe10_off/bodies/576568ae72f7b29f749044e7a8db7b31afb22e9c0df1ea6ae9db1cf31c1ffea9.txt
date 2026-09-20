@@ -1,0 +1,28 @@
+THOUGHT: The test failures indicate that the `vigenere_cipher` and `rail_fence_cipher` methods are not implemented yet.
+
+Let's implement the `vigenere_cipher` method next. I'll create a simple implementation that uses the Vigenère cipher algorithm to encrypt text.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+    def vigenere_cipher(self, text):
+        if not text:
+            return ""
+
+        key = self.key
+        key_length = len(key)
+        result = []
+        key_index = 0
+
+        for char in text:
+            if char.isalpha():
+                shift_amount = ord(key[key_index].lower()) - ord('a')
+                base = ord('a') if char.islower() else ord('A')
+                shifted_char = chr((ord(char) - base + shift_amount) % 26 + base)
+                result.append(shifted_char)
+                key_index = (key_index + 1) % key_length
+            else:
+                result.append(char)
+
+        return ''.join(result)
+EOF
+```

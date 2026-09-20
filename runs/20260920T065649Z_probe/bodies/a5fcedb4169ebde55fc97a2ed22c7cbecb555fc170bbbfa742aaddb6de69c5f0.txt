@@ -1,0 +1,5 @@
+THOUGHT: I need to understand the structure of the repository first. Let me check what files are in the current directory to get a better understanding of the codebase.
+
+```mswea_bash_command
+ls -la
+```

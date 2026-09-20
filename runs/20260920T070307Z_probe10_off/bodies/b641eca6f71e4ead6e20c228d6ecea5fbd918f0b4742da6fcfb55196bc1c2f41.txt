@@ -1,0 +1,25 @@
+THOUGHT: The `get_possible_moves` method is not implemented correctly. It should return a list of possible directions the blank space can move. I will implement the `get_possible_moves` method next.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+    def get_possible_moves(self, state):
+        blank = self.find_blank(state)
+        if not blank:
+            return None
+
+        i, j = blank
+        possible_moves = []
+
+        if i > 0:
+            possible_moves.append('up')
+        if i < len(state) - 1:
+            possible_moves.append('down')
+        if j > 0:
+            possible_moves.append('left')
+        if j < len(state[0]) - 1:
+            possible_moves.append('right')
+
+        return possible_moves
+EOF
+./run_tests.sh
+```

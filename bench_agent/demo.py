@@ -102,9 +102,32 @@ def section_context(verify: bool) -> None:
         print(f"  [verified: {len(pts)} points behind the fit]")
 
 
+def section_cross_run() -> None:
+    d = newest("*_cross_run")
+    rule("4. Two runs of the same task share only 13.7% of their prompt, because of one line")
+    if not d:
+        print("  no cross-run comparison recorded")
+        return
+    data = json.loads((d / "cross_run.json").read_text())
+    s_, f = data["summary"], data["findings"]
+    print(f"  source: {d}   ({s_['comparisons']} conversations, same tasks, same agent, an hour apart)")
+    print(f"    median prefix reusable from the previous run: "
+          f"\033[1m{s_['median_reusable_prefix_share']:.1%}\033[0m")
+    print(f"    every conversation diverges at message "
+          f"{sorted({x['first_divergent_message'] for x in f})}, cause: {list(s_['causes'])}")
+    print("  The whole difference, one line of `ls -la` output:")
+    print(f"    run A: ...{f[0]['sample_a'][-70:]}")
+    print(f"    run B: ...{f[0]['sample_b'][-70:]}")
+    print("  \033[1mCaveat, and it matters:\033[0m that line is the parent temp directory's mtime,")
+    print("  which our own harness creates fresh per task. The trigger is ours, not a real repo's.")
+    print("  What this shows exactly is the mechanism: one volatile line 40 tokens in costs")
+    print("  everything behind it. It is also why two temperature-0 runs diverge -- the model is")
+    print("  deterministic, the environment is not.")
+
+
 def section_ab() -> None:
     off, on = newest("*_ab_off"), newest("*_ab_on")
-    rule("4. The A/B: does the lever survive contact with a real agent?")
+    rule("5. The A/B: does the lever survive contact with a real agent?")
     if not (off and on):
         print("  no A/B recorded yet")
         return
@@ -128,6 +151,7 @@ def main() -> int:
     section_cache(args.verify)
     section_headroom()
     section_context(args.verify)
+    section_cross_run()
     section_ab()
     print("\nEvery figure above comes from a directory under runs/ named beside it.")
     return 0

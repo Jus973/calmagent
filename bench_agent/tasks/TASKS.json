@@ -1,0 +1,123 @@
+{
+  "seed": 0,
+  "source_run": "runs/20260919T163449Z_main/results.jsonl",
+  "n_solved": 8,
+  "n_unsolved": 2,
+  "tasks": [
+    {
+      "task_id": "ClassEval_10",
+      "class_name": "BinaryDataProcessor",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "BinaryDataProcessorTestCleanNonBinaryChars",
+        "BinaryDataProcessorTestCalculateBinaryInfo",
+        "BinaryDataProcessorTestConvertToAscii",
+        "BinaryDataProcessorTestConvertToUtf8",
+        "BinaryDataProcessorTestMain"
+      ]
+    },
+    {
+      "task_id": "ClassEval_24",
+      "class_name": "ComplexCalculator",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "ComplexCalculatorTestAdd",
+        "ComplexCalculatorTestSubtract",
+        "ComplexCalculatorTestMultiply",
+        "ComplexCalculatorTestDivide",
+        "ComplexCalculatorTestMain"
+      ]
+    },
+    {
+      "task_id": "ClassEval_27",
+      "class_name": "CurrencyConverter",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "CurrencyConverterTestConvert",
+        "CurrencyConverterTestGetSupportedCurrencies",
+        "CurrencyConverterTestAddCurrencyRate",
+        "CurrencyConverterTestUpdateCurrencyRate",
+        "CurrencyConverterTest"
+      ]
+    },
+    {
+      "task_id": "ClassEval_35",
+      "class_name": "EightPuzzle",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "EightPuzzleTestFindBlank",
+        "EightPuzzleTestMove",
+        "EightPuzzleTestGetPossibleMoves",
+        "EightPuzzleTestSolve"
+      ]
+    },
+    {
+      "task_id": "ClassEval_37",
+      "class_name": "EncryptionUtils",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "EncryptionUtilsTestCaesarCipher",
+        "EncryptionUtilsTestVigenereCipher",
+        "EncryptionUtilsTestRailFenceCipher",
+        "EncryptionUtilsTestMain"
+      ]
+    },
+    {
+      "task_id": "ClassEval_47",
+      "class_name": "IPAddress",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "IPAddressTestIsValid",
+        "IPAddressTestGetOctets",
+        "IPAddressTestGetBinary",
+        "IPAddressTest"
+      ]
+    },
+    {
+      "task_id": "ClassEval_6",
+      "class_name": "AvgPartition",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "AvgPartitionTestSetNum",
+        "AvgPartitionTestGet",
+        "AvgPartitionTestMain"
+      ]
+    },
+    {
+      "task_id": "ClassEval_7",
+      "class_name": "BalancedBrackets",
+      "solved_by_7b_in_source_run": true,
+      "test_classes": [
+        "BalancedBracketsTestClearExpr",
+        "BalancedBracketsTestCheckBalancedBrackets",
+        "BalancedBracketsTestMain"
+      ]
+    },
+    {
+      "task_id": "ClassEval_3",
+      "class_name": "ArrangementCalculator",
+      "solved_by_7b_in_source_run": false,
+      "test_classes": [
+        "ArrangementCalculatorTestCount",
+        "ArrangementCalculatorTestCountAll",
+        "ArrangementCalculatorTestSelect",
+        "ArrangementCalculatorTestSelectAll",
+        "ArrangementCalculatorTestFactorial",
+        "ArrangementCalculatorTest"
+      ]
+    },
+    {
+      "task_id": "ClassEval_33",
+      "class_name": "DiscountStrategy",
+      "solved_by_7b_in_source_run": false,
+      "test_classes": [
+        "DiscountStrategyTestTotal",
+        "DiscountStrategyTestDue",
+        "DiscountStrategyTestFidelityPromo",
+        "DiscountStrategyTestBulkItemPromo",
+        "DiscountStrategyTestLargeOrderPromo",
+        "DiscountStrategyTest"
+      ]
+    }
+  ]
+}

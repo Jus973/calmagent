@@ -13,14 +13,11 @@ import hashlib
 import json
 from pathlib import Path
 
+from calm_coder.jsonl import read_jsonl
 from calm_coder.store.store import Store
 from calm_coder.v2 import state
 
 WEB = Path(__file__).parent / "web"
-
-
-def _rows(p: Path) -> list[dict]:
-    return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
 
 
 def store_hash(store: Store) -> str:
@@ -47,15 +44,15 @@ def _task(task_id: str):
 
 def build(run: Path, task_id: str, arm: str, seed: int) -> dict:
     task = _task(task_id)
-    events = _rows(run / "events" / f"{task_id}__{arm}__s{seed}.jsonl")
+    events = read_jsonl(run / "events" / f"{task_id}__{arm}__s{seed}.jsonl")
     store = Store.from_events(events)
-    results = _rows(run / "results.jsonl")
+    results = read_jsonl(run / "results.jsonl")
     row = next((r for r in results if r["task_id"] == task_id and r["arm"] == arm and r["seed"] == seed), {})
-    emissions = [e for e in _rows(run / "emissions.jsonl")
+    emissions = [e for e in read_jsonl(run / "emissions.jsonl")
                  if e["task_id"] == task_id and e["arm"] == arm and e["seed"] == seed]
 
     # left pane: whole-class best-of-N, from arm C when the run has it, else this arm's round-0 samples
-    samples = [s for s in _rows(run / "class_samples.jsonl") if s["task_id"] == task_id and s["seed"] == seed]
+    samples = [s for s in read_jsonl(run / "class_samples.jsonl") if s["task_id"] == task_id and s["seed"] == seed]
     if samples:
         left = {"label": "best-of-N (whole class)",
                 "samples": [{"idx": s["sample_idx"], "tokens": s["completion_tokens"], "passed": s["passed"]}

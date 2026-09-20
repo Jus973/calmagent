@@ -21,6 +21,7 @@ from calm_coder.agents.fill import Emission, generate_fills
 from calm_coder.agents.scheduler import Scheduler
 from calm_coder.bench.baselines import whole_class_samples
 from calm_coder.bench.classeval import SUBSET, load_subset
+from calm_coder.jsonl import append_jsonl, read_jsonl
 from calm_coder.runner import tests as rt
 from calm_coder.serve.client import Client
 from calm_coder.serve.prompts import SAMPLING
@@ -41,8 +42,7 @@ class RunDir:
         (path / "events").mkdir(parents=True, exist_ok=True)
 
     def append(self, name: str, row: dict) -> None:
-        with open(self.path / name, "a") as f:
-            f.write(json.dumps(row, default=str) + "\n")
+        append_jsonl(self.path / name, row)
 
     def write_events(self, stem: str, events) -> Path:
         """An attempt's event log, under a name no earlier attempt can be holding."""
@@ -50,16 +50,14 @@ class RunDir:
             p = self.path / "events" / (f"{stem}.jsonl" if not i else f"{stem}__a{i}.jsonl")
             try:
                 with open(p, "x") as f:
-                    for ev in events:
-                        f.write(json.dumps(ev) + "\n")
-                return p
+                    f.writelines(json.dumps(ev, default=str) + "\n" for ev in events)
             except FileExistsError:
                 continue
+            return p
         raise RuntimeError(f"too many attempts for {stem}")
 
     def rows(self, name: str) -> list[dict]:
-        p = self.path / name
-        return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
+        return read_jsonl(self.path / name)
 
     def done(self) -> set[tuple[str, str, int]]:
         return {(r["task_id"], r["arm"], r["seed"]) for r in self.rows("results.jsonl")}
@@ -67,7 +65,7 @@ class RunDir:
 
 # ---------------------------------------------------------------- CALM arm
 
-def _budget_view(emissions: list[Emission], n: int):
+def budget_view(emissions: list[Emission], n: int):
     used = [e for e in emissions if e.sample_idx < n]
     cands: dict[str, list[str]] = defaultdict(list)
     fan_in: Counter = Counter()
@@ -94,7 +92,7 @@ async def run_calm(client: Client, task, seed: int, Ns: list[int], rd: RunDir, *
     phase1_ms = 0
     stub: dict[str, str] = {}
     for n in sorted(Ns):
-        used, cands, fan_in, arrival = _budget_view(emissions, n)
+        used, cands, fan_in, arrival = budget_view(emissions, n)
         new = [h for hs in cands.values() for h in hs if h not in stub]
         t0 = time.monotonic()
         stub = {**stub, **await sched.phase1(new)}
@@ -197,8 +195,7 @@ def budgets_from(path: Path, arm: str = "c", N: int | None = None) -> dict[tuple
     of C's own runs to a budget they exceeded. `(task, None)` is the across-seed mean, used for a
     seed C never ran.
     """
-    rows = [json.loads(l) for l in (path / "results.jsonl").read_text().splitlines() if l.strip()]
-    rows = [r for r in rows if r["arm"] == arm and (N is None or r["N"] == N)]
+    rows = [r for r in read_jsonl(path / "results.jsonl") if r["arm"] == arm and (N is None or r["N"] == N)]
     if N is None and rows:
         top = max(r["N"] for r in rows)
         rows = [r for r in rows if r["N"] == top]

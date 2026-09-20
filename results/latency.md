@@ -45,7 +45,9 @@ asks for one method either way; the tail is the part nothing downstream reads.
 | adaptive | yes | 18388 | 1.39x | 13 | 326 | 370 | 55 |
 | stop-at-fill | yes | 17973 | 1.43x | 13 | 316 | 370 | 56 |
 
-**`--tail long`** (the 7B failure mode: it writes the rest of the class)
+**`--tail long`** (a hypothetical badly-behaved model that writes the rest of the class — *not* what
+qwen2.5-coder:7b does: measured on 684 real per-slot completions its tail is 1.3% of characters,
+`results/tail.md`)
 
 | mode | verified | TTFV (ms) | speedup | requests | tokens decoded | of offered | test procs |
 |---|---|---:|---:|---:|---:|---:|---:|
@@ -69,7 +71,10 @@ how many are asked for, never which are derivable.
   that stops just never adds more facts.
 - **Stop-at-fill scales with how badly the model overshoots**, which is the point: 1.43x when the model
   is obedient, 7.1x when it writes the whole class. It is a decode-side lever, so it compounds with the
-  others rather than competing.
+  others rather than competing. **On the model we actually ran it is close to free**: the tail of a real
+  qwen2.5-coder:7b slot completion is 1.3% of characters (`results/tail.md`), so the `--tail long` row is
+  the lever's headroom against a worse-behaved model, not a saving available here. The slot prompt asking
+  for one method and no prose is doing the work the lever would otherwise do.
 - The absolute numbers are a function of `--ttft-ms` and `--tok-s`; only the ratios within a table mean
   anything, and only for this task shape (4 slots, one helper-using fill).
 - Real-server TTFV on the pilot box is in `results/final.md` and is *not* comparable: it predates all

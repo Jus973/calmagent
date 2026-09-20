@@ -5,7 +5,7 @@ import os
 import httpx
 import pytest
 
-from calm_coder.serve.client import Client
+from calm_coder.serve.client import Client, Fleet
 from calm_coder.serve.prompts import repair_messages, slot_messages, whole_class_messages
 
 
@@ -85,3 +85,33 @@ def test_smoke_live_endpoint():
             return await c.sample([{"role": "user", "content": "Say hi."}], n=4, max_tokens=16)
     out = run(go())
     assert len(out) == 4 and all(s.text for s in out)
+
+
+def test_fleet_splits_samples_across_models_with_distinct_seeds():
+    calls = []
+    f = Fleet([Client("http://a/v1", "m1", no_n=False, transport=httpx.MockTransport(_handler(calls))),
+               Client("http://b/v1", "m2", no_n=False, transport=httpx.MockTransport(_handler(calls))),
+               Client("http://c/v1", "m3", no_n=False, transport=httpx.MockTransport(_handler(calls)))])
+    out = run(f.sample([{"role": "user", "content": "hi"}], n=8, seed=100))
+    # 8 split three ways, remainder to the earlier members, and no two members share a seed range.
+    assert f.shares(8) == [3, 3, 2]
+    assert sorted((b["n"], b["seed"]) for b in calls) == [(2, 106), (3, 100), (3, 103)]
+    assert len(out) == 8
+    assert sorted({s.model for s in out}) == ["m1", "m2", "m3"]
+
+
+def test_fleet_share_is_a_function_of_n_alone():
+    f = Fleet([Client("http://a/v1", "m1"), Client("http://b/v1", "m2")])
+    assert [f.shares(i) for i in range(5)] == [[0, 0], [1, 0], [1, 1], [2, 1], [2, 2]]
+    assert f.model == "m1+m2" and [c.model for c in f.members] == ["m1", "m2"]
+
+
+def test_fleet_from_spec_falls_back_to_env_base_url(monkeypatch):
+    monkeypatch.setenv("CALM_BASE_URL", "http://env/v1")
+    f = Fleet.from_spec("m1@http://a/v1, m2")
+    assert [(c.model, c.base_url) for c in f.members] == [("m1", "http://a/v1"), ("m2", "http://env/v1")]
+
+
+def test_single_client_is_a_one_member_fleet():
+    c = Client("http://a/v1", "m1")
+    assert c.members == [c]

@@ -1,0 +1,14 @@
+{
+ "emissions": 684,
+ "skipped": {
+  "no_cut_point": 12
+ },
+ "chars": 409918,
+ "tail_chars": 5333,
+ "tail_frac": 0.013009919056982127,
+ "median_tail_frac": 0.005660397509425096,
+ "p90_tail_frac": 0.008571428571428572,
+ "cut_at_all_frac": 0.04678362573099415,
+ "decode_tokens": 107347,
+ "projected_tokens_saved": 1396
+}

@@ -20,6 +20,13 @@ measured, and are labelled as such wherever they are printed:
 The solve-rate difference is reported with a Wilson interval on each arm and an exact McNemar
 p-value on the paired tasks, because with 10 tasks nothing else is honest: a one-task difference
 is well inside the noise, and the report says so rather than leaving the reader to assume.
+
+**Total wall clock is not evidence about the lever, and this report says so where it prints it.**
+At temperature 0 the agent is deterministic given its prompt, so the first message the lever
+rewrites forks the trajectory; from there the arms are different agents taking different numbers of
+turns. A run ending at 127 s instead of the 480 s cap usually means the agent gave up early, not
+that tokens got cheaper. The per-request block below normalises that out, and
+`bench_agent/replay_bench.py` measures the lever with the agent removed entirely.
 """
 from __future__ import annotations
 
@@ -148,6 +155,26 @@ def main() -> int:
         f"{100*(tot[n]['no_cache_s']-tot[n]['prefill_s'])/max(tot[n]['no_cache_s'],1e-9):.1f}%"))
     row("dedup: messages replaced", lambda n: str(tot[n]["dedup_replaced"]))
     row("dedup: bytes removed from prompts", lambda n: f"{tot[n]['dedup_bytes_saved']:,}")
+    print()
+    print("> Total wall clock and total token counts above are **confounded**: the arms take "
+          "different numbers of turns because the lever forks the agent's trajectory. Compare the "
+          "per-request block below, and see `bench_agent/replay_bench.py` for the lever measured "
+          "without an agent.\n")
+
+    print("## Per request (normalised for how many turns the agent took)\n")
+    print("| metric | " + " | ".join(arms) + " |")
+    print("|" + "---|" * (len(arms) + 1))
+
+    def per_req(n: str, key: str) -> float:
+        r = tot[n]["requests"]
+        return tot[n][key] / r if r else 0.0
+
+    row("requests per task", lambda n: f"{tot[n]['requests']/max(ntask[n],1):.1f}")
+    row("prompt tokens per request", lambda n: f"{per_req(n, 'prompt_tokens'):,.0f}")
+    row("completion tokens per request", lambda n: f"{per_req(n, 'completion_tokens'):,.0f}")
+    row("upstream ms per request", lambda n: f"{1000*per_req(n, 'upstream_wall_s'):,.0f}")
+    row("upstream ms per completion token", lambda n: (
+        f"{1000*tot[n]['upstream_wall_s']/max(tot[n]['completion_tokens'],1):,.0f}"))
     print()
 
     # ---- paired ----

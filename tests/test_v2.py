@@ -293,6 +293,23 @@ def test_the_warmup_prompt_is_a_prefix_of_the_requests_it_warms(toy, client):
         assert ser(after).startswith(ser(w)), ser(w)[:200]
 
 
+def test_repair_rounds_use_the_repair_client(toy):
+    """A hosted fixer is a second producer into the same store, not a judge and not the headline."""
+    gen_calls, fix_calls = [], []
+    gen = Client("http://gen/v1", "qwen", no_n=False,
+                 transport=httpx.MockTransport(fake_server(gen_calls)))
+    fixer = Client("https://api.x.ai/v1", "grok-build-0.1", no_n=False,
+                   transport=httpx.MockTransport(fake_server(fix_calls)))
+    res = asyncio.run(run_v2(gen, toy, budget_tokens=10_000, k=2, repair_n=2, rounds=3,
+                             warm=False, repair_client=fixer))
+    assert res.row["solved"]
+    assert res.row["gen_model"] == "qwen" and res.row["repair_model"] == "grok-build-0.1"
+    assert all("Rewrite only" not in c["messages"][-1]["content"] for c in gen_calls)
+    assert any("Rewrite only" in c["messages"][-1]["content"] for c in fix_calls)
+    assert any(e.get("model") == "grok-build-0.1" for e in res.emissions)
+    assert any(e.get("model") == "qwen" for e in res.emissions)
+
+
 def test_a_repair_round_asks_for_as_many_samples_as_the_baseline(toy, client):
     """`repair_n` is a round total in both arms, so the targeted round is split across dead slots."""
     v2 = asyncio.run(run_v2(client, toy, budget_tokens=10_000, k=2, repair_n=4, rounds=1, warm=False))

@@ -111,6 +111,30 @@ def infer_slot_tests(task: Task) -> dict[str, str]:
     return out
 
 
+def skeletonize(src: str) -> str:
+    """Turn a class implementation into a skeleton: `__init__` kept, other methods reduced to
+    signature + docstring + `pass`, so a repair prompt does not treat the bug as the spec."""
+    mod = ast.parse(src)
+    for node in mod.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for stmt in node.body:
+            if not isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)) or stmt.name == "__init__":
+                continue
+            doc = ast.get_docstring(stmt, clean=False)
+            stmt.body = ([ast.Expr(ast.Constant(doc))] if doc else []) + [ast.Pass()]
+    return ast.unparse(mod) + "\n"
+
+
+def task_from_implementation(impl_path, tests_path) -> tuple[Task, str]:
+    """Task from a full class file: interface is skeletonized, the original source is the seed."""
+    from pathlib import Path
+    impl, tests = Path(impl_path), Path(tests_path)
+    src = impl.read_text()
+    t = Task.from_skeleton(task_id=impl.stem, skeleton=skeletonize(src), test_src=tests.read_text())
+    return Task(**{**t.__dict__, "slot_tests": infer_slot_tests(t)}), src
+
+
 def task_from_files(skeleton_path, tests_path) -> Task:
     from pathlib import Path
     sk, tests = Path(skeleton_path), Path(tests_path)

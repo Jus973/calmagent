@@ -11,6 +11,7 @@ import json
 import os
 import time
 from collections import Counter, defaultdict
+from contextlib import AsyncExitStack
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,7 +24,7 @@ from calm_coder.bench.baselines import whole_class_samples
 from calm_coder.bench.classeval import SUBSET, load_subset
 from calm_coder.jsonl import append_jsonl, read_jsonl
 from calm_coder.runner import tests as rt
-from calm_coder.serve.client import Client, Fleet
+from calm_coder.serve.client import Client, client_from_spec
 from calm_coder.serve.prompts import SAMPLING
 from calm_coder.store.derive import reachable
 from calm_coder.store.defs import Composition
@@ -215,12 +216,12 @@ def budget_for(budgets: dict, task_id: str, seed: int) -> int | None:
 
 async def run_v2_arm(client: Client, task, seed: int, rd: RunDir, *, arm: str, budget_tokens: int,
                      k: int, repair_n: int, rounds: int, level: str, max_comps: int,
-                     on_event=None) -> list[dict]:
+                     on_event=None, repair_client: Client | None = None) -> list[dict]:
     kw = dict(V2_ARMS[arm])
     runner = run_wcr if arm == "wcr" else run_v2
     res = await runner(client, task, budget_tokens=budget_tokens, seed=seed, k=k, repair_n=repair_n,
                        rounds=rounds, level=kw.pop("level", level), max_comps=max_comps, arm=arm,
-                       on_event=on_event, **kw)
+                       on_event=on_event, repair_client=repair_client, **kw)
     for e in res.emissions:
         # producers number emissions by repair round; `seed` means the run's seed everywhere a log
         # is joined with results.jsonl, so the round moves to its own field here
@@ -254,7 +255,7 @@ async def main_async(a) -> Path:
                "k": a.k, "repair_n": a.repair_n, "rounds": a.rounds,
                "test_width": a.test_width,
                "sampling": SAMPLING, "per_class_timeout_s": 5, "wall_timeout_s": 20,
-               "models": a.models,
+               "models": a.models, "repair_models": a.repair_models,
                "model": os.environ.get("CALM_MODEL"), "base_url": os.environ.get("CALM_BASE_URL"),
                "no_n": os.environ.get("CALM_NO_N"),
                "server_env": {k: v for k, v in os.environ.items() if k.startswith("OLLAMA_")},
@@ -273,10 +274,15 @@ async def main_async(a) -> Path:
                                     "budgets": [{"task_id": t, "seed": s, "tokens": v}
                                                 for (t, s), v in sorted(budgets.items(),
                                                                         key=lambda kv: (kv[0][0], kv[0][1] is None, kv[0][1]))]})
-    async with (Fleet.from_spec(cfg["models"]) if cfg.get("models") else Client()) as client:
+    async with AsyncExitStack() as stack:
+        client = await stack.enter_async_context(client_from_spec(cfg.get("models")))
+        repair_client = (await stack.enter_async_context(client_from_spec(cfg["repair_models"]))
+                         if cfg.get("repair_models") else None)
         cfg_client = client.config()
         if not (rd.path / "client.json").exists():
-            (rd.path / "client.json").write_text(json.dumps({**cfg_client, "metrics_start": await client.metrics_snapshot()}))
+            (rd.path / "client.json").write_text(json.dumps({
+                **cfg_client, "repair": repair_client.config() if repair_client else None,
+                "metrics_start": await client.metrics_snapshot()}))
         jobs = [(seed, i, task) for seed in cfg["seeds"] for i, (_, task) in enumerate(tasks)]
         queue: asyncio.Queue = asyncio.Queue()
         for j in jobs:
@@ -306,7 +312,8 @@ async def main_async(a) -> Path:
                                                     repair_n=cfg.get("repair_n") or DEFAULT_REPAIR_N,
                                                     rounds=cfg.get("rounds") or DEFAULT_ROUNDS,
                                                     level=cfg.get("feedback") or "F1",
-                                                    max_comps=cfg["max_comps"])
+                                                    max_comps=cfg["max_comps"],
+                                                    repair_client=repair_client)
                         else:
                             raise ValueError(f"unknown arm {arm}")
                     except Exception as e:  # a task that doesn't fit is excluded and logged, never special-cased
@@ -339,6 +346,9 @@ def main() -> None:
     ap.add_argument("--models", help="comma-separated `model[@base_url]`: samples are split across "
                                      "them, so the agents writing into the store are different "
                                      "models rather than clones of one")
+    ap.add_argument("--repair-models", help="like --models, but only for repair rounds (dead slots). "
+                                            "Generation stays on --models / CALM_MODEL. A hosted "
+                                            "model here is a secondary producer, never the headline")
     ap.add_argument("--budget-from", help="run dir whose arm-C decode tokens set each task's v2 budget")
     ap.add_argument("--budget-tokens", type=int, help="flat per-task decode budget when --budget-from is absent")
     ap.add_argument("--feedback", default="F1", choices=["F0", "F1", "F2"])

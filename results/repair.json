@@ -1,0 +1,146 @@
+{
+ "repair": {
+  "task_id": "broken",
+  "arm": "repair",
+  "seed": 0,
+  "N": 0,
+  "feedback": "F1",
+  "budget_tokens": 2000,
+  "solved": true,
+  "verified_comp": "a4cff8e7c2d53d49dacd81dc83b0162e296d0480d9c9644b091454c0fc887257",
+  "decode_tokens": 80,
+  "prompt_tokens": 160,
+  "cached_tokens": 100,
+  "requests": 1,
+  "rounds": [
+   {
+    "round": 0,
+    "producer": "seed",
+    "dead_before": null,
+    "dead_after": [
+     "get"
+    ],
+    "decode_tokens": 0,
+    "solved": false
+   },
+   {
+    "round": 1,
+    "producer": "repair",
+    "targets": [
+     "get"
+    ],
+    "samples_per_target": 2,
+    "dead_before": [
+     "get"
+    ],
+    "dead_after": [],
+    "decode_tokens": 80,
+    "solved": true
+   }
+  ],
+  "ttfv_ms": 147,
+  "test_ms": 67,
+  "gen_ms": 0,
+  "gen_model": "fake",
+  "repair_model": "fake",
+  "mode": "repair",
+  "seed_bindings": {
+   "set": "05a76f36210e6b6f1c8321f70bee27948539f19c560a2f7495dd777eca52e5fe",
+   "get": "8466061b65468dfe1bd8e6102d905806b1c150a413d58108d86e37beb1aababa",
+   "delete": "50cec5054e696455eb9f3b6e20a9e5187d5f4d376431024fd37f5397b2ac9b6a",
+   "keys_with_prefix": "8d0e408eddddb8733155fb1ff7501f4380dfb77d7ebb1f040d331f1c752660af"
+  },
+  "seed_dropped": [],
+  "seed_error": null,
+  "seed_comp_solved": false,
+  "solved_by_seed": false,
+  "seed_slots_kept": [
+   "delete",
+   "keys_with_prefix",
+   "set"
+  ],
+  "dead_slots": [],
+  "dead_slot_report": {},
+  "over_budget": false,
+  "n_model_calls": 2,
+  "n_slots": 4
+ },
+ "rewrite": {
+  "task_id": "broken",
+  "arm": "rewrite",
+  "seed": 0,
+  "N": 0,
+  "feedback": "F1",
+  "budget_tokens": 2000,
+  "solved": false,
+  "verified_comp": null,
+  "decode_tokens": 160,
+  "prompt_tokens": 320,
+  "cached_tokens": 200,
+  "requests": 2,
+  "rounds": [
+   {
+    "round": 0,
+    "producer": "seed",
+    "dead_before": null,
+    "dead_after": [
+     "get"
+    ],
+    "decode_tokens": 0,
+    "solved": false
+   },
+   {
+    "round": 1,
+    "producer": "whole_class_repair",
+    "dead_after": [
+     "get"
+    ],
+    "decode_tokens": 80,
+    "solved": false
+   },
+   {
+    "round": 2,
+    "producer": "whole_class_repair",
+    "dead_after": [
+     "get"
+    ],
+    "decode_tokens": 160,
+    "solved": false
+   }
+  ],
+  "ttfv_ms": null,
+  "test_ms": 35,
+  "gen_ms": 0,
+  "gen_model": "fake",
+  "repair_model": "fake",
+  "mode": "rewrite",
+  "seed_bindings": {
+   "set": "05a76f36210e6b6f1c8321f70bee27948539f19c560a2f7495dd777eca52e5fe",
+   "get": "8466061b65468dfe1bd8e6102d905806b1c150a413d58108d86e37beb1aababa",
+   "delete": "50cec5054e696455eb9f3b6e20a9e5187d5f4d376431024fd37f5397b2ac9b6a",
+   "keys_with_prefix": "8d0e408eddddb8733155fb1ff7501f4380dfb77d7ebb1f040d331f1c752660af"
+  },
+  "seed_dropped": [],
+  "seed_error": null,
+  "seed_comp_solved": false,
+  "solved_by_seed": false,
+  "seed_slots_kept": [],
+  "dead_slots": [
+   "get"
+  ],
+  "dead_slot_report": {
+   "get": {
+    "candidates": 2,
+    "exc_types": [
+     "AssertionError"
+    ],
+    "interface_error": false,
+    "has_own_test": true,
+    "unattributed": false
+   }
+  },
+  "over_budget": false,
+  "n_model_calls": 4,
+  "n_slots": 4
+ }
+}

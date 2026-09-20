@@ -15,7 +15,36 @@ import numpy as np
 from calm_coder.jsonl import read_jsonl
 
 # What-if prices per 1M tokens (input, cached input, output). Labeled as hypothetical, never a measurement.
-WHAT_IF_PRICES = {"small-hosted-model (what-if)": {"input": 0.15, "cached_input": 0.075, "output": 0.60}}
+# Grok rows are xAI list prices as of 2026-09 (docs.x.ai/docs/models); local models are $0.
+WHAT_IF_PRICES = {
+    "local (what-if $0)": {"input": 0.0, "cached_input": 0.0, "output": 0.0},
+    "small-hosted-model (what-if)": {"input": 0.15, "cached_input": 0.075, "output": 0.60},
+    "grok-build-0.1": {"input": 1.00, "cached_input": 0.20, "output": 2.00},
+    "grok-4.6": {"input": 2.00, "cached_input": 0.50, "output": 6.00},
+}
+
+
+def price_for_model(model: str | None) -> tuple[str, dict]:
+    """Pick a what-if price row from a logged `Sample.model`. Local Qwen/Llama are $0."""
+    m = (model or "").lower()
+    if "grok-build" in m:
+        return "grok-build-0.1", WHAT_IF_PRICES["grok-build-0.1"]
+    if "grok-4.6" in m or m.startswith("grok-4") or m == "grok-4":
+        return "grok-4.6", WHAT_IF_PRICES["grok-4.6"]
+    if any(tag in m for tag in ("qwen", "llama", "ollama", "fake", "local")):
+        return "local (what-if $0)", WHAT_IF_PRICES["local (what-if $0)"]
+    return "small-hosted-model (what-if)", WHAT_IF_PRICES["small-hosted-model (what-if)"]
+
+
+def dollars_for(prompt: int, cached: int, completion: int, prices: dict) -> dict:
+    """Uncached input + cached input + output, per the given $/1M table."""
+    cached = min(max(cached, 0), max(prompt, 0))
+    uncached = max(prompt, 0) - cached
+    usd_in = uncached * prices["input"] / 1e6
+    usd_cached = cached * prices["cached_input"] / 1e6
+    usd_out = max(completion, 0) * prices["output"] / 1e6
+    return {"uncached_input": round(usd_in, 6), "cached_input": round(usd_cached, 6),
+            "output": round(usd_out, 6), "total": round(usd_in + usd_cached + usd_out, 6)}
 
 
 def wilson(k: float, n: int, z: float = 1.96) -> tuple[float, float, float]:

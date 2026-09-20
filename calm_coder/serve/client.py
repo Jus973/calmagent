@@ -43,6 +43,27 @@ def _env_flag(name: str) -> bool:
     return os.environ.get(name, "").lower() in ("1", "true", "yes")
 
 
+def key_for_url(base_url: str, explicit: str | None = None) -> str | None:
+    """Host-specific key first, then the generic env. The key itself is never logged."""
+    if explicit:
+        return explicit
+    if "api.x.ai" in (base_url or ""):
+        return (os.environ.get("XAI_API_KEY") or os.environ.get("CALM_API_KEY")
+                or os.environ.get("OPENAI_API_KEY"))
+    return os.environ.get("CALM_API_KEY") or os.environ.get("OPENAI_API_KEY")
+
+
+def auth_label(base_url: str, key: str | None) -> str | None:
+    """Which env supplied the key, for client.json. Never the secret."""
+    if not key:
+        return None
+    return "xai" if "api.x.ai" in (base_url or "") else "env"
+
+
+def client_from_spec(spec: str | None = None, **kw) -> "Client | Fleet":
+    return Fleet.from_spec(spec, **kw) if spec else Client(**kw)
+
+
 class Client:
     def __init__(self, base_url: str | None = None, model: str | None = None, *,
                  api_key: str | None = None, max_inflight: int | None = None,
@@ -54,7 +75,8 @@ class Client:
         self.model = model or os.environ.get("CALM_MODEL", "qwen2.5-coder:7b")
         self.no_n = _env_flag("CALM_NO_N") if no_n is None else no_n
         self.stream = _env_flag("CALM_STREAM") if stream is None else stream
-        key = api_key or os.environ.get("CALM_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        key = key_for_url(self.base_url, api_key)
+        self.auth = auth_label(self.base_url, key)
         self._sem = asyncio.Semaphore(max_inflight or int(os.environ.get("CALM_MAX_INFLIGHT", "32")))
         self._http = httpx.AsyncClient(
             timeout=timeout_s, transport=transport,
@@ -62,7 +84,8 @@ class Client:
         )
 
     def config(self) -> dict:
-        return {"base_url": self.base_url, "model": self.model, "no_n": self.no_n, "stream": self.stream}
+        return {"base_url": self.base_url, "model": self.model, "no_n": self.no_n,
+                "stream": self.stream, "auth": self.auth}
 
     @property
     def members(self) -> list["Client"]:

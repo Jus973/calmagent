@@ -27,7 +27,7 @@ from pathlib import Path
 
 import numpy as np
 
-from calm_coder.bench.metrics import mcnemar_exact, paired_bootstrap, wilson
+from calm_coder.bench.metrics import dollars_for, mcnemar_exact, paired_bootstrap, price_for_model, wilson
 from calm_coder.jsonl import read_jsonl
 
 V2_ARMS = ("v2", "v2_pm", "v2_f0", "v2_f2", "wcr")
@@ -36,6 +36,31 @@ V2_ARMS = ("v2", "v2_pm", "v2_f0", "v2_f2", "wcr")
 def load_excluded(dirs: list[Path]) -> list[dict]:
     """Tasks a run refused to attempt. They are not failures and they are not silence either."""
     return [r for d in dirs for r in read_jsonl(d / "excluded.jsonl")]
+
+
+def load_emissions(dirs: list[Path]) -> list[dict]:
+    return [r for d in dirs for r in read_jsonl(d / "emissions.jsonl")]
+
+
+def tokens_by_model(emissions: list[dict]) -> dict:
+    """What-if dollars from logged emissions. Local models price at $0; Grok uses list prices."""
+    agg: dict[str, dict] = defaultdict(lambda: {
+        "prompt": 0, "cached": 0, "completion": 0, "requests": 0, "emissions": 0})
+    for e in emissions:
+        m = e.get("model") or "unknown"
+        a = agg[m]
+        a["prompt"] += e.get("prompt_tokens") or 0
+        a["cached"] += e.get("cached_tokens") or 0
+        a["completion"] += e.get("completion_tokens") or 0
+        a["emissions"] += 1
+        if e.get("prompt_tokens"):
+            a["requests"] += 1
+    out = {}
+    for m, a in sorted(agg.items()):
+        label, prices = price_for_model(m)
+        out[m] = {**a, "price_table": label,
+                  "what_if_usd": dollars_for(a["prompt"], a["cached"], a["completion"], prices)}
+    return out
 
 
 def load(dirs: list[Path]) -> list[dict]:
@@ -192,6 +217,18 @@ def to_md(m: dict) -> str:
             d1 = f"{s['dead_slots_at_end_mean']:.2f}" if s["dead_slots_at_end_mean"] is not None else "-"
             L.append(f"| {arm} | {','.join(s['feedback']) or '-'} | {s['repair_rounds_mean']:.2f} | "
                      f"{s['solved_by_seed_samples']} | {s['solved_total']} | {d0} | {d1} |")
+    by_model = m.get("tokens_by_model") or {}
+    if by_model:
+        L += ["", "## What-if cost by model", "",
+              "Labeled prices, not a measurement. Local Qwen/Llama are $0. Grok rows use xAI list "
+              "prices (input / cached input / output per 1M). Cached tokens shrink the uncached "
+              "input line; they are never estimated.", "",
+              "| model | emissions | prompt | cached | completion | price table | what-if $ |",
+              "| --- | --- | --- | --- | --- | --- | --- |"]
+        for model, s in by_model.items():
+            usd = s["what_if_usd"]["total"]
+            L.append(f"| {model} | {s['emissions']} | {s['prompt']} | {s['cached']} | "
+                     f"{s['completion']} | {s['price_table']} | {usd:.4f} |")
     return "\n".join(L) + "\n"
 
 
@@ -206,6 +243,7 @@ def main() -> None:
     m = compute(rows, a.baseline or ["c", "calm"])
     m["runs"] = [str(d) for d in dirs]
     m["excluded"] = load_excluded(dirs)
+    m["tokens_by_model"] = tokens_by_model(load_emissions(dirs))
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "final.json").write_text(json.dumps(m, indent=1))

@@ -13,6 +13,7 @@ from calm_coder.v2.harness import run_v2
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from analysis import cache_value, dead_slots, final_report, pool_existing, tail_waste  # noqa: E402
+from calm_coder.bench.metrics import dollars_for, price_for_model, WHAT_IF_PRICES
 
 from test_v2 import BAD_GET, GOOD, fake_server, toy_class  # noqa: E402
 
@@ -81,6 +82,40 @@ def test_an_arm_that_ran_fewer_tasks_says_so(tmp_path):
     assert m["paired"]["v2-c"]["n_tasks"] == 3          # only what both arms ran is compared
     md = final_report.to_md(m)
     assert "1 tasks excluded" in md and "ClassEval_3, ClassEval_4, ClassEval_5" in md
+
+
+def test_what_if_prices_zero_local_and_charge_grok():
+    label, prices = price_for_model("qwen2.5-coder:7b")
+    assert label.startswith("local") and dollars_for(10_000, 8_000, 500, prices)["total"] == 0
+    label, prices = price_for_model("grok-build-0.1")
+    assert label == "grok-build-0.1"
+    usd = dollars_for(10_000, 8_000, 500, prices)
+    # 2k uncached * $1 + 8k cached * $0.20 + 500 * $2, per million
+    assert usd["total"] == pytest.approx(2 * 1.00 / 1e3 + 8 * 0.20 / 1e3 + 0.5 * 2.00 / 1e3)
+    assert price_for_model("grok-4.6")[0] == "grok-4.6"
+    assert "grok-4.6" in WHAT_IF_PRICES and "grok-build-0.1" in WHAT_IF_PRICES
+
+
+def test_tokens_by_model_prices_only_the_expensive_producer(tmp_path):
+    em = [
+        {"model": "qwen2.5-coder:7b", "prompt_tokens": 2000, "cached_tokens": 1800,
+         "completion_tokens": 400},
+        {"model": "grok-build-0.1", "prompt_tokens": 800, "cached_tokens": 0,
+         "completion_tokens": 120},
+        {"model": "grok-build-0.1", "prompt_tokens": 800, "cached_tokens": 600,
+         "completion_tokens": 80},
+    ]
+    (tmp_path / "emissions.jsonl").write_text("".join(json.dumps(e) + "\n" for e in em))
+    (tmp_path / "results.jsonl").write_text("")
+    by = final_report.tokens_by_model(final_report.load_emissions([tmp_path]))
+    assert by["qwen2.5-coder:7b"]["what_if_usd"]["total"] == 0
+    grok = by["grok-build-0.1"]
+    assert grok["emissions"] == 2 and grok["completion"] == 200
+    assert grok["what_if_usd"]["total"] > 0
+    md = final_report.to_md({"n_tasks": 0, "seeds": [], "excluded": [], "solve": {},
+                             "N_per_arm": {}, "paired": {}, "systems": {}, "v2": {},
+                             "tokens_by_model": by})
+    assert "What-if cost by model" in md and "grok-build-0.1" in md
 
 
 def test_pooling_reports_one_denominator_per_configuration(tmp_path):

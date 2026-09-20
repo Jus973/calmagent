@@ -5,7 +5,7 @@ import os
 import httpx
 import pytest
 
-from calm_coder.serve.client import Client, Fleet
+from calm_coder.serve.client import Client, Fleet, auth_label, client_from_spec, key_for_url
 from calm_coder.serve.prompts import repair_messages, slot_messages, whole_class_messages
 
 
@@ -115,3 +115,32 @@ def test_fleet_from_spec_falls_back_to_env_base_url(monkeypatch):
 def test_single_client_is_a_one_member_fleet():
     c = Client("http://a/v1", "m1")
     assert c.members == [c]
+
+
+def test_xai_url_uses_xai_key_not_the_generic_one(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "xai-secret")
+    monkeypatch.setenv("CALM_API_KEY", "calm-secret")
+    assert key_for_url("https://api.x.ai/v1") == "xai-secret"
+    assert key_for_url("http://localhost:11434/v1") == "calm-secret"
+    assert auth_label("https://api.x.ai/v1", "xai-secret") == "xai"
+    grok = Client("https://api.x.ai/v1", "grok-build-0.1")
+    local = Client("http://localhost:11434/v1", "qwen")
+    assert grok._http.headers["Authorization"] == "Bearer xai-secret"
+    assert local._http.headers["Authorization"] == "Bearer calm-secret"
+    assert grok.auth == "xai" and local.auth == "env"
+    assert "xai-secret" not in json.dumps(grok.config())
+
+
+def test_mixed_fleet_picks_a_key_per_member(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "xai-secret")
+    monkeypatch.delenv("CALM_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    f = Fleet.from_spec("qwen@http://localhost:11434/v1,grok-build-0.1@https://api.x.ai/v1")
+    qwen, grok = f.members
+    assert "Authorization" not in qwen._http.headers
+    assert grok._http.headers["Authorization"] == "Bearer xai-secret"
+
+
+def test_client_from_spec_none_is_a_plain_client():
+    assert isinstance(client_from_spec(None), Client)
+    assert isinstance(client_from_spec("m1@http://a/v1,m2@http://b/v1"), Fleet)

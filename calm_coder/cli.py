@@ -26,7 +26,9 @@ from calm_coder.serve.client import Client
 from calm_coder.store.defs import Composition
 from calm_coder.store.materialize import STUB_EXC, materialize
 from calm_coder.store.store import Store
-from calm_coder.task import task_from_files
+from calm_coder.task import task_from_files, task_from_implementation
+from calm_coder.v2 import state
+from calm_coder.v2.harness import run_from_seed
 
 console = Console(stderr=True)
 
@@ -112,6 +114,41 @@ async def solve(task, *, n: int, seed: int, live: bool, max_comps: int, events_o
     return src.replace(STUB_EXC, "", 1).lstrip("\n"), res
 
 
+def _materialize_verified(task, res):
+    vid = res.row.get("verified_comp")
+    if not vid:
+        return None
+    binds = state.comp_bindings(res.store).get(vid)
+    if not binds:
+        return None
+    src = materialize(task, res.store, Composition.make(binds))
+    return src.replace(STUB_EXC, "", 1).lstrip("\n")
+
+
+async def repair(task, seed_src: str, *, n: int, seed: int, live: bool, budget_tokens: int,
+                 rewrite: bool, events_out: Path | None, rounds: int = 3):
+    """Keep methods that already pass. Sample only dead slots, unless `--rewrite` (the baseline)."""
+    store = Store()
+    view = None
+    if live:
+        from calm_coder.viz.live import LiveView
+        view = LiveView(task, store, title=f"calm repair · {task.task_id}")
+        view.__enter__()
+    try:
+        cb = view.on_event if view else None
+        async with Client() as client:
+            res = await run_from_seed(
+                client, task, seed_src, mode="rewrite" if rewrite else "repair",
+                budget_tokens=budget_tokens, seed=seed, repair_n=n, rounds=rounds,
+                warm=False, store=store, on_event=cb)
+    finally:
+        if view:
+            view.__exit__(None, None, None)
+    if events_out:
+        write_jsonl(events_out, res.store.event_log())
+    return _materialize_verified(task, res), res
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="calm")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -130,19 +167,48 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--live", action="store_true")
     s.add_argument("--out")
     s.add_argument("--events", help="write the store's event log here (for --replay / --replay-shuffled)")
+    r = sub.add_parser("repair", help="keep passing methods of an existing class; resample only dead slots")
+    r.add_argument("implementation")
+    r.add_argument("--tests", required=True)
+    r.add_argument("--N", type=int, default=4, help="samples per repair round")
+    r.add_argument("--seed", type=int, default=0)
+    r.add_argument("--rounds", type=int, default=3)
+    r.add_argument("--budget-tokens", type=int, default=4000)
+    r.add_argument("--rewrite", action="store_true",
+                   help="baseline: regenerate the whole class (the usual agent loop)")
+    r.add_argument("--live", action="store_true")
+    r.add_argument("--out")
+    r.add_argument("--events", help="write the store's event log here")
     a = ap.parse_args(argv)
-    task = task_from_files(a.skeleton, a.tests)
-    src, res = asyncio.run(solve(task, n=a.N, seed=a.seed, live=a.live, max_comps=a.max_comps,
-                                 events_out=Path(a.events) if a.events else None,
-                                 sequential=a.sequential, width=a.width,
-                                 cache=Path(a.cache) if a.cache else None,
-                                 stop_at_fill=not a.no_stop_at_fill))
-    if src is None:
-        console.print(f"[red]no verified composition within budget ({res.unsolvable_reason}, "
-                      f"{len(res.trace)} compositions tested)[/red]")
-        return 1
-    console.print(f"[green]verified after {len(res.trace)} composition(s), "
-                  f"{res.test_wall_ms} ms wall in the search[/green]")
+    if a.cmd == "solve":
+        task = task_from_files(a.skeleton, a.tests)
+        src, res = asyncio.run(solve(task, n=a.N, seed=a.seed, live=a.live, max_comps=a.max_comps,
+                                     events_out=Path(a.events) if a.events else None,
+                                     sequential=a.sequential, width=a.width,
+                                     cache=Path(a.cache) if a.cache else None,
+                                     stop_at_fill=not a.no_stop_at_fill))
+        if src is None:
+            console.print(f"[red]no verified composition within budget ({res.unsolvable_reason}, "
+                          f"{len(res.trace)} compositions tested)[/red]")
+            return 1
+        console.print(f"[green]verified after {len(res.trace)} composition(s), "
+                      f"{res.test_wall_ms} ms wall in the search[/green]")
+    else:
+        task, seed_src = task_from_implementation(a.implementation, a.tests)
+        src, res = asyncio.run(repair(task, seed_src, n=a.N, seed=a.seed, live=a.live,
+                                      budget_tokens=a.budget_tokens, rewrite=a.rewrite,
+                                      events_out=Path(a.events) if a.events else None,
+                                      rounds=a.rounds))
+        row = res.row
+        if src is None:
+            console.print(f"[red]no verified composition within budget "
+                          f"(dead slots {row.get('dead_slots')}, "
+                          f"{row.get('decode_tokens')} decode tokens)[/red]")
+            return 1
+        kept = row.get("seed_slots_kept") or []
+        mode = "rewrite" if a.rewrite else "repair"
+        console.print(f"[green]{mode} verified; kept {len(kept)}/{len(task.slots)} seed methods "
+                      f"{kept}; {row.get('decode_tokens')} decode tokens[/green]")
     if a.out:
         Path(a.out).write_text(src)
         console.print(f"wrote {a.out}")

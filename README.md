@@ -1,3 +1,153 @@
+# CALM Proxy
+
+> A local model server will re-read your agent's whole transcript for 26 seconds, or reuse it in
+> 0.25, and nothing in the OpenAI API tells you which one just happened. This is the instrument
+> that tells you, and the two levers worth pulling once it has.
+
+Drop it between any agent and Ollama / vLLM / llama.cpp. It records every request, shows where the
+prompt cache is being missed and why, and shortens the prompts that are safe to shorten — without
+changing the agent.
+
+Built overnight at HackMIT 2026 on top of a research project whose main hypothesis came back null;
+that project, its pre-registration and its failed hypotheses are still here, at the bottom.
+
+## One command
+
+```bash
+python -m bench_agent.demo
+```
+
+Prints every number below out of the run directory that holds it. No model server, nothing to fail.
+
+## What was measured
+
+Each figure names the directory it came from. Nothing here is typed by hand.
+
+### A prompt-cache hit is worth 100.9x — and the server will not tell you when you got one
+
+`runs/20260920T063803Z_cache_probe/`, qwen2.5-coder:7b, a 4,317-token prompt:
+
+| | prompt evaluation | per prompt token |
+|---|---|---|
+| cold prefix | 25,711 ms | 5.96 ms |
+| warm prefix | **253 ms** | **0.059 ms** |
+
+Two ways to throw it away, both measured in the same run: a **timestamp at the front of the system
+prompt** costs 28,586 ms, and **one interleaved request** with a different prefix costs 27,327 ms
+— with `OLLAMA_NUM_PARALLEL=1` there is a single KV slot, so an agent that alternates between two
+prompt shapes evicts its own cache every time it switches.
+
+**Ollama 0.21.2 reports no `cached_tokens` at all**, and `prompt_eval_count` does not shrink on a
+hit. The contract this project started from assumed "prompt tokens computed = prompt − cached" was
+readable. It is not, on this server. Wall clock is the only instrument there is, which is why every
+number here is a time.
+
+### On a well-behaved agent there is nothing left to win — and that is a result
+
+`runs/20260920T074436Z_headroom/`, 42 real mini-swe-agent requests. Every lever was sized from the
+trace *before* any of them was built:
+
+| lever | headroom | verdict |
+|---|---|---|
+| I-2 prefix-lint | **0.0 s** — churn tokens: 0, all 40 divergences are `appended_only` | kill number hit |
+| I-3 memo | **0.0 s** — 0 duplicate request keys of 42 | kill number hit |
+| I-4 dedup | 102.3 s of uncached duplicate bytes | **shipped** |
+| I-5 `calm-run` | 2 reruns of 5 test commands, ~20 ms each on this bench | shipped, uncaveated it would be dishonest |
+
+mini-swe-agent only ever appends to its transcript: it never stamps it, reorders it or rewrites it.
+Measured prefill across those 42 requests was 283.3 s, against 185.8 s for a perfect cache and
+2,072.7 s for none — **the cache is already capturing 94.8% of what there is to capture**. A lint
+that promised to win that back would be selling something already owned. It ships as a diagnostic
+that prints a clean bill of health, and the 100.9x above is what it would find on an agent that
+was not this well behaved.
+
+### So why does the agent keep getting slower? Context is not free
+
+`runs/20260920T072921Z_context_cost/`, 73 requests. The measured request time fitted against both
+kinds of token, each with its own attention term (r² = 0.975):
+
+```
+done_ms = a*new + b*new*context + c*completion + d*completion*context
+```
+
+| | at 1,246 ctx | at 27,449 ctx | multiple |
+|---|---|---|---|
+| one prompt token | 7.36 ms | 16.04 ms | **2.18x** |
+| one output token | 45.92 ms | 113.68 ms | **2.48x** |
+
+Generation falls from ~22 tok/s to ~8.8 tok/s with nothing changed but the length of the transcript
+it is appended to. No prefix cache addresses this: those tokens *are* cached, and are still being
+attended to by every token generated.
+
+Two independent checks that this is not an artefact of the fit, neither of which the fit was given:
+`a` = 6.95 ms per prompt token against the cache probe's separately measured **5.96 ms**, and
+`c` = 42.7 ms per output token, i.e. **23 tok/s**, against this model's known ~20 tok/s.
+
+This is the argument for dedup, and it is not the argument for dedup that we started with. Dedup is
+nearly worthless as a *prefill* saving, because the bytes it removes were mostly cached already.
+It is worth something because a shorter context makes every remaining token of both kinds cheaper.
+
+### Does it survive contact with a real agent?
+
+<!-- AB-RESULTS -->
+
+## What this does not claim
+
+- **Not that we made the cache work better.** This agent's cache already works. What the proxy did
+  was *prove* it, and measure the cliff waiting for an agent whose prompt is not append-only.
+- **Not that dedup saves 620 s of prefill.** Deleting an already-cached token saves almost nothing.
+  The defensible prefill figure is 102 s; the rest of dedup's case is the context curve above.
+- **Not that `calm-run` pays off here.** The research phase measured 64–75% of *test executions*
+  avoided (`results/cache.md`). A ClassEval test module runs in ~20 ms, so on this bench that
+  converts to about 40 ms. A repo with a 30-second suite is where it pays, and this bench cannot
+  show it.
+- **Not that dedup improves solve rate.** See the A/B section: at temperature 0 the agent is
+  deterministic given its prompt, so the first rewritten message forks the trajectory and the arms
+  become different agents. Any solve-rate difference at n=10 is a coin flip.
+
+## The CALM lineage
+
+Every store the proxy keeps is grow-only and keyed by content hash, so it is idempotent,
+replay-safe and needs no coordination — the dedup memory is a G-Set, and a rewrite is a pure
+function of content, which is exactly why the same message is rewritten identically on every turn.
+That stability is the whole lever: a rewrite that moved would invalidate the prefix behind it, and
+at 5.96 ms per prompt token a single broken 17k-token prefix costs ~100 s, more than dedup saves
+across a whole task. It is enforced by tests, not by convention
+(`tests/bench_agent/test_trace_proxy_dedup.py`).
+
+## Reproduce
+
+```bash
+# 1. what a cache hit is worth on your machine
+python -m bench_agent.probe_cache --out runs/$(date -u +%Y%m%dT%H%M%SZ)_cache_probe
+
+# 2. package the tasks and check every reference solution still passes
+python -m bench_agent.make_tasks && python -m bench_agent.verify_tasks
+
+# 3. the A/B, interleaved, one task at a time
+python -m bench_agent.ab --arms off,on --agent mini-swe --label ab \
+    --proxy-flags "--dedup --dedup-min-bytes 200"
+
+# 4. read it
+python -m bench_agent.quick_report runs/<ts>_ab_off runs/<ts>_ab_on
+python -m bench_agent.probe_headroom runs/<ts>_ab_off
+python -m bench_agent.context_cost runs/<ts>_ab_off
+```
+
+Serve with `OLLAMA_NUM_PARALLEL=1 OLLAMA_CONTEXT_LENGTH=32768`. The default 4 parallel slots at
+16k give **4,096 tokens per sequence**, which an agent prompt silently exceeds.
+
+---
+
+---
+
+# Archive: the research phase
+
+The hypothesis below — that a coordination-free, content-addressed store raises class-level solve
+rate — was pre-registered in `PREREG.md` and came back **null**: v2 − C = +0.026, McNemar p = 1.000.
+H1, H4 and H5 hold; H2, H2b, H3 and H6 fail. It is kept in full, including the failures, because
+the proxy above is built out of what it measured.
+
 # CALM Coder
 
 > A shared file is a last-writer-wins register, so every merge is an ordering decision. A grow-only, hash-keyed set of definitions has no ordering decision to make. CALM tells you that is exactly the line between "needs coordination" and "doesn't."

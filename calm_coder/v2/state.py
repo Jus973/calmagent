@@ -1,4 +1,4 @@
-"""Policy reads over the store: verdict facts, the current best class, and dead slots.
+"""Policy reads over the store: the current best class and the dead slots to repair.
 
 These are *scheduling* reads. `best_class` is an argmax and `dead_slots` is a negation, so neither
 may live in `store/derive.py`: I3 keeps derivations monotone. What these functions decide is *what
@@ -7,7 +7,6 @@ round is reproducible from the store contents at the round boundary (see ARCHITE
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Mapping, Sequence
 
 from calm_coder.runner import tests as rt
@@ -19,27 +18,6 @@ if TYPE_CHECKING:
     from calm_coder.task import Task
 
 PASS = "pass"
-
-
-@dataclass(frozen=True)
-class Verdict:
-    """(task_id, context_hash, slot, candidate_hash, test_class, result, failure_summary) — §2."""
-    task_id: str
-    context_hash: str          # the composition the candidate was tested inside
-    slot: str
-    candidate_hash: str
-    test_class: str
-    result: str
-    failure_summary: str
-
-
-def verdict_facts(store: Store, task: "Task") -> tuple[Verdict, ...]:
-    out = []
-    for o in store.outcomes():
-        for slot, h in o.bindings:
-            out.append(Verdict(task_id=task.task_id, context_hash=o.comp_id, slot=slot, candidate_hash=h,
-                               test_class=o.test_id, result=o.result, failure_summary=o.detail[:512]))
-    return tuple(sorted(out, key=lambda v: (v.context_hash, v.slot, v.candidate_hash, v.test_class, v.result)))
 
 
 def comp_results(store: Store) -> dict[str, dict[str, tuple[str, str]]]:

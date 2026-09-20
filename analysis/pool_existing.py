@@ -16,12 +16,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 from pathlib import Path
 
 from calm_coder.agents.scheduler import Scheduler
 from calm_coder.bench.classeval import load_rows, task_from_row
-from calm_coder.bench.posthoc import _ranked_cands, _rows, exhaustive
+from calm_coder.bench.posthoc import _ranked_cands, exhaustive
+from calm_coder.jsonl import append_jsonl, read_jsonl, write_jsonl
 from calm_coder.store.derive import verified
 from calm_coder.store.store import Store
 from calm_coder.v2.decompose import ingest_class_sample
@@ -76,9 +76,9 @@ async def pool_task(task, calm_events: list[dict], class_samples: list[dict], *,
 async def main_async(d: Path, seed: int, N: int, cap: int, par: int, max_comps: int) -> None:
     out_dir = d / "analysis"
     (out_dir / "events").mkdir(parents=True, exist_ok=True)
-    done = {(r["task_id"], r.get("seed"), r.get("N")) for r in _rows(out_dir / "pool_existing.jsonl")}
+    done = {(r["task_id"], r.get("seed"), r.get("N")) for r in read_jsonl(out_dir / "pool_existing.jsonl")}
     rows = {r["task_id"]: r for r in load_rows()}
-    results = _rows(d / "results.jsonl")
+    results = read_jsonl(d / "results.jsonl")
     pick = lambda arm: {r["task_id"]: r for r in results                                # noqa: E731
                         if r["arm"] == arm and r.get("N") == N and r["seed"] == seed}
     calm, c = pick("calm"), pick("c")
@@ -86,7 +86,7 @@ async def main_async(d: Path, seed: int, N: int, cap: int, par: int, max_comps: 
         raise SystemExit(f"no c/calm results in {d} at N={N} seed={seed}; "
                          f"present: {sorted({(r['arm'], r.get('N'), r['seed']) for r in results})}")
     uniq: dict[tuple, dict] = {}
-    for s in _rows(d / "class_samples.jsonl"):
+    for s in read_jsonl(d / "class_samples.jsonl"):
         if s["arm"] == "c" and s["seed"] == seed and s["sample_idx"] < N:
             uniq[(s["task_id"], s["arm"], s["seed"], s["sample_idx"])] = s   # a resumed run re-logs
     samples: dict[str, list[dict]] = {}
@@ -96,21 +96,18 @@ async def main_async(d: Path, seed: int, N: int, cap: int, par: int, max_comps: 
         if (tid, seed, N) in done or tid not in rows:
             continue
         task = task_from_row(rows[tid])
-        r = await pool_task(task, _rows(d / "events" / f"{tid}__calm__s{seed}.jsonl"),
+        r = await pool_task(task, read_jsonl(d / "events" / f"{tid}__calm__s{seed}.jsonl"),
                             samples.get(tid, []), cap=cap, par=par, max_comps=max_comps, n=N)
-        events = r.pop("events", [])
-        (out_dir / "events" / f"{tid}__pool__s{seed}_N{N}.jsonl").write_text(
-            "".join(json.dumps(e) + "\n" for e in events))
+        write_jsonl(out_dir / "events" / f"{tid}__pool__s{seed}_N{N}.jsonl", r.pop("events", []))
         row = {"task_id": tid, "seed": seed, "N": N, "calm_solved": calm.get(tid, {}).get("solved"),
                "c_solved": c.get(tid, {}).get("solved"), **r}
-        with open(out_dir / "pool_existing.jsonl", "a") as f:
-            f.write(json.dumps(row) + "\n")
+        append_jsonl(out_dir / "pool_existing.jsonl", row)
         print(row["task_id"], "c=", row["c_solved"], "calm=", row["calm_solved"], "pooled=", row["pooled_solved"])
     write_md(out_dir)
 
 
 def write_md(out_dir: Path) -> None:
-    rows = _rows(out_dir / "pool_existing.jsonl")
+    rows = read_jsonl(out_dir / "pool_existing.jsonl")
     if not rows:
         return
     lines = ["# Pooling existing samples (zero new tokens)", ""]

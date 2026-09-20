@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import contextlib
-import json
 import sys
 from pathlib import Path
 
@@ -20,11 +19,11 @@ from rich.console import Console
 
 from calm_coder.agents.fill import Emission, generate_fills
 from calm_coder.agents.scheduler import Scheduler, SearchResult
-from calm_coder.bench.experiment import _budget_view
+from calm_coder.bench.experiment import budget_view
+from calm_coder.jsonl import write_jsonl
 from calm_coder.runner.cache import OutcomeCache
 from calm_coder.serve.client import Client
 from calm_coder.store.defs import Composition
-from calm_coder.store.derive import verified
 from calm_coder.store.materialize import STUB_EXC, materialize
 from calm_coder.store.store import Store
 from calm_coder.task import task_from_files
@@ -54,7 +53,7 @@ async def _pipelined(client: Client, task, store: Store, sched: Scheduler, *, n:
         while not gen.done():
             landed.clear()                         # nothing new to compose until another fill lands
             if all(store.defs_for_slot(s.id) for s in task.slots):
-                _, cands, fan_in, arrival = _budget_view(emissions, n)
+                _, cands, fan_in, arrival = budget_view(emissions, n)
                 res = await sched.search(cands, fan_in, arrival)
                 if res.verified_comp:
                     gen.cancel()
@@ -72,7 +71,7 @@ async def _pipelined(client: Client, task, store: Store, sched: Scheduler, *, n:
         await sched.drain()                        # the tests themselves finish; their outcomes are facts
         return res
     await asyncio.gather(*stubs.values())
-    _, cands, fan_in, arrival = _budget_view(emissions, n)
+    _, cands, fan_in, arrival = budget_view(emissions, n)
     return await sched.search(cands, fan_in, arrival)
 
 
@@ -92,7 +91,7 @@ async def solve(task, *, n: int, seed: int, live: bool, max_comps: int, events_o
         async with Client() as client:
             if sequential:
                 emissions = await generate_fills(client, task, store, n=n, seed=seed, on_event=cb)
-                _, cands, fan_in, arrival = _budget_view(emissions, n)
+                _, cands, fan_in, arrival = budget_view(emissions, n)
                 await sched.phase1([h for hs in cands.values() for h in hs])
                 res = await sched.search(cands, fan_in, arrival)
             else:
@@ -101,7 +100,7 @@ async def solve(task, *, n: int, seed: int, live: bool, max_comps: int, events_o
         if view:
             view.__exit__(None, None, None)
     if events_out:
-        events_out.write_text("\n".join(json.dumps(e) for e in store.event_log()) + "\n")
+        write_jsonl(events_out, store.event_log())
     if res.verified_comp is None:
         return None, res
     tr = next(t for t in res.trace if t.comp_id == res.verified_comp)

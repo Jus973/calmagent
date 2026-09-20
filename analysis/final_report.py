@@ -28,31 +28,22 @@ from pathlib import Path
 import numpy as np
 
 from calm_coder.bench.metrics import mcnemar_exact, paired_bootstrap, wilson
+from calm_coder.jsonl import read_jsonl
 
 V2_ARMS = ("v2", "v2_pm", "v2_f0", "v2_f2", "wcr")
 
 
 def load_excluded(dirs: list[Path]) -> list[dict]:
     """Tasks a run refused to attempt. They are not failures and they are not silence either."""
-    out = []
-    for d in dirs:
-        p = d / "excluded.jsonl"
-        if p.exists():
-            out += [json.loads(ln) for ln in p.read_text().splitlines() if ln.strip()]
-    return out
+    return [r for d in dirs for r in read_jsonl(d / "excluded.jsonl")]
 
 
 def load(dirs: list[Path]) -> list[dict]:
     rows = []
     for d in dirs:
-        p = d / "results.jsonl"
-        if not p.exists():
+        if not (d / "results.jsonl").exists():
             raise SystemExit(f"no results.jsonl in {d}")
-        for line in p.read_text().splitlines():
-            if line.strip():
-                r = json.loads(line)
-                r["run"] = str(d)
-                rows.append(r)
+        rows += [{**r, "run": str(d)} for r in read_jsonl(d / "results.jsonl")]
     # a resumed run may re-log a (task, arm, seed, N); the last copy wins
     return list({(r["task_id"], r["arm"], r["seed"], r.get("N")): r for r in rows}.values())
 

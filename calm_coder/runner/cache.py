@@ -7,19 +7,17 @@ outcomes carry `reused:` in their detail — the log never claims we executed a 
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
+
+from calm_coder.jsonl import append_jsonl, read_jsonl
 
 
 class OutcomeCache:
     def __init__(self, path: str | Path):
         self.path = Path(path)
         self._d: dict[str, dict] = {}
-        if self.path.exists():
-            for line in self.path.read_text().splitlines():
-                if line.strip():
-                    row = json.loads(line)
-                    self._d.setdefault(row["key"], row)
+        for row in read_jsonl(self.path):
+            self._d.setdefault(row["key"], row)
 
     def get(self, key: str) -> dict | None:
         return self._d.get(key)
@@ -30,5 +28,4 @@ class OutcomeCache:
         row = {"key": key, "test_id": test_id, "result": result, "detail": detail[:512]}
         self._d[key] = row
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.path, "a") as f:
-            f.write(json.dumps(row) + "\n")
+        append_jsonl(self.path, row)

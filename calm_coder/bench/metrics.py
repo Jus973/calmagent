@@ -12,13 +12,10 @@ from pathlib import Path
 
 import numpy as np
 
+from calm_coder.jsonl import read_jsonl
+
 # What-if prices per 1M tokens (input, cached input, output). Labeled as hypothetical, never a measurement.
 WHAT_IF_PRICES = {"small-hosted-model (what-if)": {"input": 0.15, "cached_input": 0.075, "output": 0.60}}
-
-
-def _rows(d: Path, name: str) -> list[dict]:
-    p = d / name
-    return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
 
 
 def wilson(k: float, n: int, z: float = 1.96) -> tuple[float, float, float]:
@@ -59,13 +56,13 @@ class Run:
     def __init__(self, d: Path):
         self.d = d
         self.config = json.loads((d / "config.json").read_text())
-        self.results = _rows(d, "results.jsonl")
+        self.results = read_jsonl(d / "results.jsonl")
         # An arm interrupted mid-task is redone on resume; keep the last copy of each re-logged sample.
         self.emissions = list({(e["task_id"], e["arm"], e["seed"], e["slot"], e["sample_idx"]): e
-                               for e in _rows(d, "emissions.jsonl")}.values())
+                               for e in read_jsonl(d / "emissions.jsonl")}.values())
         self.class_samples = list({(e["task_id"], e["arm"], e["seed"], e["sample_idx"]): e
-                                   for e in _rows(d, "class_samples.jsonl")}.values())
-        self.excluded = _rows(d, "excluded.jsonl")
+                                   for e in read_jsonl(d / "class_samples.jsonl")}.values())
+        self.excluded = read_jsonl(d / "excluded.jsonl")
         self.by = {(r["task_id"], r["arm"], r["seed"], r["N"]): r for r in self.results}
         self.Ns = sorted({r["N"] for r in self.results if r["arm"] == "calm"})
         self.seeds = sorted({r["seed"] for r in self.results})

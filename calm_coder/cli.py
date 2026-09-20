@@ -33,7 +33,7 @@ console = Console(stderr=True)
 
 
 async def _pipelined(client: Client, task, store: Store, sched: Scheduler, *, n: int, seed: int,
-                     cb) -> SearchResult:
+                     cb, stop_at_fill: bool = True, adaptive: bool = True) -> SearchResult:
     """Phases 0-2 overlapped: fills are stub-tested as they land and composed as soon as every slot has
     one, so a verified composition can arrive before the budget is spent. Late emissions are inert, so
     cancelling generation after the ∃ exit only costs facts nobody needed."""
@@ -48,7 +48,9 @@ async def _pipelined(client: Client, task, store: Store, sched: Scheduler, *, n:
         landed.set()
 
     gen = asyncio.ensure_future(generate_fills(client, task, store, n=n, seed=seed, on_event=cb,
-                                               on_emission=on_emission, skip_slot=sched.has_stub_pass))
+                                               on_emission=on_emission,
+                                               skip_slot=sched.has_stub_pass if adaptive else None,
+                                               stop_at_fill=stop_at_fill))
     res: SearchResult | None = None
     try:
         while not gen.done():
@@ -77,7 +79,8 @@ async def _pipelined(client: Client, task, store: Store, sched: Scheduler, *, n:
 
 
 async def solve(task, *, n: int, seed: int, live: bool, max_comps: int, events_out: Path | None,
-                sequential: bool = False, width: int = 4, cache: Path | None = None):
+                sequential: bool = False, width: int = 4, cache: Path | None = None,
+                stop_at_fill: bool = True):
     store = Store()
     view = None
     if live:
@@ -96,7 +99,8 @@ async def solve(task, *, n: int, seed: int, live: bool, max_comps: int, events_o
                 await sched.phase1([h for hs in cands.values() for h in hs])
                 res = await sched.search(cands, fan_in, arrival)
             else:
-                res = await _pipelined(client, task, store, sched, n=n, seed=seed, cb=cb)
+                res = await _pipelined(client, task, store, sched, n=n, seed=seed, cb=cb,
+                                       stop_at_fill=stop_at_fill)
     finally:
         if view:
             view.__exit__(None, None, None)
@@ -121,6 +125,8 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--width", type=int, default=4, help="compositions tested at once in the search")
     s.add_argument("--sequential", action="store_true",
                    help="the experiment's path: generate everything, then phase 1, then search")
+    s.add_argument("--no-stop-at-fill", action="store_true",
+                   help="decode every completion to its end instead of stopping at the method")
     s.add_argument("--cache", help="JSONL outcome cache reused across runs (keyed by content hashes)")
     s.add_argument("--live", action="store_true")
     s.add_argument("--out")
@@ -130,7 +136,8 @@ def main(argv: list[str] | None = None) -> int:
     src, res = asyncio.run(solve(task, n=a.N, seed=a.seed, live=a.live, max_comps=a.max_comps,
                                  events_out=Path(a.events) if a.events else None,
                                  sequential=a.sequential, width=a.width,
-                                 cache=Path(a.cache) if a.cache else None))
+                                 cache=Path(a.cache) if a.cache else None,
+                                 stop_at_fill=not a.no_stop_at_fill))
     if src is None:
         console.print(f"[red]no verified composition within budget ({res.unsolvable_reason}, "
                       f"{len(res.trace)} compositions tested)[/red]")

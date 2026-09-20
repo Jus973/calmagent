@@ -112,3 +112,75 @@ null. **Without them there is no cache measurement on this machine at all** — 
 not exist here (see 02:41). If `/v1` passthrough is the only supported upstream, say so and I will
 measure TTFT instead, which is a noisier proxy for the same thing. Everything else in the contract
 record is fine as written and I will emit it byte-compatibly from my fallback proxy.
+
+### 03:12 STATUS — agent loop is up, and the probe numbers kill two of the four levers
+`bench_agent/` on `main`: `make_tasks.py` (10 ClassEval tasks as standalone repos, every reference
+solution verified to pass — `verify_tasks.py`), `trace_proxy.py` (DV's is not on `main` yet),
+`run_agent.py`, `_mini_driver.py`, `ab.py`, `probe_headroom.py`.
+
+**Agent: mini-swe-agent, driven through its Python API, not its CLI.** Two things had to be fixed
+and both are worth knowing:
+1. The CLI allocates a terminal UI at import and dies under a pipe (`OSError: [Errno 22]` out of
+   `loop.add_reader`). Driving `DefaultAgent` directly also lets the 8-minute cap kill a wedged
+   agent from outside.
+2. Its default config drives the model with **OpenAI tool calls**, which qwen2.5-coder:7b does not
+   emit: three replies in a row came back "No tool calls found" and the agent exited
+   `RepeatedFormatError` having touched nothing. `mini_textbased.yaml` asks for a fenced bash
+   block instead and the 7B handles that. Anyone else benchmarking a small local model through
+   mini-swe-agent will hit this.
+3. The 7B then wedged on `nano` and burned the remaining 7 minutes of its cap inside a full-screen
+   editor. The task text now says the shell has no terminal (SWE-bench's own config says the same
+   thing). It is in `TASK.md`, so it is identical in both A/B arms.
+   Before: 15 failed. After: 8 failed, 7 passed, agent exits cleanly in 329 s. It is doing real work.
+
+**Headroom on 42 real requests (`bench_agent/probe_headroom.py`, two ClassEval_7 sessions).** The
+full 10-task probe is running now; these are the numbers the T+1:00 decision can already use.
+
+| Lever | Headroom | Kill number |
+|---|---|---|
+| I-2 prefix-lint | **0.0 s** — churn tokens: 0 | **HIT** |
+| I-3 memo | **0.0 s** — 0 duplicate requests of 42 | **HIT** |
+| I-4 dedup | **102.3 s** — 68,659 duplicate bytes after the divergence point | not hit |
+| I-5 `calm-run` | 2 reruns of 5 test commands | not hit, but see below |
+
+**I-2 is dead on this agent and I want to be precise about why, because it is a good result, not a
+disappointing one.** All 40 non-first requests diverge with cause `appended_only`: mini-swe-agent
+only ever appends to its transcript, never rewrites it, never stamps it, never reorders it. There
+is no churn to lint. Its achievable prefix share is 91.6% and the remaining 8.4% is content that
+did not exist before, which no cache could have held. I originally reported that 8.4% as
+"unaligned" — that was wrong and I fixed the metric before quoting it anywhere; new content is not
+waste.
+
+**And the server is actually delivering that prefix.** Measured prefill across the 42 requests is
+283.3 s, against 185.8 s for a perfect cache and 2,072.7 s for no cache at all: **the cache is
+capturing 94.8% of the available saving.** So on a well-behaved agent the prompt cache is already
+doing its job, and a lint would print a clean bill of health. That is worth saying out loud in the
+README next to the 100.9× from the cache probe: the 100.9× is what the cache is *worth*, and 94.8%
+is how much of it this agent already gets. A lever that promises to win it back has nothing to win.
+
+**What the same table shows instead, and I think this is the actual finding:** cost per *new*
+token climbs monotonically with context length — 3.99 ms at a 1k prompt, 9.54 at 8k, 14.61 at 13k,
+**17.40 ms at 17k** — on rows doing identical work (1,046 new tokens, 196 completion tokens). That
+is attention against a growing KV cache, not a cache miss, and no prefix cache can fix it. The
+agent sent **347,775 prompt tokens to get 4,514 completion tokens back, a 77:1 ratio**, and the
+per-turn price of that transcript rises as it grows.
+
+So I-4 is both the largest measured headroom *and* the only lever pointed at the thing that is
+actually expensive. One caveat for whoever builds it: `duplicate_tool_result_bytes` is 0 because
+mini-swe-agent puts command output in a `user` message, not a `tool` message — I-4 must key on
+repeated content, not on `role == "tool"`, or it will no-op on this agent. The 68,659 bytes are
+repeated *observation* outputs: the agent re-running a command and getting the same text back.
+
+**I-5's honest caveat.** The agent does re-run `python -m pytest -q` on an unchanged tree, so the
+mechanism fires. But a ClassEval test module runs in ~20 ms, so caching it saves ~40 ms on this
+bench. `results/cache.md`'s 64–75% was a count of executions avoided, and counts do not convert to
+wall clock on a suite this small. I-5 should ship, and the README should say plainly that this
+bench cannot show its value — a repo whose suite takes 30 s would.
+
+### 03:13 REQ-LC-2 (to CF, by 03:45): the decision input is above, and two contract metrics are not available
+The headline metric in the contract is "prompt tokens actually computed (prompt − cached)". On
+Ollama that quantity does not exist (02:41) and on this agent it would be ~0 anyway (94.8%). I
+suggest the headline metric be **upstream wall clock, decomposed into prefill / decode / re-prefill
+caused by broken prefixes**, which is measurable, is what a user feels, and is what the probe
+already reports. If you want a different framing, say so by 03:45 and I will measure whatever it
+needs; I have the probe trace and the A/B has not started.

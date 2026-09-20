@@ -184,3 +184,46 @@ suggest the headline metric be **upstream wall clock, decomposed into prefill / 
 caused by broken prefixes**, which is measurable, is what a user feels, and is what the probe
 already reports. If you want a different framing, say so by 03:45 and I will measure whatever it
 needs; I have the probe trace and the A/B has not started.
+
+### 03:14 STATUS — dedup replayed on recorded traffic: prompts 38–44% smaller, and what that is *not* worth
+Replaying two recorded sessions through `Tracer.apply_dedup` offline (no model, no server):
+
+| session | requests | messages replaced | prompt bytes | reduction |
+|---|---|---|---|---|
+| `20260920T065649Z_probe` | 25 | 254 | 952,130 → 535,594 | **43.7%** |
+| `20260920T070307Z_probe10_off` | 25 | 161 | 754,776 → 469,449 | **37.8%** |
+
+**The saving is not 620 s of prefill, and I want that on the record before anyone multiplies those
+bytes by the cold rate.** Most of the removed bytes sit inside the shared prefix, where the cache
+already serves them at 0.059 ms/token rather than 5.96. Deleting an already-cached token saves
+almost no prefill. The honest prefill number stays the one in `probe_headroom.py`: 102 s, the
+duplicate bytes that fall *after* the divergence point and so were never cached.
+
+What a 40% shorter context should buy is the superlinear term instead, and that one is measured:
+cost per new token ran 3.99 ms at a 1k prompt to 17.40 ms at 17k on rows doing identical work.
+Every token in the context is attended to by every token being generated, so shortening the
+context should bend that curve down for both prefill and decode. I am deliberately **not** putting
+a number on it from the replay — the replay can only tell me how many bytes go away, not what the
+GPU does about it. The A/B measures it, and if it comes back flat, then dedup is a context-window
+lever and not a speed lever, and that is what the README will say.
+
+Also worth knowing for whoever builds I-4 properly: `messages replaced` counts re-replacements,
+because every turn re-sends the whole transcript and a message once replaced stays replaced. Per
+request it is about 10 messages, not 254. The per-request prompt reduction is the real figure.
+
+### 03:15 STATUS — schedule arithmetic, and the cut I am making
+`ClassEval_10` used its whole 480 s cap (timeout, 16 of 21 tests passing). The agent hits the cap
+on most tasks, so at 480 s a 10-task two-arm interleaved A/B is 160 minutes, which does not fit
+before 06:30 if the probe also runs to 04:25.
+
+Plan: let the probe reach ~5 tasks, stop it there, and spend the time on the A/B instead —
+**10 tasks, both arms, interleaved, cap 300 s**, which is ~100 minutes. Interleaving is worth more
+than the extra three minutes per task: this machine's throughput drifts, and a drift that landed on
+one arm would read as the result. The cap is identical in both arms, so it costs solve rate
+symmetrically. `probe_headroom.py` runs on the A/B's `off` arm just as well as on a standalone
+probe, so nothing downstream needs the probe to be 10 tasks long. Recorded as `CUT` below.
+
+### 03:16 CUT probe10 shortened from 10 tasks to ~5; the A/B cap drops 480 s → 300 s
+Reason: fitting a properly interleaved 10-task A/B before 06:30. What is lost: five tasks of
+standalone trace (the A/B produces equivalent trace), and whatever the agent would have solved
+between 300 s and 480 s — symmetric across arms, and reported as a cap rather than hidden.

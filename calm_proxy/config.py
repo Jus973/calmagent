@@ -5,6 +5,17 @@ from pathlib import Path
 
 KNOWN_MIDDLEWARES = ("trace", "prefix", "dedup", "memo", "affinity")
 
+# Names that are recognised but have no middleware behind them yet. Enabling one used to start the
+# proxy happily and do nothing, which during a demo is indistinguishable from the lever not
+# working -- `--enable dedup` would report `replaced: 0` on every request and look like a null
+# result. Refuse instead, and name the implementation that does have it.
+UNIMPLEMENTED: dict[str, str] = {
+    "dedup": "bench_agent.trace_proxy --dedup",
+    "prefix": "bench_agent/probe_headroom.py and bench_agent/cross_run.py (offline, on a trace)",
+    "memo": "",
+    "affinity": "",
+}
+
 
 @dataclass
 class Config:
@@ -29,5 +40,15 @@ def parse_enabled(value: str | None) -> frozenset[str]:
         raise ValueError(
             f"unknown middleware(s): {','.join(sorted(unknown))}; "
             f"known: {','.join(KNOWN_MIDDLEWARES)}"
+        )
+    missing = sorted(names & set(UNIMPLEMENTED))
+    if missing:
+        hints = "; ".join(
+            f"{n} -> {UNIMPLEMENTED[n]}" if UNIMPLEMENTED[n] else f"{n} -> not built"
+            for n in missing
+        )
+        raise ValueError(
+            f"middleware not implemented in calm_proxy yet: {','.join(missing)}. "
+            f"Enabling it would silently do nothing. Use: {hints}"
         )
     return frozenset(names)

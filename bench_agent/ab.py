@@ -53,10 +53,19 @@ def ollama_version() -> str:
         return "unknown"
 
 
-def start_proxy(trace_dir: pathlib.Path, flags: list[str], port: int) -> subprocess.Popen:
-    """Prefer DV's `calm_proxy` once it is on main; fall back to the bench's own tracer."""
-    if (pathlib.Path(__file__).parents[1] / "calm_proxy").is_dir():
-        cmd = [sys.executable, "-m", "calm_proxy.server", "--port", str(port),
+def start_proxy(trace_dir: pathlib.Path, flags: list[str], port: int,
+                impl: str = "bench") -> subprocess.Popen:
+    """Start the proxy the A/B will run through.
+
+    This used to prefer `calm_proxy` whenever that package existed. It landed implementing
+    `trace` only -- `--enable dedup` is accepted and does nothing -- and its entry point is
+    `python -m calm_proxy`, not `calm_proxy.server`, so the automatic preference both failed to
+    start and would have measured a no-op lever if it had. Every result in `runs/` was produced by
+    `bench_agent.trace_proxy`, so that is the default; `--proxy calm_proxy` selects the other one
+    explicitly, for tracing.
+    """
+    if impl == "calm_proxy":
+        cmd = [sys.executable, "-m", "calm_proxy", "--port", str(port),
                "--trace-dir", str(trace_dir), *flags]
     else:
         cmd = [sys.executable, "-m", "bench_agent.trace_proxy", "--port", str(port),
@@ -92,6 +101,9 @@ def main() -> int:
     ap.add_argument("--out-root", default="runs")
     ap.add_argument("--label", default="ab")
     ap.add_argument("--port", type=int, default=PORT)
+    ap.add_argument("--proxy", default="bench", choices=["bench", "calm_proxy"],
+                    help="which proxy implementation to run through (default: bench, the one "
+                         "that implements the dedup lever)")
     args = ap.parse_args()
 
     manifest = json.loads(pathlib.Path(args.tasks).read_text())
@@ -113,8 +125,7 @@ def main() -> int:
             "proxy_flags": on_flags if arm == "on" else [],
             "git_commit": git_commit(), "ollama_version": ollama_version(),
             "tasks": task_ids, "interleaved": True, "concurrency": 1,
-            "proxy": "calm_proxy" if (pathlib.Path(__file__).parents[1] / "calm_proxy").is_dir()
-                     else "bench_agent.trace_proxy",
+            "proxy": "calm_proxy" if args.proxy == "calm_proxy" else "bench_agent.trace_proxy",
             "started_utc": ts,
         }, indent=2) + "\n")
 
@@ -127,7 +138,7 @@ def main() -> int:
             if task_id in done:
                 print(f"[{i+1}/{len(task_ids)}] {task_id} {arm}: already done, skipping", flush=True)
                 continue
-            proxy = start_proxy(d, on_flags if arm == "on" else [], args.port)
+            proxy = start_proxy(d, on_flags if arm == "on" else [], args.port, args.proxy)
             try:
                 r = run_one(args.agent, task_id, f"http://127.0.0.1:{args.port}/v1",
                             args.model, d, args.cap_s)

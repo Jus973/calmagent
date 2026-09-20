@@ -106,6 +106,13 @@ class Proxy:
                 body = None
         if isinstance(body, dict):
             return await self._handle_completion(request, raw, body)
+        if request.method == "POST" and path.endswith(("/api/chat", "/api/generate")):
+            try:
+                native = json.loads(raw) if raw else None
+            except json.JSONDecodeError:
+                native = None
+            if isinstance(native, dict):
+                return await self._handle_native(request, raw, native)
         return await self._passthrough(request, raw)
 
     async def _passthrough(self, request: web.Request, raw: bytes) -> web.StreamResponse:
@@ -170,6 +177,7 @@ class Proxy:
             "timing_ms": {"submit": 0, "first_token": None, "done": None},
             "memo": {"hit": False, "key": None},
             "dedup": dedup_info,
+            "upstream": tracemw.upstream_timing(None),
             "upstream_status": None,
             "error": None,
         }
@@ -313,6 +321,75 @@ class Proxy:
         await out.write_eof()
         return out
 
+    async def _handle_native(
+        self, request: web.Request, raw: bytes, body: dict[str, Any]
+    ) -> web.StreamResponse:
+        """Ollama's own ``/api/chat``: forwarded byte-for-byte, traced anyway.
+
+        It is the only surface that reports ``prompt_eval_duration``, which is
+        the only cache signal Ollama has (REQ-LC-1). The rewriting levers stay
+        off here — this path exists to measure, not to change.
+        """
+        messages = _messages_of(body)
+        session = tracemw.session_id(request.headers.get("X-Calm-Session"), messages)
+        writer = self.tracer if self.tracer.enabled else None
+        message_recs = tracemw.message_records(messages, writer)
+        record: dict[str, Any] = {
+            "ts": time.time(),
+            "session": session,
+            "seq": self.tracer.next_seq(session),
+            "model": body.get("model"),
+            "stream": bool(body.get("stream", True)),
+            "api": "ollama",
+            "params": tracemw.params_of(body.get("options") or body),
+            "messages": message_recs,
+            "prompt_sha": tracemw.prompt_sha(message_recs),
+            "usage": tracemw.usage_record(None),
+            "timing_ms": {"submit": 0, "first_token": None, "done": None},
+            "memo": {"hit": False, "key": None},
+            "dedup": {"replaced": 0, "bytes_saved": 0},
+            "upstream": tracemw.upstream_timing(None),
+            "upstream_status": None,
+            "error": None,
+        }
+        if self.prefix is not None:
+            record["prefix"] = self.prefix.observe(session, messages)
+
+        started = time.monotonic()
+        try:
+            upstream = await self.client.post(
+                self.upstream_url(request), data=raw, headers=_request_headers(request)
+            )
+        except (aiohttp.ClientError, TimeoutError) as exc:
+            record["error"] = f"{type(exc).__name__}: {exc}"
+            record["timing_ms"]["done"] = _ms(started)
+            self.tracer.append(record)
+            return _gateway_error(exc)
+
+        record["upstream_status"] = upstream.status
+        out = web.StreamResponse(
+            status=upstream.status, headers=_response_headers(upstream.headers)
+        )
+        await out.prepare(request)
+        collected = b""
+        try:
+            async for chunk in upstream.content.iter_any():
+                if record["timing_ms"]["first_token"] is None:
+                    record["timing_ms"]["first_token"] = _ms(started)
+                collected += chunk
+                await out.write(chunk)
+        finally:
+            upstream.release()
+        final = _last_json_object(collected)
+        record["upstream"] = tracemw.upstream_timing(final)
+        record["usage"] = tracemw.native_usage(final)
+        record["timing_ms"]["done"] = _ms(started)
+        if upstream.status >= 400:
+            record["error"] = f"upstream status {upstream.status}"
+        self.tracer.append(record)
+        await out.write_eof()
+        return out
+
     async def _memo_hit(
         self,
         request: web.Request,
@@ -344,6 +421,20 @@ class Proxy:
             await out.write(frame)
         await out.write_eof()
         return out
+
+
+def _last_json_object(data: bytes) -> dict[str, Any] | None:
+    for line in reversed(data.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+    return None
 
 
 def _messages_of(body: dict[str, Any]) -> list[dict[str, Any]]:

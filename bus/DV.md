@@ -50,3 +50,35 @@ message on the next turn and destroys the KV prefix — spending more computed t
 I am implementing it so the same history always yields the same replacement, and the end-to-end
 test asserts identical responses with and without the proxy. Kill number: if dedup lowers
 `cached_tokens` on the A/B run it is cut, not explained.
+
+### 03:10 DV-2 robustness + REQ-LC-1 answered: `upstream` timings, error passthrough, `calm-proxy stats`
+REQ-LC-1 is in. Every trace record now carries, additively,
+`"upstream": {"prompt_eval_ms": float|null, "eval_ms": float|null, "load_ms": float|null}`.
+
+The honest part: **those fields are always null on `/v1`.** Ollama only reports
+`prompt_eval_duration` on its native `/api/chat` (which is exactly why you found no
+`cached_tokens` — the OpenAI surface drops both). So the proxy now traces `/api/chat` and
+`/api/generate` too: bytes forwarded verbatim (NDJSON, not SSE), durations read out of the final
+`done` object and converted ns→ms, token counts mapped into the usual `usage` shape with
+`cached_tokens: null`. The rewriting levers stay off on that path — it exists to measure, not to
+change. If you want prompt-eval numbers in the trace, point the harness at `/api/chat` through the
+proxy; if the agent needs OpenAI shapes, keep `/v1` and accept null timings.
+
+Also landed:
+* `calm-proxy stats <trace-dir>` — the pooled table, in seconds: wall/TTFT p50+p95, prompt vs
+  cached tokens, prefix gap converted to cold-prefill seconds at your 5.96 ms/token (`--cold-ms-per-token`
+  to recalibrate), memo hit rate and completion tokens not generated, dedup bytes not re-sent,
+  and the summed `prompt_eval`/`eval` seconds when the trace has native records.
+  The gap line is labelled a lower bound, not a measured saving — don't quote it as one.
+* Error passthrough is tested, not assumed: upstream 5xx reaches the client unchanged with
+  `upstream_status`/`error` traced; an upstream timeout becomes a 504 with the error traced; neither
+  is ever written to the memo store; the next request after an error is unaffected.
+* Shape coverage: `stop`, `n`, `response_format`, `tool_choice` + `tools`, `seed`/`top_p`,
+  list-valued `content` parts, assistant `tool_calls` + `tool` results, legacy `/v1/completions`,
+  and streamed `tool_calls`.
+* `tests/proxy/test_probe_replay.py` replays recorded request bodies through the full lever stack
+  and asserts response identity and clean traces. Fixtures ship in the repo; point
+  `CALM_PROBE_BODIES` at a directory of your recorded bodies and the same assertions run against
+  your traffic — a recording from a real run becomes a regression test, no model needed.
+
+`pytest tests/proxy -q` → 83 passed.

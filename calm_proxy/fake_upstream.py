@@ -30,6 +30,9 @@ from .middleware.trace import session_id
 
 CHARS_PER_TOKEN = 4
 
+# LC measured 5.96 ms/token of cold prefill on an M4 (bus/LC.md, 02:41).
+COLD_MS_PER_TOKEN = 5.96
+
 
 def _tokens(text: str) -> int:
     return max(1, (len(text) + CHARS_PER_TOKEN - 1) // CHARS_PER_TOKEN)
@@ -195,6 +198,61 @@ class FakeUpstream:
         await response.write_eof()
         return response
 
+    async def api_chat(self, request: web.Request) -> web.StreamResponse:
+        """Ollama's native surface: NDJSON, and durations in nanoseconds.
+
+        It is the only surface that carries a cache signal on Ollama (LC's
+        02:41 measurement), so the proxy has to be able to trace it. Prompt
+        eval is billed here the way the real server bills it: full price for
+        the part of the prompt that is not a prefix of the previous one.
+        """
+        body = await request.json()
+        self.requests.append(body)
+        messages = body.get("messages") or [{"role": "user", "content": body.get("prompt", "")}]
+        prompt = _prompt_text(messages)
+        session = session_id(request.headers.get("X-Calm-Session"), messages)
+        previous = self.last_prompt.get(session, "")
+        cached_tokens = min(
+            _tokens_of_prefix(_common_prefix_len(previous, prompt)), _tokens(prompt)
+        )
+        self.last_prompt[session] = prompt
+        text = self._reply_for(request, body, prompt)
+        model = body.get("model", "fake-model")
+        computed = max(0, _tokens(prompt) - cached_tokens)
+        final = {
+            "model": model,
+            "created_at": "2026-09-20T00:00:00Z",
+            "message": {"role": "assistant", "content": "" if body.get("stream", True) else text},
+            "done": True,
+            "done_reason": "stop",
+            "load_duration": 1_000_000,
+            "prompt_eval_count": _tokens(prompt),
+            "prompt_eval_duration": int(computed * COLD_MS_PER_TOKEN * 1_000_000),
+            "eval_count": _tokens(text),
+            "eval_duration": 2_000_000,
+        }
+        if not body.get("stream", True):
+            return web.json_response(final, status=200)
+
+        response = web.StreamResponse(headers={"Content-Type": "application/x-ndjson"})
+        await response.prepare(request)
+        for token in _tokenize(text):
+            if self.tok_ms:
+                await asyncio.sleep(self.tok_ms / 1000)
+            await response.write(
+                json.dumps(
+                    {
+                        "model": model,
+                        "message": {"role": "assistant", "content": token},
+                        "done": False,
+                    }
+                ).encode("utf-8")
+                + b"\n"
+            )
+        await response.write(json.dumps(final).encode("utf-8") + b"\n")
+        await response.write_eof()
+        return response
+
     async def tags(self, _request: web.Request) -> web.Response:
         return web.json_response({"models": [{"name": "fake-model"}]})
 
@@ -246,6 +304,7 @@ def create_app(tok_ms: int = 0, reply: str | None = None) -> web.Application:
     app["upstream"] = upstream
     app.router.add_post("/v1/chat/completions", upstream.chat_completions)
     app.router.add_post("/v1/completions", upstream.completions)
+    app.router.add_post("/api/chat", upstream.api_chat)
     app.router.add_get("/api/tags", upstream.tags)
     return app
 

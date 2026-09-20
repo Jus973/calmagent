@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 
 from . import lint as lint_cmd
+from . import stats as stats_cmd
 from .__main__ import build_parser, config_from_args
 from .server import run as run_server
 
@@ -11,6 +12,7 @@ USAGE = """calm-proxy <command> [options]
 commands:
   serve   run the proxy (same flags as `python -m calm_proxy --help`)
   lint    per-session prompt-cache report for a trace directory
+  stats   pooled table: what every lever did, in seconds and bytes
 """
 
 
@@ -26,6 +28,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if command == "lint":
         return lint_cmd.main(rest)
+    if command == "stats":
+        return stats_cmd.main(rest)
     print(f"calm-proxy: unknown command {command!r}\n", file=sys.stderr)
     print(USAGE, file=sys.stderr)
     return 2

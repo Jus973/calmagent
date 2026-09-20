@@ -1,0 +1,9 @@
+{
+  "model": "qwen2.5-coder:7b",
+  "temperature": 0.7,
+  "max_tokens": 64,
+  "prompt": "def canonicalize(fn):\n    ",
+  "stop": [
+    "\n\n"
+  ]
+}

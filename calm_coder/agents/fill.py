@@ -108,7 +108,8 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
 
     async def one(slot, idx: int) -> None:
         s_seed = sample_seed(seed, slot.order, idx)
-        stop = (lambda text: truncation_point(text, slot.id, slot_ids)) if stop_at_fill else None
+        stop = (lambda text: truncation_point(text, slot.id, slot_ids, task.class_name)) \
+            if stop_at_fill else None
         (s,) = await client.sample(slot_messages(task, slot.id), n=1, temperature=temperature,
                                    top_p=top_p, max_tokens=max_tokens, seed=s_seed, stop_when=stop)
         e = Emission(task_id=task.task_id, arm=arm, slot=slot.id, seed=seed, sample_idx=idx,

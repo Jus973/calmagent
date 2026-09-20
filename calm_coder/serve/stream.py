@@ -13,10 +13,12 @@ otherwise None, meaning keep decoding.
 from __future__ import annotations
 
 import ast
+import builtins
 import re
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from calm_coder.serve.extract import ExtractError, extract_functions
+from calm_coder.store.normalize import RECEIVERS
 
 _DEF = re.compile(r"^(?P<indent>[ \t]*)(?:async[ \t]+)?def[ \t]+(?P<name>\w+)[ \t]*\(")
 _DECORATOR = re.compile(r"^[ \t]*@")
@@ -36,27 +38,69 @@ def _indent(line: str) -> int:
     return len(line) - len(line.lstrip(" \t"))
 
 
-def _pending_helpers(fn: ast.FunctionDef, defined: Iterable[str], slots: Iterable[str]) -> bool:
-    """True if the method calls a private helper on self/cls that has not been emitted yet."""
-    have, declared = set(defined), set(slots)
+def _bound(fn: ast.FunctionDef) -> set[str]:
+    """Names the function itself binds: parameters, assignment targets, imports, nested defs."""
+    out = {a.arg for n in ast.walk(fn) if isinstance(n, ast.arguments)
+           for a in n.posonlyargs + n.args + n.kwonlyargs + ([n.vararg] if n.vararg else [])
+           + ([n.kwarg] if n.kwarg else [])}
     for node in ast.walk(fn):
-        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            out.add(node.id)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            out.add(node.name)
+        elif isinstance(node, ast.alias):
+            out.add((node.asname or node.name).split(".")[0])
+    return out
+
+
+def _referenced(fn: ast.FunctionDef, recv: set[str], emitted: Mapping[str, ast.FunctionDef]) -> set[str]:
+    """What `fn` calls that a class member could satisfy: `<receiver>.n(...)` and bare `n(...)`.
+
+    Those are the two call forms `emission_to_defs` resolves against emitted helpers. A bare call to
+    something the function binds itself, or to a builtin, is nobody's helper and is ignored.
+    """
+    bound = _bound(fn) | set(dir(builtins))
+    out: set[str] = set()
+    for node in ast.walk(fn):
+        if not isinstance(node, ast.Call):
             continue
-        recv, name = node.func.value, node.func.attr
-        if isinstance(recv, ast.Name) and recv.id in ("self", "cls") \
-                and name.startswith("_") and name not in have and name not in declared:
-            return True
+        f = node.func
+        if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) and f.value.id in recv:
+            out.add(f.attr)
+        elif isinstance(f, ast.Name) and (f.id in emitted or f.id not in bound):
+            out.add(f.id)
+    return out
+
+
+def _pending_helpers(fill: ast.FunctionDef, emitted: Mapping[str, ast.FunctionDef],
+                     slots: Iterable[str], class_name: str) -> bool:
+    """True if anything reachable from the fill calls a method that is neither a declared slot nor emitted.
+
+    The walk follows emitted helpers, so a helper needed only by another helper still holds the cut,
+    and a helper called bare or through the class name counts the same as `self._h()`.
+    """
+    recv = set(RECEIVERS) | ({class_name} if class_name else set())
+    declared, seen, queue = set(slots), set(), [fill]
+    while queue:
+        for name in _referenced(queue.pop(), recv, emitted):
+            if name in emitted:
+                if name not in seen:
+                    seen.add(name)
+                    queue.append(emitted[name])
+            elif name not in declared and not (name.startswith("__") and name.endswith("__")):
+                return True
     return False
 
 
-def truncation_point(text: str, slot: str, slots: Iterable[str] = ()) -> int | None:
+def truncation_point(text: str, slot: str, slots: Iterable[str] = (), class_name: str = "") -> int | None:
     """Index at which `text` may be cut without losing the fill for `slot`, or None to keep decoding.
 
     The method is over once a non-blank line is no more indented than its `def`. That line is only a
-    stop if it does not start another definition the fill might need: a decorator or a `def _helper`
-    at the same indentation means helpers are still arriving, so decoding continues through them. A
-    method that calls a helper it has not emitted yet is never cut either.
+    stop if it does not start another definition the fill might need: a decorator, or a `def` at the
+    same indentation for anything other than a declared slot, means helpers are still arriving, so
+    decoding continues through them. A fill whose helper graph is incomplete is never cut either.
     """
+    declared = set(slots)
     if _THINK_OPEN in text and _THINK_CLOSE not in text:
         return None
     lines = _lines_with_offsets(text)
@@ -75,19 +119,23 @@ def truncation_point(text: str, slot: str, slots: Iterable[str] = ()) -> int | N
             i += 1
             continue
         m = _DEF.match(ln)
-        if m and _indent(ln) == body_indent and m.group("name").startswith("_"):
+        if m and _indent(ln) == body_indent and m.group("name") not in declared:
             i += 1                                                # a helper the fill may call
             continue
-        return _cut(text, pos, slot, slots)
+        stop = _cut(text, pos, slot, declared, class_name)
+        if stop is not None:
+            return stop
+        i += 1          # a boundary we can't take yet: a helper is still missing, keep looking
     return None
 
 
-def _cut(text: str, pos: int, slot: str, slots: Iterable[str]) -> int | None:
+def _cut(text: str, pos: int, slot: str, slots: set[str], class_name: str) -> int | None:
     """Confirm the prefix really extracts into the slot's fill before calling it a stop."""
-    fns = extract_functions(text[:pos], class_name="")
+    fns = extract_functions(text[:pos], class_name=class_name)
     if isinstance(fns, ExtractError):
         return None
     fill = next((f for f in fns if f.name == slot), None)
-    if fill is None or _pending_helpers(fill, {f.name for f in fns}, slots):
+    if fill is None:
         return None
-    return pos
+    emitted = {f.name: f for f in fns if f.name != slot and f.name not in slots}
+    return None if _pending_helpers(fill, emitted, slots, class_name) else pos

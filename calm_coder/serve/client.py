@@ -109,7 +109,8 @@ class Client:
         cut at; cutting ends the request, so the tokens after that index are never decoded.
 
         A server that ignores `stream` and answers with a whole completion is read as one: no TTFT, and
-        no cut, but the sample is the same."""
+        no cut, but the sample is the same. Retries match `_post`: an attempt that fails before it is
+        cut or finished is restarted from empty, so no partial text survives it."""
         body = {"model": self.model, "messages": messages, "temperature": temperature,
                 "max_tokens": max_tokens, "n": 1, "stream": True,
                 "stream_options": {"include_usage": True}}
@@ -117,53 +118,70 @@ class Client:
             body["seed"] = seed
         if top_p is not None:
             body["top_p"] = top_p
-        parts: list[str] = []
-        deltas, ttft, finish, usage, stopped, check = 0, None, None, {}, False, False
-        async with self._sem:
-            t0 = time.monotonic()
-            async with self._http.stream("POST", f"{self.base_url}/chat/completions", json=body) as r:
-                if r.status_code >= 400:
-                    await r.aread()
-                    r.raise_for_status()
-                if "event-stream" not in r.headers.get("content-type", ""):
-                    await r.aread()
-                    return _samples(r.json(), messages, int((time.monotonic() - t0) * 1000), seed)
-                async for line in r.aiter_lines():
-                    if not line.startswith("data:"):
-                        continue
-                    payload = line[5:].strip()
-                    if payload == "[DONE]":
-                        break
-                    chunk = json.loads(payload)
-                    usage = chunk.get("usage") or usage
-                    for c in chunk.get("choices", []):
-                        finish = c.get("finish_reason") or finish
-                        text = (c.get("delta") or {}).get("content") or ""
-                        if not text:
-                            continue
-                        if ttft is None:
-                            ttft = int((time.monotonic() - t0) * 1000)
-                        deltas += 1
-                        parts.append(text)
-                        check = check or "\n" in text
-                    if stop_when is not None and check:
-                        check = False
-                        cut = stop_when("".join(parts))
-                        if cut is not None:
-                            parts = ["".join(parts)[:cut]]
-                            stopped = True
-                            break
-            ms = int((time.monotonic() - t0) * 1000)
-        # A cut request never gets the usage frame, and a streamed one only does if the server sends it.
-        estimated = stopped or "completion_tokens" not in usage
-        return [Sample(
-            text="".join(parts), completion_tokens=deltas if estimated else usage["completion_tokens"],
-            prompt_tokens=usage.get("prompt_tokens", sum(len(m["content"]) for m in messages) // 4),
-            latency_ms=ms, seed=seed,
-            cached_tokens=(usage.get("prompt_tokens_details") or {}).get("cached_tokens"),
-            tokens_estimated=estimated, finish_reason="stopped_early" if stopped else finish,
-            ttft_ms=ttft, stopped_early=stopped,
-        )]
+        delay = 1.0
+        for attempt in range(4):
+            parts: list[str] = []
+            ttft, finish, usage, stopped, check, retry = None, None, {}, False, False, False
+            async with self._sem:
+                t0 = time.monotonic()
+                try:
+                    async with self._http.stream("POST", f"{self.base_url}/chat/completions",
+                                                 json=body) as r:
+                        if r.status_code >= 400:
+                            await r.aread()
+                            if r.status_code not in RETRY_STATUS or attempt == 3:
+                                r.raise_for_status()
+                            retry = True
+                        elif "event-stream" not in r.headers.get("content-type", ""):
+                            await r.aread()
+                            return _samples(r.json(), messages,
+                                            int((time.monotonic() - t0) * 1000), seed)
+                        else:
+                            async for line in r.aiter_lines():
+                                if not line.startswith("data:"):
+                                    continue
+                                payload = line[5:].strip()
+                                if payload == "[DONE]":
+                                    break
+                                chunk = json.loads(payload)
+                                usage = chunk.get("usage") or usage
+                                for c in chunk.get("choices", []):
+                                    finish = c.get("finish_reason") or finish
+                                    text = (c.get("delta") or {}).get("content") or ""
+                                    if not text:
+                                        continue
+                                    if ttft is None:
+                                        ttft = int((time.monotonic() - t0) * 1000)
+                                    parts.append(text)
+                                    check = check or "\n" in text
+                                if stop_when is not None and check:
+                                    check = False
+                                    cut = stop_when("".join(parts))
+                                    if cut is not None:
+                                        parts = ["".join(parts)[:cut]]
+                                        stopped = True
+                                        break
+                except (httpx.TransportError, httpx.TimeoutException):
+                    if attempt == 3:
+                        raise
+                    retry = True
+                ms = int((time.monotonic() - t0) * 1000)
+            if retry:
+                await asyncio.sleep(delay)
+                delay *= 2
+                continue
+            out = "".join(parts)
+            # A cut request never gets the usage frame, and a streamed one only if the server sends it.
+            estimated = stopped or "completion_tokens" not in usage
+            return [Sample(
+                text=out, completion_tokens=len(out) // 4 if estimated else usage["completion_tokens"],
+                prompt_tokens=usage.get("prompt_tokens", sum(len(m["content"]) for m in messages) // 4),
+                latency_ms=ms, seed=seed,
+                cached_tokens=(usage.get("prompt_tokens_details") or {}).get("cached_tokens"),
+                tokens_estimated=estimated, finish_reason="stopped_early" if stopped else finish,
+                ttft_ms=ttft, stopped_early=stopped,
+            )]
+        raise RuntimeError("unreachable")
 
     async def sample(self, messages: list[dict], n: int = 1, temperature: float = 0.8,
                      max_tokens: int = 512, seed: int | None = 0, top_p: float | None = None,

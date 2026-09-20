@@ -1,0 +1,179 @@
+{
+  "summary": {
+    "trace_dir": "runs/20260920T072732Z_ab_off",
+    "mode": "full",
+    "conversations": 10,
+    "total_requests": 149,
+    "pooled_off_wall_s": 2494.7,
+    "pooled_on_wall_s": 1176.4,
+    "pooled_speedup": 2.121,
+    "median_speedup": 1.555,
+    "min_speedup": 0.99,
+    "max_speedup": 3.665,
+    "conversations_with_no_effect": 4,
+    "pooled_prompt_token_reduction": 0.3705,
+    "note": "One arm order per conversation, alternating. Order-independence was checked separately on two conversations and held to within 4%."
+  },
+  "conversations": [
+    {
+      "conversation": 0,
+      "requests": 25,
+      "arm_order": [
+        "off",
+        "on"
+      ],
+      "off_wall_s": 161.48,
+      "on_wall_s": 137.52,
+      "off_prompt_tokens": 169163,
+      "on_prompt_tokens": 133871,
+      "messages_replaced": 172,
+      "speedup": 1.174,
+      "prompt_token_reduction": 0.2086,
+      "deepest_prompt_tokens": 10525
+    },
+    {
+      "conversation": 1,
+      "requests": 25,
+      "arm_order": [
+        "on",
+        "off"
+      ],
+      "off_wall_s": 300.3,
+      "on_wall_s": 121.27,
+      "off_prompt_tokens": 99633,
+      "on_prompt_tokens": 71418,
+      "messages_replaced": 171,
+      "speedup": 2.476,
+      "prompt_token_reduction": 0.2832,
+      "deepest_prompt_tokens": 6936
+    },
+    {
+      "conversation": 2,
+      "requests": 25,
+      "arm_order": [
+        "off",
+        "on"
+      ],
+      "off_wall_s": 468.96,
+      "on_wall_s": 127.95,
+      "off_prompt_tokens": 305232,
+      "on_prompt_tokens": 117984,
+      "messages_replaced": 192,
+      "speedup": 3.665,
+      "prompt_token_reduction": 0.6135,
+      "deepest_prompt_tokens": 27284
+    },
+    {
+      "conversation": 3,
+      "requests": 22,
+      "arm_order": [
+        "on",
+        "off"
+      ],
+      "off_wall_s": 499.63,
+      "on_wall_s": 202.95,
+      "off_prompt_tokens": 285283,
+      "on_prompt_tokens": 177859,
+      "messages_replaced": 192,
+      "speedup": 2.462,
+      "prompt_token_reduction": 0.3766,
+      "deepest_prompt_tokens": 23379
+    },
+    {
+      "conversation": 4,
+      "requests": 17,
+      "arm_order": [
+        "off",
+        "on"
+      ],
+      "off_wall_s": 485.25,
+      "on_wall_s": 250.64,
+      "off_prompt_tokens": 214701,
+      "on_prompt_tokens": 163549,
+      "messages_replaced": 46,
+      "speedup": 1.936,
+      "prompt_token_reduction": 0.2382,
+      "deepest_prompt_tokens": 25549
+    },
+    {
+      "conversation": 5,
+      "requests": 14,
+      "arm_order": [
+        "on",
+        "off"
+      ],
+      "off_wall_s": 415.5,
+      "on_wall_s": 173.28,
+      "off_prompt_tokens": 151169,
+      "on_prompt_tokens": 90189,
+      "messages_replaced": 48,
+      "speedup": 2.398,
+      "prompt_token_reduction": 0.4034,
+      "deepest_prompt_tokens": 20860
+    },
+    {
+      "conversation": 6,
+      "requests": 6,
+      "arm_order": [
+        "off",
+        "on"
+      ],
+      "off_wall_s": 43.76,
+      "on_wall_s": 43.42,
+      "off_prompt_tokens": 9996,
+      "on_prompt_tokens": 9996,
+      "messages_replaced": 0,
+      "speedup": 1.008,
+      "prompt_token_reduction": 0.0,
+      "deepest_prompt_tokens": 2200
+    },
+    {
+      "conversation": 7,
+      "requests": 5,
+      "arm_order": [
+        "on",
+        "off"
+      ],
+      "off_wall_s": 41.17,
+      "on_wall_s": 40.46,
+      "off_prompt_tokens": 14086,
+      "on_prompt_tokens": 14086,
+      "messages_replaced": 0,
+      "speedup": 1.018,
+      "prompt_token_reduction": 0.0,
+      "deepest_prompt_tokens": 4064
+    },
+    {
+      "conversation": 8,
+      "requests": 5,
+      "arm_order": [
+        "off",
+        "on"
+      ],
+      "off_wall_s": 45.49,
+      "on_wall_s": 45.43,
+      "off_prompt_tokens": 12423,
+      "on_prompt_tokens": 12423,
+      "messages_replaced": 0,
+      "speedup": 1.001,
+      "prompt_token_reduction": 0.0,
+      "deepest_prompt_tokens": 3554
+    },
+    {
+      "conversation": 9,
+      "requests": 5,
+      "arm_order": [
+        "on",
+        "off"
+      ],
+      "off_wall_s": 33.17,
+      "on_wall_s": 33.52,
+      "off_prompt_tokens": 7540,
+      "on_prompt_tokens": 7540,
+      "messages_replaced": 0,
+      "speedup": 0.99,
+      "prompt_token_reduction": 0.0,
+      "deepest_prompt_tokens": 1944
+    }
+  ]
+}

@@ -271,3 +271,43 @@ Dedup is not worth much as a *prefill* saving — those bytes were mostly cached
 something because a 40% shorter context makes every remaining token of both kinds cheaper, and that
 coefficient is now measured rather than asserted. Whether it converts to wall clock is exactly what
 the A/B is for, and if it comes back flat I will report it flat.
+
+### 03:40 STATUS — the A/B's wall clock is confounded, and I am saying so now rather than at 07:00
+First interleaved pair, `ClassEval_10`:
+
+| arm | wall | requests | prompt tokens | max prompt | result | exit |
+|---|---|---|---|---|---|---|
+| off | 480.0 s (cap) | 24 | 287,514 | 23,379 | 16/21 pass | still working when killed |
+| on | **127.0 s** | 8 | 41,460 | 7,445 | 16/21 pass | submitted |
+
+A 3.8× wall-clock difference with an identical test outcome is exactly the headline anyone would
+want, and **it is not a measurement of the lever.** Dedup replaced 3 messages and removed 9,105
+bytes in that run — a rounding error against 287k prompt tokens. What actually happened is in the
+`on` trajectory: the agent wrote `solution.py` with a heredoc, got back `returncode 0` and an empty
+output, concluded "the tests are now passing without any failures", and issued
+`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`. It quit early because a 7B misread an empty shell output,
+having never run the tests again.
+
+The mechanism is general and it will affect every task: at temperature 0 the agent is deterministic
+*given its prompt*, so the first deduped message forks the trajectory, and from there the two arms
+are running different agents. Whether a run ends at 127 s or at the 480 s cap is then mostly
+"did it happen to give up", which is a coin flip that dedup perturbs but does not control.
+
+**So the total-wall-clock column of this A/B is not evidence about dedup, and the report will label
+it that way.** What the A/B *can* still answer, and what it is still worth running for:
+- **Solve rate** — the contract's guard. If `on` loses solves, dedup is cut. That is unaffected by
+  the confound; it is the thing the confound threatens.
+- **Per-request quantities** — prompt tokens per request, ms per request, context size per turn.
+  Less confounded, because they normalise out "how many turns did the agent take".
+
+**What I am adding to fix the gap: a deterministic replay bench** (`bench_agent/replay_bench.py`).
+Take a recorded conversation, replay its exact requests through the proxy with dedup off and on,
+and measure server time. No agent, no trajectory, perfectly paired, same prompts in both arms
+except for the lever itself. That is the clean measurement of what dedup costs and saves; the agent
+A/B then answers the separate question of whether the agent still solves as often. Each arm's
+sequence has to be replayed contiguously — interleaving per request would evict both arms' prefixes
+and make both look uniformly cold (`a_after_b` in the cache probe: 27.3 s) — so drift is controlled
+by running the pair in both orders instead.
+
+This is a real weakness in tonight's design and I would rather have it written down at 03:40 with a
+fix in flight than discovered by a judge. The A/B keeps running; nothing is being thrown away.

@@ -341,3 +341,56 @@ been rewritten into a reference to a message number only task 1 ever had: deleti
 of compressing it. Conversations are now separated structurally (a request that does not extend its
 predecessor starts a new one), with four tests. The A/B in flight is unaffected because `ab.py`
 starts a fresh proxy per task, so no result is contaminated — but that was luck, not design.
+
+### 04:12 STATUS — I-2 has headroom after all, across runs rather than within one, and our harness is half the reason
+`runs/20260920T080936Z_cross_run/`, comparing the probe run against the A/B's `off` arm — same
+tasks, same agent, same settings, an hour apart.
+
+| conv | messages | diverges at | reusable prefix | wasted tokens | cause |
+|---|---|---|---|---|---|
+| 0 | 40 | **message 3** | 6.9% | 19,902 | timestamp in tool output |
+| 1 | 10 | 3 | 26.1% | 3,005 | " |
+| 2 | 50 | 3 | 10.4% | 9,429 | " |
+| 3 | 40 | 3 | 4.0% | 27,645 | " |
+| 4 | 18 | 3 | 13.7% | 6,365 | " |
+| 5 | 4 | 3 | 94.1% | 73 | " |
+
+Median reusable prefix across runs: **13.7%**. At 03:12 I reported I-2's within-session headroom as
+0 s and I stand by that — mini-swe-agent only appends, and the server captures 94.8% of what there
+is. This is the other question: a developer running the same agent on the same repo an hour later.
+There, 86% of the prompt is uncacheable, and the ceiling is set forty tokens in.
+
+**The diverging line, in full, is one line of `ls -la` output:**
+
+```
+run A:  drwx------@ 3 justinzhang  staff  96 Sep 20 03:03 ..
+run B:  drwx------@ 3 justinzhang  staff  96 Sep 20 03:27 ..
+```
+
+Every other line of that output is byte-identical. It is the **parent temp directory's mtime**, and
+`run_agent.py` creates that directory fresh for every task so runs cannot contaminate each other.
+**So the trigger is our harness, not the agent and not a real repository**, where `..` would sit
+still. I have written that into the script's docstring and into the JSON's `caveat` field rather
+than leaving it in a bus entry, because the number is going to outlive the entry. Nobody should
+quote the 396 s as a real-world saving, and CF: please do not put it in the README as one.
+
+What it *is* evidence for, exactly: **the mechanism.** One volatile line forty tokens into a
+transcript makes everything behind it uncacheable, because a prefix cache is a prefix cache. A real
+repo churns something else — edited files' mtimes, `git status` branch state, a test runner's
+durations — so the wall arrives later and costs less, but it is the same wall. This is precisely
+what `prefix-lint` is for, and now there is a worked example of it finding a line no human would
+have looked for.
+
+**It also explains the 03:40 confound, and the model is innocent.** I thought temperature-0 runs
+were irreproducible because the server is non-deterministic. It is not: assistant turn 0 is
+byte-identical across the two runs. Turn 1 differs because *its prompt* differs, by those six
+characters. The environment injects the entropy; the model faithfully propagates it. That is worth
+knowing before anyone blames a local server for non-determinism.
+
+### 04:13 REQ-LC-3 (to CF/DV, no deadline — informational)
+`bus/DECISIONS.md` ranked I-2 as "diagnostic only" on the within-session measurement. That ranking
+is still right for what ships tonight (dedup is built, tested and running; a cross-run lint is
+not), but the *reason* in that file is now incomplete. I have not rewritten DECISIONS.md because it
+is CF's file and the decision itself does not change. If CF arrives: the honest line is "I-2 has no
+within-session headroom on a well-behaved agent, and real cross-run headroom whose size we cannot
+yet quote for a real repo."

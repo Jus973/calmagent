@@ -4,6 +4,7 @@ The claim under test is that cutting a completion short costs nothing: the defin
 store is the one the full completion would have produced, and only the discarded tail differs.
 """
 import asyncio
+import json
 from pathlib import Path
 
 import httpx
@@ -24,8 +25,8 @@ SLOTS = ("set", "get", "delete", "keys_with_prefix")
 METHOD = "def get(self, key):\n    return self.data[key]\n"
 
 
-def cut(text: str, slot: str = "get") -> str | None:
-    i = truncation_point(text, slot, SLOTS)
+def cut(text: str, slot: str = "get", class_name: str = "KVStore") -> str | None:
+    i = truncation_point(text, slot, SLOTS, class_name)
     return None if i is None else text[:i]
 
 
@@ -56,6 +57,38 @@ def test_cut_inside_a_class_body_and_after_reasoning():
     assert cut(indented) is not None
     assert cut("<think>the key must be normalized") is None
     assert cut("<think>ok</think>\n" + METHOD + "```") is not None
+
+
+def test_no_cut_until_the_whole_helper_graph_is_emitted():
+    """A helper the fill reaches only through another helper holds the cut just like a direct call."""
+    head = ("```python\ndef get(self, key):\n    return self.data[self._norm(key)]\n"
+            "\ndef _norm(self, key):\n    return self._strip(key).lower()\n")
+    stray = "\ndef set(self, key, value):\n    self.data[key] = value\n"
+    tail = "\ndef _strip(self, key):\n    return key.strip()\n"
+    assert cut(head + "```") is None                      # _strip is still missing
+    assert cut(head + stray) is None                      # ... even past another declared method
+    assert cut(head + stray + tail + "```") == head + stray + tail
+
+
+def test_helper_calls_count_bare_and_through_the_class_name():
+    for call, helper in (("KVStore._norm(key)", "def _norm(key):"), ("_norm(key)", "def _norm(key):")):
+        head = f"```python\ndef get(self, key):\n    return self.data[{call}]\n"
+        assert cut(head + "```") is None
+        whole = head + f"\n{helper}\n    return key.strip()\n"
+        assert cut(whole + "```") == whole
+
+
+def test_a_helper_without_a_leading_underscore_still_holds_the_cut():
+    """`emission_to_defs` calls every emitted non-slot function a helper, underscore or not."""
+    head = "```python\ndef get(self, key):\n    return self.data[self.norm(key)]\n"
+    assert cut(head + "```") is None
+    whole = head + "\ndef norm(self, key):\n    return key.strip()\n"
+    assert cut(whole + "```") == whole
+
+
+def test_fields_and_declared_slots_do_not_hold_the_cut():
+    text = "```python\ndef get(self, key):\n    return self.data.get(self.set(key))\n"
+    assert cut(text + "```") == text
 
 
 def test_no_cut_for_a_different_slot():
@@ -103,6 +136,65 @@ def test_a_server_that_ignores_stream_is_still_read():
     (s,) = asyncio.run(go())
     assert s.text == METHOD and s.completion_tokens == 9
     assert s.ttft_ms is None and not s.stopped_early
+
+
+def _stream_body(text: str) -> bytes:
+    frames = [f'data: {{"choices":[{{"index":0,"delta":{{"content":{json.dumps(c)}}}}}]}}'
+              for c in text.splitlines(keepends=True)]
+    return ("\n\n".join(frames) + "\n\ndata: [DONE]\n\n").encode()
+
+
+def _retrying_client(fail):
+    """A client whose first request fails the way `fail(request)` says and whose second streams METHOD."""
+    calls = []
+
+    def h(req):
+        calls.append(req)
+        if len(calls) == 1:
+            return fail(req)
+        return httpx.Response(200, content=_stream_body(METHOD + TAILS["long"]),
+                              headers={"content-type": "text/event-stream"})
+
+    async def go():
+        async with Client(base_url="http://fake.invalid/v1", model="fake", stream=True,
+                          transport=httpx.MockTransport(h)) as client:
+            return await client.sample([{"role": "user", "content": "Implement `get` now."}], n=1, seed=0,
+                                       stop_when=lambda t: truncation_point(t, "get", SLOTS, "KVStore"))
+    return go, calls
+
+
+def _raise_connect(req):
+    raise httpx.ConnectError("server is restarting", request=req)
+
+
+@pytest.mark.parametrize("fail", [lambda req: httpx.Response(503, text="overloaded"), _raise_connect],
+                         ids=["retryable-status", "transport-error"])
+def test_a_transient_streaming_failure_is_retried_not_fatal(fail):
+    """The latency-first path always streams, so a flaky server must not end the solve."""
+    go, calls = _retrying_client(fail)
+    (s,) = asyncio.run(go())
+    assert len(calls) == 2
+    assert s.stopped_early and s.text.rstrip().endswith("self.data[key]")
+    assert s.text.count("def get") == 1          # nothing survives from the attempt that failed
+
+
+def test_a_streaming_failure_that_never_clears_raises():
+    def h(req):
+        return httpx.Response(503, text="overloaded")
+
+    async def go():
+        async with Client(base_url="http://fake.invalid/v1", model="fake", stream=True,
+                          transport=httpx.MockTransport(h)) as client:
+            return await client.sample([{"role": "user", "content": "hi"}], n=1, seed=0)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        asyncio.run(go())
+
+
+def test_a_cut_sample_estimates_tokens_from_its_text():
+    """An early-stopped stream has no usage frame; SSE chunk counts are not tokens."""
+    s, _ = asyncio.run(_one(stop=True))
+    assert s.tokens_estimated and s.completion_tokens == len(s.text) // 4
 
 
 def test_unstreamed_requests_have_no_ttft():

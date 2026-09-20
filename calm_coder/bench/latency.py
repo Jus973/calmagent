@@ -28,7 +28,7 @@ from pathlib import Path
 
 from calm_coder.agents.fill import generate_fills
 from calm_coder.agents.scheduler import Scheduler
-from calm_coder.bench.experiment import _budget_view
+from calm_coder.bench.experiment import budget_view
 from calm_coder.bench.fake_model import FakeModel, FakeModelConfig
 from calm_coder.bench.latency_samples import SAMPLES, TAILS
 from calm_coder.cli import _pipelined
@@ -84,7 +84,7 @@ async def run_mode(task, mode: Mode, *, n: int, seed: int, cfg: FakeModelConfig,
                       transport=model.transport) as client:
         if mode.sequential:
             emissions = await generate_fills(client, task, store, n=n, seed=seed)
-            _, cands, fan_in, arrival = _budget_view(emissions, n)
+            _, cands, fan_in, arrival = budget_view(emissions, n)
             await sched.phase1([h for hs in cands.values() for h in hs])
             res = await sched.search(cands, fan_in, arrival)
         else:

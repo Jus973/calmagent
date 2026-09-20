@@ -59,10 +59,8 @@ def start_proxy(trace_dir: pathlib.Path, flags: list[str], port: int) -> subproc
         cmd = [sys.executable, "-m", "calm_proxy.server", "--port", str(port),
                "--trace-dir", str(trace_dir), *flags]
     else:
-        if flags:
-            print(f"WARNING: calm_proxy is not on main; ignoring proxy flags {flags}", flush=True)
         cmd = [sys.executable, "-m", "bench_agent.trace_proxy", "--port", str(port),
-               "--trace-dir", str(trace_dir)]
+               "--trace-dir", str(trace_dir), *flags]
     log = (trace_dir / "proxy.log").open("w")
     p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT)
     for _ in range(50):

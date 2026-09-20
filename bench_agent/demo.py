@@ -19,8 +19,11 @@ import pathlib
 RUNS = pathlib.Path("runs")
 
 
-def newest(pattern: str) -> pathlib.Path | None:
+def newest(pattern: str, must_contain: str = "") -> pathlib.Path | None:
+    """Newest matching run directory, skipping any still being written."""
     hits = sorted(glob.glob(str(RUNS / pattern)))
+    if must_contain:
+        hits = [h for h in hits if (pathlib.Path(h) / must_contain).exists()]
     return pathlib.Path(hits[-1]) if hits else None
 
 
@@ -29,7 +32,7 @@ def rule(title: str) -> None:
 
 
 def section_cache(verify: bool) -> None:
-    d = newest("*_cache_probe")
+    d = newest("*_cache_probe", "summary.json")
     rule("1. What a prompt-cache hit is worth on this machine")
     if not d:
         print("  no cache probe recorded; run `python -m bench_agent.probe_cache --out ...`")
@@ -54,7 +57,7 @@ def section_cache(verify: bool) -> None:
 
 
 def section_headroom() -> None:
-    d = newest("*_headroom")
+    d = newest("*_headroom", "headroom.json")
     rule("2. What the levers are worth on a real agent loop")
     if not d:
         print("  no headroom measurement recorded; run")
@@ -77,7 +80,7 @@ def section_headroom() -> None:
 
 
 def section_context(verify: bool) -> None:
-    d = newest("*_context_cost")
+    d = newest("*_context_cost", "fit.json")
     rule("3. Why the agent still gets slower: context is not free")
     if not d:
         print("  no context-cost fit recorded")
@@ -103,7 +106,7 @@ def section_context(verify: bool) -> None:
 
 
 def section_cross_run() -> None:
-    d = newest("*_cross_run")
+    d = newest("*_cross_run", "cross_run.json")
     rule("4. Two runs of the same task share only 13.7% of their prompt, because of one line")
     if not d:
         print("  no cross-run comparison recorded")
@@ -125,9 +128,34 @@ def section_cross_run() -> None:
     print("  deterministic, the environment is not.")
 
 
+def section_replay() -> None:
+    # Skip directories still being written: a run in flight must not break the demo.
+    dirs = [d for d in sorted(glob.glob(str(RUNS / "*_replay_*")))
+            if (pathlib.Path(d) / "summary.json").exists()]
+    rule("5. The lever itself, with the agent taken out of the loop")
+    if not dirs:
+        print("  no completed replay bench recorded")
+        return
+    print("  Same recorded requests, one variable changed, both arm orders, no agent:")
+    for d in dirs:
+        s_ = json.loads((pathlib.Path(d) / "summary.json").read_text())
+        off = s_["arms"]["off_on::off"]
+        on = s_["arms"]["off_on::on"]
+        print(f"    {pathlib.Path(d).name}  ({s_['requests']} requests, mode={s_['mode']})")
+        print(f"      dedup off  {off['total_wall_s']:>8.1f} s   {off['prompt_tokens']:>9,} prompt tokens")
+        print(f"      dedup on   {on['total_wall_s']:>8.1f} s   {on['prompt_tokens']:>9,} prompt tokens"
+              f"   ({s_['prompt_token_reduction_off_on']:.1%} fewer)")
+        print(f"      => \033[1m{s_['verdict']}\033[0m"
+              f"   (orders agree: {s_['orders_agree']})")
+    print("  This is the longest recorded conversation, which is where dedup has the most to")
+    print("  remove. A short successful run has almost nothing repeated yet and gains almost")
+    print("  nothing -- the lever is aimed at the runs that were wasting the time.")
+
+
 def section_ab() -> None:
-    off, on = newest("*_ab_off"), newest("*_ab_on")
-    rule("5. The A/B: does the lever survive contact with a real agent?")
+    off = newest("*_ab_off", "results.jsonl")
+    on = newest("*_ab_on", "results.jsonl")
+    rule("6. The A/B: does the lever survive contact with a real agent?")
     if not (off and on):
         print("  no A/B recorded yet")
         return
@@ -152,6 +180,7 @@ def main() -> int:
     section_headroom()
     section_context(args.verify)
     section_cross_run()
+    section_replay()
     section_ab()
     print("\nEvery figure above comes from a directory under runs/ named beside it.")
     return 0

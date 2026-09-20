@@ -1,7 +1,8 @@
 """OpenAI-compatible chat client (§3.6). Configured by env only:
 
 CALM_BASE_URL (default http://localhost:11434/v1), CALM_MODEL, CALM_API_KEY,
-CALM_MAX_INFLIGHT (default 32), CALM_NO_N=1 (server ignores `n`: send n requests instead).
+CALM_MAX_INFLIGHT (default 32), CALM_NO_N=1 (server ignores `n`: send n requests instead),
+CALM_TIMEOUT_S (default 600) for the HTTP read timeout.
 """
 from __future__ import annotations
 
@@ -39,7 +40,8 @@ def _env_flag(name: str) -> bool:
 class Client:
     def __init__(self, base_url: str | None = None, model: str | None = None, *,
                  api_key: str | None = None, max_inflight: int | None = None,
-                 no_n: bool | None = None, timeout_s: float = 600, transport=None):
+                 no_n: bool | None = None, timeout_s: float | None = None, transport=None):
+        timeout_s = timeout_s if timeout_s is not None else float(os.environ.get("CALM_TIMEOUT_S", "600"))
         self.base_url = (base_url or os.environ.get("CALM_BASE_URL", "http://localhost:11434/v1")).rstrip("/")
         self.model = model or os.environ.get("CALM_MODEL", "qwen2.5-coder:7b")
         self.no_n = _env_flag("CALM_NO_N") if no_n is None else no_n

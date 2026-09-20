@@ -2,10 +2,40 @@
 
 ## USER: read this first
 
-- *(filled in before 08:15 — headline number, anything blocked, the one command to see the demo)*
-- *(nothing is blocked as of 03:10; no permission prompt has been hit)*
-- *(Ollama was restarted with `OLLAMA_NUM_PARALLEL=1 OLLAMA_CONTEXT_LENGTH=32768`; your old
-  4-slot/16k settings are not restored automatically)*
+1. **There is a headline number, and it is real.** Content-addressed dedup cut the prompt by
+   **61%** and server time by **3.6x** (458 s → 127 s) on the longest recorded agent conversation,
+   with **solve rate unchanged** (4/10 both arms, McNemar p = 1.000, 10 paired tasks). On a *short*
+   conversation it does nothing at all (1.00x). Both are in `README.md`; neither is quotable
+   without the other. Run directories: `runs/20260920T085217Z_replay_full/`,
+   `runs/20260920T072732Z_ab_off|on/`.
+
+2. **Nothing is blocked and no permission prompt was ever hit.** One thing to know: I restarted
+   Ollama with `OLLAMA_NUM_PARALLEL=1 OLLAMA_CONTEXT_LENGTH=32768` and **it is still running that
+   way**. Your previous `4 / 16384` gave 4,096 tokens *per sequence*, which an agent prompt
+   silently exceeds. `caffeinate -dims` is also still running — kill it when you want sleep back.
+   **DV and CF never appeared**: no `calm_proxy/`, no `analysis/proxy_report.py`, no `bus/DV.md`
+   or `bus/CF.md`. Everything on `main` tonight is from this machine, which is why the proxy is
+   `bench_agent/trace_proxy.py` rather than the package the plan assumed.
+
+3. **The one command:**
+
+   ```bash
+   python -m bench_agent.demo
+   ```
+
+   Prints every number from the run directory that holds it. No model server, nothing to fail.
+
+### What I would check first if I were you
+
+- `README.md` is the submission text. The research README is kept underneath, failures included.
+- The A/B's *total wall clock* is confounded and the report says so in the table itself: at
+  temperature 0 the first rewritten message forks the agent's trajectory, so the arms stop being
+  the same agent. That is why `bench_agent/replay_bench.py` exists and why the headline comes from
+  it rather than from the A/B.
+- The cross-run finding (`runs/20260920T080936Z_cross_run/`) has a caveat you should not let anyone
+  strip: two runs of the same task share only 13.7% of their prompt, but the line that breaks it is
+  the parent temp directory's mtime, which *our own harness* creates. The mechanism is real; the
+  trigger is ours.
 
 ## Research phase result
 
@@ -34,6 +64,18 @@ between any agent and a local model server. Instructions and the shared contract
   **94.8%** of the available cache saving); I-4 dedup **102 s**, the only survivor.
 - **03:08** Dedup implemented behind `--dedup` with a stability test that caught a real prefix-
   breaking bug before it ever ran.
+- **03:40** The A/B's wall clock turns out to be **confounded**: at temperature 0 the first
+  rewritten message forks the agent's trajectory, so the arms become different agents.
+  `replay_bench.py` written to measure the lever with the agent removed.
+- **04:12** `runs/20260920T080936Z_cross_run/`: two runs of the same task share only **13.7%** of
+  their prompt, every one diverging at message 3 on a timestamp in `ls -la` output. The trigger on
+  this bench is our own temp directory, which is recorded in the script and the JSON, not just here.
+  It also explains the fork: the model is deterministic, the environment is not.
+- **04:38** A/B complete, 10 tasks interleaved: **4/10 solved in both arms**, discordant 1–1,
+  McNemar p = 1.000. Dedup removed 1.6 MB from prompts across 477 replacements.
+- **05:15** Replay bench, agent removed, both arm orders: **3.61–3.69x** on the longest
+  conversation with full decode, **6.95–7.18x** on prompt processing alone, **1.00–1.02x** on a
+  short conversation.
 
 ## How to reproduce tonight's numbers
 

@@ -14,6 +14,7 @@ import aiohttp
 from aiohttp import web
 
 from .config import Config
+from .middleware import dedup as dedupmw
 from .middleware import trace as tracemw
 from .middleware.prefix import PrefixTracker
 from .middleware.trace import TraceWriter
@@ -127,6 +128,14 @@ class Proxy:
         client_stream = bool(body.get("stream"))
 
         upstream_body = dict(body)
+        dedup_info = {"replaced": 0, "bytes_saved": 0}
+        if self.config.has("dedup") and messages:
+            messages, dedup_info = dedupmw.apply(
+                messages, min_bytes=self.config.dedup_min_bytes
+            )
+            if dedup_info["replaced"]:
+                upstream_body["messages"] = messages
+
         strip_usage_chunk = False
         if client_stream:
             options = body.get("stream_options")
@@ -153,7 +162,7 @@ class Proxy:
             "usage": tracemw.usage_record(None),
             "timing_ms": {"submit": 0, "first_token": None, "done": None},
             "memo": {"hit": False, "key": None},
-            "dedup": {"replaced": 0, "bytes_saved": 0},
+            "dedup": dedup_info,
             "upstream_status": None,
             "error": None,
         }

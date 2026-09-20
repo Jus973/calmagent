@@ -107,6 +107,41 @@ def params_of(body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+NS_PER_MS = 1_000_000.0
+
+
+def upstream_timing(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Ollama-native durations (nanoseconds) as milliseconds; null when absent.
+
+    REQ-LC-1: on that server ``cached_tokens`` does not exist, so prompt-eval
+    wall clock is the only cache signal. The ``/v1`` surface never carries
+    these fields, so they stay null there.
+    """
+    payload = payload or {}
+
+    def ms(key: str) -> float | None:
+        value = payload.get(key)
+        if isinstance(value, (int, float)):
+            return round(value / NS_PER_MS, 3)
+        return None
+
+    return {
+        "prompt_eval_ms": ms("prompt_eval_duration"),
+        "eval_ms": ms("eval_duration"),
+        "load_ms": ms("load_duration"),
+    }
+
+
+def native_usage(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Ollama-native token counts in the OpenAI shape."""
+    payload = payload or {}
+    return {
+        "prompt_tokens": payload.get("prompt_eval_count"),
+        "cached_tokens": None,
+        "completion_tokens": payload.get("eval_count"),
+    }
+
+
 def usage_record(usage: dict[str, Any] | None) -> dict[str, Any]:
     usage = usage or {}
     details = usage.get("prompt_tokens_details") or {}

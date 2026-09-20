@@ -1,0 +1,56 @@
+{
+  "model": "qwen2.5-coder:7b",
+  "temperature": 0,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are CALM Coder. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. "
+    },
+    {
+      "role": "user",
+      "content": "Implement Slot.canonicalize and run the tests."
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "type": "function",
+          "function": {
+            "name": "bash",
+            "arguments": "{\"command\": \"pytest -q\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_1",
+      "content": "OBSERVATION:\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\n"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_2",
+          "type": "function",
+          "function": {
+            "name": "bash",
+            "arguments": "{\"command\": \"pytest -q\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_2",
+      "content": "OBSERVATION:\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\ntests/test_store.py::test_add_def PASSED\n"
+    }
+  ]
+}

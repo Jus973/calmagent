@@ -1,0 +1,32 @@
+{
+  "model": "qwen2.5-coder:7b",
+  "temperature": 0,
+  "max_tokens": 1024,
+  "stream": false,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are CALM Coder. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. Follow the tool protocol precisely. "
+    },
+    {
+      "role": "user",
+      "content": "Implement Slot.canonicalize and run the tests."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "bash",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

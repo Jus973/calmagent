@@ -5,9 +5,11 @@
 > that tells you, and the one lever that turned out to be worth pulling once it had.
 
 **Headline, measured:** on the longest recorded agent conversation, content-addressed dedup cut the
-prompt by **61%** and prompt processing by **7x** (313.6 s → 45.1 s), with the **solve rate
-unchanged** across a 10-task paired A/B (4/10 both arms, McNemar p = 1.000). Three of the four
-candidate levers were killed by their own measurements before being built.
+prompt by **61%** and server time by **3.6x** (458 s → 127 s), with the **solve rate
+unchanged** across a 10-task paired A/B (4/10 both arms, McNemar p = 1.000). On a *short*
+conversation it does nothing at all (1.00x) — both numbers are below, because one without the
+other would be a sales pitch. Three of the four candidate levers were killed by their own
+measurements before being built.
 
 Drop it between any agent and Ollama / vLLM / llama.cpp. It records every request, shows where the
 prompt cache is being missed and why, and shortens the prompts that are safe to shorten — without
@@ -97,25 +99,27 @@ It is worth something because a shorter context makes every remaining token of b
 The A/B below cannot size dedup, for a reason worth stating: at temperature 0 the agent is
 deterministic *given its prompt*, so the first message the lever rewrites forks the trajectory and
 the two arms become different agents taking different numbers of turns. A run that ends at 127 s
-instead of the 480 s cap usually means the agent gave up early.
+instead of the 480 s cap usually means the agent gave up early, not that tokens got cheaper.
 
 So `bench_agent/replay_bench.py` removes the agent. It replays the requests a recorded run really
 sent, once with the lever off and once with it on, and changes nothing else. Both orders are run,
 because a machine that drifts should say so rather than be mistaken for a lever.
-`runs/20260920T083923Z_replay_prefill/`, the longest recorded conversation (25 requests):
 
-| | prompt tokens | prompt processing (order off→on) | (order on→off) |
-|---|---|---|---|
-| dedup off | 305,232 | 313.6 s | 327.2 s |
-| dedup on | 117,984 | **45.1 s** | **45.6 s** |
+| recorded conversation | requests | prompt tokens | server time, dedup off → on | speedup |
+|---|---|---|---|---|
+| **longest**, full decode | 25 | 305,232 → 117,984 (61% fewer) | 457.6 s → **126.8 s** | **3.61–3.69x** |
+| the same, prompt processing only | 25 | 305,232 → 117,984 | 313.6 s → **45.1 s** | 6.95–7.18x |
+| **a short one**, full decode | 6 | 9,996 → 9,996 (0% fewer) | 38.5 s → 38.5 s | 1.00–1.02x |
 
-**61.4% fewer prompt tokens, 6.95–7.18x faster prompt processing.** The two orders agree to within 4%,
-so this is the lever and not the machine.
+Directories: `runs/20260920T085217Z_replay_full/`, `runs/20260920T083923Z_replay_prefill/`,
+`runs/20260920T091237Z_replay_full_short/`. In every case the two
+orders agree to within 4%, so these are the lever and not the machine.
 
-This is the *longest* conversation in the run, which is where dedup has the most to remove. A short
-successful run has almost nothing repeated yet and gains almost nothing. That is the honest shape
-of the lever: it does nothing when you do not need it, and it is aimed squarely at the runs that
-were burning the time.
+**Read the last row as carefully as the first.** On a short successful conversation dedup removes
+nothing and saves nothing — there is not yet anything repeated to remove. That is the shape of this
+lever and it is not a defect: it does nothing when you do not need it, and it is aimed squarely at
+the long looping runs that were burning the time. Any single headline number for it is a statement
+about which conversation you picked, which is why all three are here.
 
 ### Does it survive contact with a real agent?
 

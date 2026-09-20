@@ -1,0 +1,258 @@
+{
+  "trace_dir": "runs/20260920T072732Z_ab_off",
+  "conversation": 6,
+  "mode": "full",
+  "requests": 6,
+  "arms": {
+    "off_on::off": {
+      "dedup": false,
+      "mode": "full",
+      "requests": 6,
+      "total_wall_s": 38.45,
+      "prompt_tokens": 9996,
+      "completion_tokens": 661,
+      "median_wall_ms": 3327.2,
+      "messages_replaced": 0,
+      "bytes_removed": 0,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2692.2,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 3962.3,
+          "prompt_tokens": 1247,
+          "completion_tokens": 52,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 14470.1,
+          "prompt_tokens": 1589,
+          "completion_tokens": 246,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 12548.2,
+          "prompt_tokens": 1859,
+          "completion_tokens": 234,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 2257.8,
+          "prompt_tokens": 2117,
+          "completion_tokens": 39,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 2517.0,
+          "prompt_tokens": 2200,
+          "completion_tokens": 41,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        }
+      ]
+    },
+    "off_on::on": {
+      "dedup": true,
+      "mode": "full",
+      "requests": 6,
+      "total_wall_s": 38.45,
+      "prompt_tokens": 9996,
+      "completion_tokens": 661,
+      "median_wall_ms": 3277.7,
+      "messages_replaced": 0,
+      "bytes_removed": 0,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2536.7,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 3944.3,
+          "prompt_tokens": 1247,
+          "completion_tokens": 52,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 14610.3,
+          "prompt_tokens": 1589,
+          "completion_tokens": 246,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 12478.7,
+          "prompt_tokens": 1859,
+          "completion_tokens": 234,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 2265.2,
+          "prompt_tokens": 2117,
+          "completion_tokens": 39,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 2611.1,
+          "prompt_tokens": 2200,
+          "completion_tokens": 41,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        }
+      ]
+    },
+    "on_off::on": {
+      "dedup": true,
+      "mode": "full",
+      "requests": 6,
+      "total_wall_s": 38.66,
+      "prompt_tokens": 9996,
+      "completion_tokens": 661,
+      "median_wall_ms": 3297.3,
+      "messages_replaced": 0,
+      "bytes_removed": 0,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2586.7,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 4008.0,
+          "prompt_tokens": 1247,
+          "completion_tokens": 52,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 14642.7,
+          "prompt_tokens": 1589,
+          "completion_tokens": 246,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 12563.0,
+          "prompt_tokens": 1859,
+          "completion_tokens": 234,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 2292.4,
+          "prompt_tokens": 2117,
+          "completion_tokens": 39,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 2566.6,
+          "prompt_tokens": 2200,
+          "completion_tokens": 41,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        }
+      ]
+    },
+    "on_off::off": {
+      "dedup": false,
+      "mode": "full",
+      "requests": 6,
+      "total_wall_s": 39.61,
+      "prompt_tokens": 9996,
+      "completion_tokens": 661,
+      "median_wall_ms": 3553.3,
+      "messages_replaced": 0,
+      "bytes_removed": 0,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2656.4,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 4450.2,
+          "prompt_tokens": 1247,
+          "completion_tokens": 52,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 14992.7,
+          "prompt_tokens": 1589,
+          "completion_tokens": 246,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 12634.8,
+          "prompt_tokens": 1859,
+          "completion_tokens": 234,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 2287.9,
+          "prompt_tokens": 2117,
+          "completion_tokens": 39,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 2583.7,
+          "prompt_tokens": 2200,
+          "completion_tokens": 41,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        }
+      ]
+    }
+  },
+  "speedup_off_on": 1.0,
+  "prompt_token_reduction_off_on": 0.0,
+  "speedup_on_off": 1.025,
+  "prompt_token_reduction_on_off": 0.0,
+  "orders_agree": true,
+  "verdict": "dedup speedup 1.00-1.02x on full"
+}

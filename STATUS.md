@@ -1,5 +1,53 @@
 # Status
 
+## USER: read this first
+
+- *(filled in before 08:15 — headline number, anything blocked, the one command to see the demo)*
+- *(nothing is blocked as of 03:10; no permission prompt has been hit)*
+- *(Ollama was restarted with `OLLAMA_NUM_PARALLEL=1 OLLAMA_CONTEXT_LENGTH=32768`; your old
+  4-slot/16k settings are not restored automatically)*
+
+## Research phase result
+
+The bet that CALM-style coordination-free generation raises solve rate is a **null**: on the
+39-task 1.5b run v2 − C = +0.026 with McNemar p = 1.000, and on the 7B run H2/H2b/H3/H6 all fail.
+Details and the pre-registration table with outcomes: `results/final.md`,
+`runs/20260919T163449Z_main/summary.md`.
+
+## Pivot
+
+Overnight of Sun 2026-09-20 the work moved to **CALM Proxy**: a content-addressed proxy that sits
+between any agent and a local model server. Instructions and the shared contract are in
+`docs/overnight/`; the audit trail is `bus/` and `bus/DECISIONS.md`.
+
+## Running log (overnight)
+
+- **02:35** Ollama restarted single-slot at 32k context. The previous `NUM_PARALLEL=4` /
+  `CONTEXT_LENGTH=16384` gives 4,096 tokens *per sequence*, which an agent prompt exceeds.
+- **02:41** `runs/20260920T063803Z_cache_probe/`: a prefix-cache hit is worth **100.9×** on prompt
+  evaluation (25,711 ms → 253 ms on a 4,317-token prompt). Ollama reports **no** `cached_tokens`,
+  and `prompt_eval_count` does not shrink on a hit, so wall clock is the only instrument.
+- **03:05** First real agent loop traced end to end: mini-swe-agent → `bench_agent/trace_proxy.py`
+  → Ollama, on `bench_agent/tasks/ClassEval_7`.
+- **03:12** Lever headroom measured on 42 real requests: I-2 prefix-lint **0 s** and I-3 memo
+  **0 s** (both kill numbers hit — this agent is already well behaved and the server is capturing
+  **94.8%** of the available cache saving); I-4 dedup **102 s**, the only survivor.
+- **03:08** Dedup implemented behind `--dedup` with a stability test that caught a real prefix-
+  breaking bug before it ever ran.
+
+## How to reproduce tonight's numbers
+
+```bash
+python -m bench_agent.probe_cache --out runs/$(date -u +%Y%m%dT%H%M%SZ)_cache_probe
+python -m bench_agent.make_tasks && python -m bench_agent.verify_tasks
+python -m bench_agent.ab --arms off,on --agent mini-swe --label ab
+python -m bench_agent.probe_headroom runs/<a trace dir>
+```
+
+---
+
+# Archive (research phase)
+
 ## Done
 
 * v1 end to end: grow-only store, canonicalization, materialization, sandboxed verifier,

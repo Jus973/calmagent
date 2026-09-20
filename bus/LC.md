@@ -311,3 +311,33 @@ by running the pair in both orders instead.
 
 This is a real weakness in tonight's design and I would rather have it written down at 03:40 with a
 fix in flight than discovered by a judge. The A/B keeps running; nothing is being thrown away.
+
+### 03:47 STATUS — dedup fires on 11% of A/B requests, not the 40% the replay suggested, and I know why
+| arm | requests | dedup fired on | bytes removed | share of prompt bytes |
+|---|---|---|---|---|
+| off | 56 | 0 | 0 | — |
+| on | 18 | 2 (11%) | 9,105 | **3.5%** |
+
+Against 38–44% in the offline replay. The two are not in conflict; they are measuring different
+conversations. Dedup can only remove a message the agent has already sent once, so its yield is a
+function of how long and how repetitive the conversation is. The offline replay ran on 25-request
+conversations where the agent had looped and re-issued the same commands; the A/B's `on` arm keeps
+exiting after 6–8 requests, so there is barely anything to repeat yet.
+
+**That is worth stating as the lever's actual shape rather than as a disappointment: dedup does
+nothing on a short successful run and removes ~40% of the prompt on a long looping one — which is
+the run that was wasting the time in the first place.** It is a lever against the pathological
+case, and the honest way to sell it is "it does nothing when you don't need it".
+
+It also means the A/B is the wrong instrument for sizing it, on top of the trajectory confound at
+03:40: the arm that would benefit most is the arm that keeps not getting long enough to benefit.
+`replay_bench.py` runs on a recorded 20-request conversation whose final prompt is 105,619
+characters, which is where the effect lives. Running it as soon as the A/B releases the GPU.
+
+Also fixed since 03:40, and it would have bitten a real deployment: the dedup memory was keyed by
+session id, and a session id is the hash of the first system message — which mini-swe-agent sends
+identically for every task. Under a long-lived proxy, task 2's first sight of a string would have
+been rewritten into a reference to a message number only task 1 ever had: deleting content instead
+of compressing it. Conversations are now separated structurally (a request that does not extend its
+predecessor starts a new one), with four tests. The A/B in flight is unaffected because `ab.py`
+starts a fresh proxy per task, so no result is contaminated — but that was luck, not design.

@@ -67,6 +67,7 @@ class Scheduler:
         self._class_results: dict[str, tuple[str, str]] = {}   # class key -> (result, detail)
         self._stub_inflight: dict[str, asyncio.Future] = {}
         self._test_src_hash = sha256(task.test_src)
+        self.executions = 0                    # sandbox subprocesses started (reuse is visible as an absence)
 
     def _emit(self, ev: dict) -> None:
         if self.on_event:
@@ -103,6 +104,7 @@ class Scheduler:
             res = {t: {"result": hit[0], "detail": hit[1], "wall_ms": 0}}
         else:
             src = materialize(self.task, self.store, comp)
+            self.executions += 1
             res = await run_tests_async(src, self.task.test_src, [t], per_class_timeout_s=self.per_class,
                                         wall_timeout_s=self.wall)
             key = self.class_key(t, comp)
@@ -197,10 +199,12 @@ class Scheduler:
         class to pass, so once one doesn't, the rest only add facts nobody is waiting for. Off by default
         (the experiment's trace rows need the full result map); `calm solve` turns it on."""
         if not self.fail_fast or len(pending) == 1:
+            self.executions += 1
             return await run_tests_async(src, self.task.test_src, pending,
                                          per_class_timeout_s=self.per_class, wall_timeout_s=self.wall)
 
         async def one(t: str) -> dict[str, dict]:
+            self.executions += 1
             return await run_tests_async(src, self.task.test_src, [t],
                                          per_class_timeout_s=self.per_class, wall_timeout_s=self.wall)
 

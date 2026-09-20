@@ -1,0 +1,49 @@
+{
+ "configs": 86,
+ "tasks": 22,
+ "scopes": {
+  "within_config": {
+   "pairs": 5940,
+   "executions": 2115,
+   "saved": 3825,
+   "saved_frac": 0.6439393939393939,
+   "compositions": 1111,
+   "skipped": 72,
+   "skipped_frac": 0.06480648064806481,
+   "wall_ms": 82352,
+   "wall_ms_floor": 3992,
+   "wall_floor_frac": 0.04847483971245386,
+   "wall_ms_est": 51788,
+   "wall_est_frac": 0.6288730374605642
+  },
+  "within_task": {
+   "pairs": 5940,
+   "executions": 1457,
+   "saved": 4483,
+   "saved_frac": 0.7547138047138047,
+   "compositions": 1111,
+   "skipped": 319,
+   "skipped_frac": 0.2871287128712871,
+   "wall_ms": 82352,
+   "wall_ms_floor": 17542,
+   "wall_floor_frac": 0.21301243442782203,
+   "wall_ms_est": 59612,
+   "wall_est_frac": 0.723870831482972
+  },
+  "cross_task": {
+   "pairs": 5940,
+   "executions": 1457,
+   "saved": 4483,
+   "saved_frac": 0.7547138047138047,
+   "compositions": 1111,
+   "skipped": 319,
+   "skipped_frac": 0.2871287128712871,
+   "wall_ms": 82352,
+   "wall_ms_floor": 17542,
+   "wall_floor_frac": 0.21301243442782203,
+   "wall_ms_est": 59612,
+   "wall_est_frac": 0.723870831482972
+  }
+ },
+ "recorded_test_wall_ms": 82352
+}

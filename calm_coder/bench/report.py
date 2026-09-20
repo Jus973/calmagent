@@ -11,16 +11,16 @@ import shutil
 from pathlib import Path
 
 from calm_coder.bench import charts, confluence, metrics
+from calm_coder.jsonl import read_jsonl
 
 ROOT = Path(__file__).parents[2]
 START, END = "<!-- RESULTS -->", "<!-- /RESULTS -->"
 
 
 def posthoc_md(d: Path) -> str:
-    p = d / "posthoc" / "results.jsonl"
-    if not p.exists():
+    rs = read_jsonl(d / "posthoc" / "results.jsonl")
+    if not rs:
         return ""
-    rs = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
     ce = [r for r in rs if r["analysis"] == "ceiling"]
     rc = [r for r in rs if r["analysis"] == "recombine"]
     lost = [r["task_id"] for r in ce if r["verified"] and not r["calm_solved"]]

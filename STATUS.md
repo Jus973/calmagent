@@ -23,13 +23,32 @@
     budget enforcement, repair of a dead slot, report statistics.
   * replay-first demo page (`calm_coder/demo/web/`) fed by `calm_coder.demo.export_web`.
 * Docs: `ARCHITECTURE.md`, `PREREG.md`.
+* A pilot run against a real model (qwen2.5-coder:7b via Ollama, 10 tasks, seed 0): arm C for the
+  budgets, then `v2` and `wcr` under them, reported in `results/pilot.md` with the generated
+  `results/final.md` / `results/final.json`.
+
+* Heterogeneous producers (`serve/client.Fleet`): several models behind one `sample`, so the agents
+  writing into a store are different models rather than clones. `Sample.model` / `Emission.model`
+  carry provenance; identity stays the canonical hash, so two models writing the same method write
+  one definition. `--models m1[@url],m2` on the experiment.
+* Two analyses on recorded logs, no model and no subprocess: `analysis/cache_value.py` (what
+  content-addressing saves the verifier) and `analysis/tail_waste.py` (how much of a real
+  completion is tail the decode-side lever would cut).
+* H5 confluence verified on every real run, not just the smoke run: 136 event logs, 34,763 events,
+  20 shuffled orders each, 0 derived-fact differences.
+* Metrics, charts and the pre-registration table for the 22-task 7B run
+  (`runs/20260919T163449Z_main/summary.md`): H1, H4, H5 hold; H2, H2b, H3, H6 fail; F1 not triggered.
 
 ## Not done
 
-* The v2 evaluation run itself (needs the local model server): a C run for budgets, then
-  `--arms v2,v2_pm,v2_f0,wcr --budget-from <C run>`, then `analysis/final_report.py`.
-* Phase 0 recon numbers: `analysis/pool_existing.py` and `analysis/dead_slots.py` are written but
-  have not been run against `runs/` yet.
+* The preregistered evaluation at full scale: 50 tasks, 3 seeds, all five v2 arms. What exists is
+  39 of 50 tasks at one seed on the 1.5b model, which is **underpowered by construction**: that
+  model's holistic pass@1 is 10–12%, below the 30–55% band §3.6 requires, so 24 of 39 paired tasks
+  are solved by neither arm and only 5 discordant pairs carry any information. v2 − C is +0.026,
+  McNemar p = 1.000. Reported as a null, not as a loss.
+* The mixed-model run (`--arms v2,wcr --models qwen2.5-coder:7b,llama3:8b`) is in flight; rows land
+  per task, so whatever prefix finishes is what gets reported.
+* `README.md` still has an empty `<!-- RESULTS -->` placeholder.
 * PREREG H6 (prompt tokens vs the v1 layout) and the solve-rate/token curve beyond the per-arm N
   sweep are not implemented; the report does not claim them.
 * Lint: `ruff` is not installed in this environment, so only `pytest` has been run.
@@ -66,6 +85,7 @@ python -m http.server -d calm_coder/demo/web 8000
   tasks where class-level tests dominate this can target more slots than strictly necessary. When
   nothing names a slot at all the task is bucketed as unattributed and excluded from the
   "one dead slot" statistic.
-* Prompt-token accounting depends on the server reporting `prompt_tokens_details.cached_tokens`;
-  Ollama does not, so cache counters are `null` there and the prefix claim rests on the prompt
-  construction test rather than on measured cache hits.
+* Prompt-token accounting depends on the server reporting `prompt_tokens_details.cached_tokens`.
+  Ollama does report it (the pilot measured ~94% of v2's prompt tokens as cache hits); a server
+  that omits it leaves the counters `null` and the prefix claim rests on the prompt construction
+  test alone.

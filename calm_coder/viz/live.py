@@ -7,7 +7,6 @@ Attach to a running solve via `LiveView.on_event`, or replay a logged run:
 from __future__ import annotations
 
 import argparse
-import json
 import random
 import time
 from collections import deque
@@ -19,6 +18,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from calm_coder.jsonl import read_jsonl
 from calm_coder.store.defs import Definition, Outcome
 from calm_coder.store.derive import slot_evidence, verified
 from calm_coder.store.store import Store
@@ -136,7 +136,7 @@ def main() -> None:
     ap.add_argument("--tests")
     a = ap.parse_args()
     p = Path(a.replay)
-    events = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+    events = read_jsonl(p)
     if a.skeleton:
         from calm_coder.task import Task
         task = Task.from_skeleton(task_id=p.stem, skeleton=Path(a.skeleton).read_text(), test_src=Path(a.tests).read_text())

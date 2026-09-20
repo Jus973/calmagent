@@ -45,10 +45,18 @@ Implemented in `calm solve` (default path) and, where reproducibility allows, in
 | #2 speculative testing | `generate_fills(on_emission=…)`, `cli._pipelined` | Stub tests start per fill as it lands; a composition search runs as soon as every slot has one fill, then again on each new fill (event-driven, no polling). A slot test run in Phase 1 is reused as that class's Phase 2 result whenever the fill calls nothing else — the class key is the same content. |
 | #3 latency-first CLI | `cli._pipelined` (default; `--sequential` opts out) | Generation is cancelled at the `∃` exit; in-flight tests are drained so their outcomes still land. |
 | #4 adaptive N | `generate_fills(skip_slot=…)` + `Scheduler.has_stub_pass` | One chain per slot rather than waves: a slot draws its next sample as soon as its previous one lands, and stops once it has a stub-passing fill, so no slot waits on a wave barrier. Scheduling only — it changes which facts exist, never which are derivable, so the experiment never uses it. |
+| #2 decode-side early exit | `serve/stream.py` `truncation_point`, `Client.sample(stop_when=…)`, `generate_fills(stop_at_fill=…)` | The prompt asks for one method and the model writes more; the request ends once that method and the private helpers it calls have decoded, so the tail is never produced. Pure and parse-checked: no cut before the prefix parses, inside an unfinished `<think>`, or while the method still calls a helper it hasn't defined. `--no-stop-at-fill` opts out. |
 | #6 cross-run cache | `calm_coder/runner/cache.py`, `--cache` | Append-only JSONL keyed by the same content hash. Reused outcomes carry `reused:` in their detail; the log never claims an execution that didn't happen. |
 
 Not done: #5 (prefix-cache latency) needs a server that reports prefill/decode separately — nothing to
-implement here beyond metrics, and the laptop's Ollama doesn't expose them.
+implement here beyond metrics, and the laptop's Ollama doesn't expose them. Streamed samples do now carry
+`ttft_ms`, which is the half of #5 that doesn't need server cooperation.
+
+Measured, one lever at a time, in `results/latency.md` (`python -m calm_coder.bench.latency`): on a
+deterministic server, adaptive N is 1.35–1.39x and stopping at the fill is 1.43x–7.1x depending on how far
+past the requested method the model runs. Pipelining comes out level there because that server makes
+generation the wall by construction — it removes test time from the critical path, and there is none to
+remove when tokens are the only cost.
 
 Both reuse mechanisms only ever *add* outcomes the store would have derived anyway, so I1–I3 hold: the
 store stays grow-only, the keys are content hashes, and derivations still read sets.

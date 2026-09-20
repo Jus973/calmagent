@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Callable, Mapping
 
 from calm_coder.serve.extract import ExtractError, extract_functions
 from calm_coder.serve.prompts import SAMPLING, slot_messages
+from calm_coder.serve.stream import truncation_point
 from calm_coder.store.defs import Outcome, emission_to_defs, sha256
 from calm_coder.store.store import Store
 
@@ -32,6 +33,9 @@ class Emission:
     latency_ms: int
     t_done_ms: int                     # since the task's t_start
     finish_reason: str | None
+    ttft_ms: int | None = None         # streamed requests only
+    stopped_early: bool = False        # the method was complete, so the rest was never decoded
+    model: str | None = None           # the fleet member that produced it
     extract_error: str | None = None
     fill_hash: str | None = None       # alpha-normalized identity
     fill_hash_exact: str | None = None  # exact-unparse identity (no alpha-renaming)
@@ -84,7 +88,8 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
                          max_tokens: int = SAMPLING["max_tokens_slot"],
                          on_event: Callable[[dict], None] | None = None,
                          on_emission: Callable[[Emission], None] | None = None,
-                         skip_slot: Callable[[str], bool] | None = None) -> list[Emission]:
+                         skip_slot: Callable[[str], bool] | None = None,
+                         stop_at_fill: bool = False) -> list[Emission]:
     """Every slot concurrently; each sample is ingested the moment it returns.
 
     `on_emission` is called right after ingestion, so a caller can test a fill while later samples are
@@ -92,19 +97,28 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
     its next sample as soon as its previous one lands, and stops once the caller says it has enough
     (adaptive N). It costs the flat issue order, so it is only used by latency-first callers, never by
     the experiment.
+
+    `stop_at_fill` ends each request once its method — and any private helper that method calls — has
+    been decoded, which streams the request. The fill that lands is the one the full completion would
+    have produced; the discarded tail is prose, fences and methods the prompt asked for anyway.
     """
     t_start = t_start or time.monotonic()
     out: list[Emission] = []
 
+    slot_ids = frozenset(s.id for s in task.slots)
+
     async def one(slot, idx: int) -> None:
         s_seed = sample_seed(seed, slot.order, idx)
+        stop = (lambda text: truncation_point(text, slot.id, slot_ids, task.class_name)) \
+            if stop_at_fill else None
         (s,) = await client.sample(slot_messages(task, slot.id), n=1, temperature=temperature,
-                                   top_p=top_p, max_tokens=max_tokens, seed=s_seed)
+                                   top_p=top_p, max_tokens=max_tokens, seed=s_seed, stop_when=stop)
         e = Emission(task_id=task.task_id, arm=arm, slot=slot.id, seed=seed, sample_idx=idx,
                      sample_seed=s_seed, text=s.text, completion_tokens=s.completion_tokens,
                      prompt_tokens=s.prompt_tokens, cached_tokens=s.cached_tokens,
                      tokens_estimated=s.tokens_estimated, latency_ms=s.latency_ms,
-                     t_done_ms=int((time.monotonic() - t_start) * 1000), finish_reason=s.finish_reason)
+                     t_done_ms=int((time.monotonic() - t_start) * 1000), finish_reason=s.finish_reason,
+                     ttft_ms=s.ttft_ms, stopped_early=s.stopped_early, model=s.model)
         ingest(task, store, e, on_event)
         out.append(e)
         if on_emission:

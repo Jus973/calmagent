@@ -21,8 +21,9 @@ from calm_coder.agents.fill import Emission, generate_fills
 from calm_coder.agents.scheduler import Scheduler
 from calm_coder.bench.baselines import whole_class_samples
 from calm_coder.bench.classeval import SUBSET, load_subset
+from calm_coder.jsonl import append_jsonl, read_jsonl
 from calm_coder.runner import tests as rt
-from calm_coder.serve.client import Client
+from calm_coder.serve.client import Client, Fleet
 from calm_coder.serve.prompts import SAMPLING
 from calm_coder.store.derive import reachable
 from calm_coder.store.defs import Composition
@@ -41,8 +42,7 @@ class RunDir:
         (path / "events").mkdir(parents=True, exist_ok=True)
 
     def append(self, name: str, row: dict) -> None:
-        with open(self.path / name, "a") as f:
-            f.write(json.dumps(row, default=str) + "\n")
+        append_jsonl(self.path / name, row)
 
     def write_events(self, stem: str, events) -> Path:
         """An attempt's event log, under a name no earlier attempt can be holding."""
@@ -50,16 +50,14 @@ class RunDir:
             p = self.path / "events" / (f"{stem}.jsonl" if not i else f"{stem}__a{i}.jsonl")
             try:
                 with open(p, "x") as f:
-                    for ev in events:
-                        f.write(json.dumps(ev) + "\n")
-                return p
+                    f.writelines(json.dumps(ev, default=str) + "\n" for ev in events)
             except FileExistsError:
                 continue
+            return p
         raise RuntimeError(f"too many attempts for {stem}")
 
     def rows(self, name: str) -> list[dict]:
-        p = self.path / name
-        return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
+        return read_jsonl(self.path / name)
 
     def done(self) -> set[tuple[str, str, int]]:
         return {(r["task_id"], r["arm"], r["seed"]) for r in self.rows("results.jsonl")}
@@ -67,7 +65,7 @@ class RunDir:
 
 # ---------------------------------------------------------------- CALM arm
 
-def _budget_view(emissions: list[Emission], n: int):
+def budget_view(emissions: list[Emission], n: int):
     used = [e for e in emissions if e.sample_idx < n]
     cands: dict[str, list[str]] = defaultdict(list)
     fan_in: Counter = Counter()
@@ -94,7 +92,7 @@ async def run_calm(client: Client, task, seed: int, Ns: list[int], rd: RunDir, *
     phase1_ms = 0
     stub: dict[str, str] = {}
     for n in sorted(Ns):
-        used, cands, fan_in, arrival = _budget_view(emissions, n)
+        used, cands, fan_in, arrival = budget_view(emissions, n)
         new = [h for hs in cands.values() for h in hs if h not in stub]
         t0 = time.monotonic()
         stub = {**stub, **await sched.phase1(new)}
@@ -197,8 +195,7 @@ def budgets_from(path: Path, arm: str = "c", N: int | None = None) -> dict[tuple
     of C's own runs to a budget they exceeded. `(task, None)` is the across-seed mean, used for a
     seed C never ran.
     """
-    rows = [json.loads(l) for l in (path / "results.jsonl").read_text().splitlines() if l.strip()]
-    rows = [r for r in rows if r["arm"] == arm and (N is None or r["N"] == N)]
+    rows = [r for r in read_jsonl(path / "results.jsonl") if r["arm"] == arm and (N is None or r["N"] == N)]
     if N is None and rows:
         top = max(r["N"] for r in rows)
         rows = [r for r in rows if r["N"] == top]
@@ -257,6 +254,7 @@ async def main_async(a) -> Path:
                "k": a.k, "repair_n": a.repair_n, "rounds": a.rounds,
                "test_width": a.test_width,
                "sampling": SAMPLING, "per_class_timeout_s": 5, "wall_timeout_s": 20,
+               "models": a.models,
                "model": os.environ.get("CALM_MODEL"), "base_url": os.environ.get("CALM_BASE_URL"),
                "no_n": os.environ.get("CALM_NO_N"),
                "server_env": {k: v for k, v in os.environ.items() if k.startswith("OLLAMA_")},
@@ -275,7 +273,7 @@ async def main_async(a) -> Path:
                                     "budgets": [{"task_id": t, "seed": s, "tokens": v}
                                                 for (t, s), v in sorted(budgets.items(),
                                                                         key=lambda kv: (kv[0][0], kv[0][1] is None, kv[0][1]))]})
-    async with Client() as client:
+    async with (Fleet.from_spec(cfg["models"]) if cfg.get("models") else Client()) as client:
         cfg_client = client.config()
         if not (rd.path / "client.json").exists():
             (rd.path / "client.json").write_text(json.dumps({**cfg_client, "metrics_start": await client.metrics_snapshot()}))
@@ -338,6 +336,9 @@ def main() -> None:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--tasks")
     ap.add_argument("--max-comps", type=int, default=64)
+    ap.add_argument("--models", help="comma-separated `model[@base_url]`: samples are split across "
+                                     "them, so the agents writing into the store are different "
+                                     "models rather than clones of one")
     ap.add_argument("--budget-from", help="run dir whose arm-C decode tokens set each task's v2 budget")
     ap.add_argument("--budget-tokens", type=int, help="flat per-task decode budget when --budget-from is absent")
     ap.add_argument("--feedback", default="F1", choices=["F0", "F1", "F2"])

@@ -1,0 +1,5 @@
+THOUGHT: I need to run the tests to ensure that my implementation is correct.
+
+```mswea_bash_command
+python -m pytest -q
+```

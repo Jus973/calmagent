@@ -1,0 +1,15 @@
+{
+  "task_id": "ClassEval_7",
+  "agent": "mini-swe",
+  "model": "qwen2.5-coder:7b",
+  "base_url": "http://127.0.0.1:8999/v1",
+  "cap_s": 480,
+  "wall_s": 35.3,
+  "agent_wall_s": 35.3,
+  "agent_reason": "finished",
+  "agent_tail": "This is mini-swe-agent version 2.4.6.\nCheck the v2 migration guide at https://klieret.short.gy/mini-v2-migration\nLoading global config from '/Users/justinzhang/Library/Application \nSupport/mini-swe-agent/.env'\n{\"exit\": {\"exit_status\": \"Submitted\", \"submission\": \"\"}, \"n_calls\": 5}\n",
+  "solved": true,
+  "reason": "graded",
+  "tail": "15 passed in 0.01s",
+  "returncode": 0
+}

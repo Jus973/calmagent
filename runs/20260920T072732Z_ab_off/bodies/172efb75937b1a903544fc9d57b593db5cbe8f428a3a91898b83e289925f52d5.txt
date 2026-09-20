@@ -1,0 +1,231 @@
+<returncode>1</returncode>
+<warning>
+The output of your last command was too long.
+Please try a different command that produces less output.
+If you're looking at a file you can try use head, tail or sed to view a smaller number of lines selectively.
+If you're using grep or find and it produced too much output, you can use a more selective search pattern.
+If you really need to see something from the full command's output, you can redirect output to a file and then search in that file.
+</warning><output_head>
+FFFFFFFFFFFFFFFFFFFFF                                                    [100%]
+=================================== FAILURES ===================================
+__________________ EightPuzzleTestFindBlank.test_find_blank_1 __________________
+
+self = <tests.test_solution.EightPuzzleTestFindBlank testMethod=test_find_blank_1>
+
+    def test_find_blank_1(self):
+        state = [[2, 3, 4], [5, 8, 1], [6, 0, 7]]
+        eightPuzzle = EightPuzzle(state)
+>       self.assertEqual(eightPuzzle.find_blank(state), (2, 1))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: EightPuzzle.find_blank() takes 1 positional argument but 2 were given
+
+tests/test_solution.py:9: TypeError
+__________________ EightPuzzleTestFindBlank.test_find_blank_2 __________________
+
+self = <tests.test_solution.EightPuzzleTestFindBlank testMethod=test_find_blank_2>
+
+    def test_find_blank_2(self):
+        state = [[2, 3, 4], [5, 0, 1], [6, 8, 7]]
+        eightPuzzle = EightPuzzle(state)
+>       self.assertEqual(eightPuzzle.find_blank(state), (1, 1))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: EightPuzzle.find_blank() takes 1 positional argument but 2 were given
+
+tests/test_solution.py:14: TypeError
+__________________ EightPuzzleTestFindBlank.test_find_blank_3 __________________
+
+self = <tests.test_solution.EightPuzzleTestFindBlank testMethod=test_find_blank_3>
+
+    def test_find_blank_3(self):
+        state = [[2, 3, 4], [5, 8, 1], [6, 8, 7]]
+        eightPuzzle = EightPuzzle(state)
+>       self.assertEqual(eightPuzzle.find_blank(state), None)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: EightPuzzle.find_blank() takes 1 positional argument but 2 were given
+
+tests/test_solution.py:19: TypeError
+__________________ EightPuzzleTestFindBlank.test_find_blank_4 __________________
+
+self = <tests.test_solution.EightPuzzleTestFindBlank testMethod=test_find_blank_4>
+
+    def test_find_blank_4(self):
+        state = [[2, 3, 4], [5, 8, 1], [6, 8, 7]]
+        eightPuzzle = EightPuzzle(state)
+>       self.assertEqual(eightPuzzle.find_blank(state), None)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: EightPuzzle.find_blank() takes 1 positional argument but 2 were given
+
+tests/test_solution.py:24: TypeError
+__________________ EightPuzzleTestFindBlank.test_find_blank_5 __________________
+
+self = <tests.test_solution.EightPuzzleTestFindBlank testMethod=test_find_blank_5>
+
+    def test_find_blank_5(self):
+        state = [[2, 3, 4], [5, 8, 1], [6, 8, 7]]
+        eightPuzzle = EightPuzzle(state)
+>       self.assertEqual(eightPuzzle.find_blank(state), None)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: EightPuzzle.find_blank() takes 1 positional argument but 2 were given
+
+tests/test_solution.py:29: TypeError
+_______________________ EightPuzzleTestMove.test_move_1 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_1>
+
+    def test_move_1(self):
+>       result = self.eightPuzzle.move(self.initial_state, 'up')
+                 ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'move'
+
+tests/test_solution.py:38: AttributeError
+_______________________ EightPuzzleTestMove.test_move_2 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_2>
+
+    def test_move_2(self):
+>       result = self.eightPuzzle.move(self.initial_state, 'down')
+                 ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'move'
+
+tests/test_solution.py:43: AttributeError
+_______________________ EightPuzzleTestMove.test_move_3 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_3>
+
+    def test_move_3(self):
+>       result = self.eightPuzzle.move(self.initial_state, 'left')
+                 ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'move'
+
+tests/test_solution.py:48: AttributeError
+_______________________ EightPuzzleTestMove.test_move_4 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_4>
+
+    def test_move_4(self):
+>       result = self.eightPuzzle.move(self.initial_state, 'right')
+                 ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'move'
+
+tests/test_solution.py:53: AttributeError
+_______________________ EightPuzzleTestMove.test_move_5 ________________________
+
+self = <tests.test_solution.EightPuzzleTestMove testMethod=test_move_5>
+
+    def test_move_5(self):
+>       result = self.eightPuzzle.move(self.initial_state, '???')
+                 ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'move'
+
+tests/test_solution.py:58: AttributeError
+__________ EightPuzzleTestGetPossibleMoves.test_get_possible_moves_1 ___________
+
+self = <tests.test_solution.EightPuzzleTestGetPossibleMoves testMethod=test_get_possib
+</output_head>
+<elided_chars>
+2023 characters elided
+</elided_chars>
+<output_tail>
+etPossibleMoves.test_get_possible_moves_5 ___________
+
+self = <tests.test_solution.EightPuzzleTestGetPossibleMoves testMethod=test_get_possible_moves_5>
+
+    def test_get_possible_moves_5(self):
+        eightPuzzle = EightPuzzle(None)
+        state = [[2, 3, 4], [0, 5, 1], [6, 8, 7]]
+>       result = eightPuzzle.get_possible_moves(state)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'get_possible_moves'
+
+tests/test_solution.py:99: AttributeError
+______________________ EightPuzzleTestSolve.test_solve_1 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_1>
+
+    def test_solve_1(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [7, 0, 8]])
+>       result = eightPuzzle.solve()
+                 ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'solve'
+
+tests/test_solution.py:108: AttributeError
+______________________ EightPuzzleTestSolve.test_solve_2 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_2>
+
+    def test_solve_2(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 0, 6], [7, 5, 8]])
+>       result = eightPuzzle.solve()
+                 ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'solve'
+
+tests/test_solution.py:114: AttributeError
+______________________ EightPuzzleTestSolve.test_solve_3 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_3>
+
+    def test_solve_3(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [0, 4, 5], [6, 7, 8]])
+>       result = eightPuzzle.solve()
+                 ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'solve'
+
+tests/test_solution.py:120: AttributeError
+______________________ EightPuzzleTestSolve.test_solve_4 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_4>
+
+    def test_solve_4(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [7, 8, 0]])
+>       result = eightPuzzle.solve()
+                 ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'solve'
+
+tests/test_solution.py:126: AttributeError
+______________________ EightPuzzleTestSolve.test_solve_5 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_5>
+
+    def test_solve_5(self):
+        eightPuzzle = EightPuzzle([[1, 2, 3], [4, 5, 6], [0, 7, 8]])
+>       result = eightPuzzle.solve()
+                 ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'solve'
+
+tests/test_solution.py:132: AttributeError
+______________________ EightPuzzleTestSolve.test_solve_6 _______________________
+
+self = <tests.test_solution.EightPuzzleTestSolve testMethod=test_solve_6>
+
+    def test_solve_6(self):
+        eightPuzzle = EightPuzzle([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+>       result = eightPuzzle.solve()
+                 ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'EightPuzzle' object has no attribute 'solve'
+
+tests/test_solution.py:138: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::EightPuzzleTestFindBlank::test_find_blank_1 - ...
+FAILED tests/test_solution.py::EightPuzzleTestFindBlank::test_find_blank_2 - ...
+FAILED tests/test_solution.py::EightPuzzleTestFindBlank::test_find_blank_3 - ...
+FAILED tests/test_solution.py::EightPuzzleTestFindBlank::test_find_blank_4 - ...
+FAILED tests/test_solution.py::EightPuzzleTestFindBlank::test_find_blank_5 - ...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_1 - AttributeEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_2 - AttributeEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_3 - AttributeEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_4 - AttributeEr...
+FAILED tests/test_solution.py::EightPuzzleTestMove::test_move_5 - AttributeEr...
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_1
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_2
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_3
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_4
+FAILED tests/test_solution.py::EightPuzzleTestGetPossibleMoves::test_get_possible_moves_5
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_1 - Attribute...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_2 - Attribute...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_3 - Attribute...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_4 - Attribute...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_5 - Attribute...
+FAILED tests/test_solution.py::EightPuzzleTestSolve::test_solve_6 - Attribute...
+21 failed in 0.05s
+
+</output_tail>

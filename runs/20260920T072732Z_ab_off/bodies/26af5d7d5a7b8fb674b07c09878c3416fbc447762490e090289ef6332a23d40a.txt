@@ -1,0 +1,9 @@
+THOUGHT: The `select` method should generate a list of arrangements by selecting m items from the internal datas. If m is not provided, it should select all items.
+
+```mswea_bash_command
+sed -i '' '/def select(self, m=None):/,/pass$/c\
+    def select(self, m=None):\
+        if m is None:\
+            m = len(self.datas)\
+        return list(itertools.combinations(self.datas, m))' solution.py
+```

@@ -1,0 +1,18 @@
+THOUGHT: The test failures indicate that the `EightPuzzle` class is not implemented correctly. Specifically, methods like `find_blank`, `move`, `get_possible_moves`, and `solve` are returning `None` instead of the expected values.
+
+Let's start by implementing the `find_blank` method to find the position of the blank space in the puzzle state.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+class EightPuzzle:
+    def __init__(self, state):
+        self.state = state
+
+    def find_blank(self):
+        for i in range(len(self.state)):
+            for j in range(len(self.state[i])):
+                if self.state[i][j] == 0:
+                    return (i, j)
+        return None
+EOF
+```

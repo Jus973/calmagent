@@ -1,0 +1,36 @@
+THOUGHT: The test failures indicate that the `clean_non_binary_chars` method is not working as expected. I need to ensure that it removes all non-binary characters from the input string.
+
+```mswea_bash_command
+cat <<'EOF' > solution.py
+class BinaryDataProcessor:
+    def __init__(self, binary_string):
+        self.binary_string = binary_string
+
+    def clean_non_binary_chars(self):
+        self.binary_string = ''.join(filter(lambda x: x in '01', self.binary_string))
+
+    def calculate_binary_info(self):
+        total_bits = len(self.binary_string)
+        ones_count = self.binary_string.count('1')
+        zeroes_count = self.binary_string.count('0')
+        return {
+            'Bit length': total_bits,
+            'Ones': ones_count / total_bits if total_bits > 0 else 0,
+            'Zeroes': zeroes_count / total_bits if total_bits > 0 else 0
+        }
+
+    def convert_to_ascii(self):
+        ascii_string = ''
+        for i in range(0, len(self.binary_string), 8):
+            byte = self.binary_string[i:i+8]
+            ascii_string += chr(int(byte, 2))
+        return ascii_string
+
+    def convert_to_utf8(self):
+        utf8_string = ''
+        for i in range(0, len(self.binary_string), 8):
+            byte = self.binary_string[i:i+8]
+            utf8_string += chr(int(byte, 2))
+        return utf8_string
+EOF
+```

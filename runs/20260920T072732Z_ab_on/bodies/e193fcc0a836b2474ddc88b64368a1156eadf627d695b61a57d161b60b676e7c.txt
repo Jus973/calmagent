@@ -1,0 +1,47 @@
+THOUGHT: The test suite is failing because the `caesar_cipher`, `vigenere_cipher`, and `rail_fence_cipher` methods are returning `None` instead of the expected encrypted strings. I need to implement these methods in the `EncryptionUtils` class.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+class EncryptionUtils:
+    def __init__(self, key):
+        self.key = key
+
+    def caesar_cipher(self, text, shift):
+        result = ""
+        for char in text:
+            if char.isalpha():
+                shift_amount = shift % 26
+                if char.islower():
+                    start = ord('a')
+                else:
+                    start = ord('A')
+                result += chr((ord(char) - start + shift_amount) % 26 + start)
+            else:
+                result += char
+        return result
+
+    def vigenere_cipher(self, text):
+        key = self.key
+        key_length = len(key)
+        key_as_int = [ord(i) for i in key]
+        text_int = [ord(i) for i in text]
+        cipher_text = []
+        for i in range(len(text_int)):
+            value = (text_int[i] + key_as_int[i % key_length]) % 26
+            cipher_text.append(chr(value + 65))
+        return "".join(cipher_text)
+
+    def rail_fence_cipher(self, text, n):
+        result = ['' for i in range(n)]
+        dir_down = False
+        row = 0
+
+        for i in range(len(text)):
+            if row == 0 or row == n - 1:
+                dir_down = not dir_down
+            result[row] += text[i]
+            row += 1 if dir_down else -1
+
+        return ''.join(result)
+EOF
+```

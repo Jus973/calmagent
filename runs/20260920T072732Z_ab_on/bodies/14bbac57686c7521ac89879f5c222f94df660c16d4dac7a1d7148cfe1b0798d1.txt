@@ -1,0 +1,5 @@
+THOUGHT: I have edited the `solution.py` file to ensure that the `clean_non_binary_chars` method removes all non-binary characters from the input string. Now, I will run the tests again to verify if the issues are resolved.
+
+```mswea_bash_command
+./run_tests.sh
+```

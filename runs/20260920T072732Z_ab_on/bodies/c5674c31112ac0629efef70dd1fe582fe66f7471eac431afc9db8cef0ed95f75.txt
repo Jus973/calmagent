@@ -1,0 +1,205 @@
+<returncode>1</returncode>
+<output>
+FFFFFFFFFFFFFFFFFF                                                       [100%]
+=================================== FAILURES ===================================
+______________ EncryptionUtilsTestCaesarCipher.test_caesar_cipher ______________
+
+self = <tests.test_solution.EncryptionUtilsTestCaesarCipher testMethod=test_caesar_cipher>
+
+    def test_caesar_cipher(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.caesar_cipher("abc", 1), "bcd")
+E       AssertionError: None != 'bcd'
+
+tests/test_solution.py:9: AssertionError
+_____________ EncryptionUtilsTestCaesarCipher.test_caesar_cipher_2 _____________
+
+self = <tests.test_solution.EncryptionUtilsTestCaesarCipher testMethod=test_caesar_cipher_2>
+
+    def test_caesar_cipher_2(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.caesar_cipher("WORLD", -2), "UMPJB")
+E       AssertionError: None != 'UMPJB'
+
+tests/test_solution.py:13: AssertionError
+_____________ EncryptionUtilsTestCaesarCipher.test_caesar_cipher_3 _____________
+
+self = <tests.test_solution.EncryptionUtilsTestCaesarCipher testMethod=test_caesar_cipher_3>
+
+    def test_caesar_cipher_3(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.caesar_cipher("", 4), "")
+E       AssertionError: None != ''
+
+tests/test_solution.py:17: AssertionError
+_____________ EncryptionUtilsTestCaesarCipher.test_caesar_cipher_4 _____________
+
+self = <tests.test_solution.EncryptionUtilsTestCaesarCipher testMethod=test_caesar_cipher_4>
+
+    def test_caesar_cipher_4(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.caesar_cipher("abcxyz", 26), "abcxyz")
+E       AssertionError: None != 'abcxyz'
+
+tests/test_solution.py:21: AssertionError
+_____________ EncryptionUtilsTestCaesarCipher.test_caesar_cipher_5 _____________
+
+self = <tests.test_solution.EncryptionUtilsTestCaesarCipher testMethod=test_caesar_cipher_5>
+
+    def test_caesar_cipher_5(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.caesar_cipher("abcxyz", 27), "bcdyza")
+E       AssertionError: None != 'bcdyza'
+
+tests/test_solution.py:25: AssertionError
+_____________ EncryptionUtilsTestCaesarCipher.test_caesar_cipher_6 _____________
+
+self = <tests.test_solution.EncryptionUtilsTestCaesarCipher testMethod=test_caesar_cipher_6>
+
+    def test_caesar_cipher_6(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.caesar_cipher("123", 27), "123")
+E       AssertionError: None != '123'
+
+tests/test_solution.py:29: AssertionError
+____________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher ____________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher>
+
+    def test_vigenere_cipher(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher("abc"), "kfa")
+E       AssertionError: None != 'kfa'
+
+tests/test_solution.py:35: AssertionError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_2 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_2>
+
+    def test_vigenere_cipher_2(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher("hello"), "rijvs")
+E       AssertionError: None != 'rijvs'
+
+tests/test_solution.py:39: AssertionError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_3 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_3>
+
+    def test_vigenere_cipher_3(self):
+        encryption_utils = EncryptionUtils("longkey")
+>       self.assertEqual(encryption_utils.vigenere_cipher("AbCdEfG"), "LpPjOjE")
+E       AssertionError: None != 'LpPjOjE'
+
+tests/test_solution.py:43: AssertionError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_4 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_4>
+
+    def test_vigenere_cipher_4(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher("Hello, World! 123"), "Rijvs, Uyvjn! 123")
+E       AssertionError: None != 'Rijvs, Uyvjn! 123'
+
+tests/test_solution.py:47: AssertionError
+___________ EncryptionUtilsTestVigenereCipher.test_vigenere_cipher_5 ___________
+
+self = <tests.test_solution.EncryptionUtilsTestVigenereCipher testMethod=test_vigenere_cipher_5>
+
+    def test_vigenere_cipher_5(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.vigenere_cipher(""), "")
+E       AssertionError: None != ''
+
+tests/test_solution.py:51: AssertionError
+__________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher ___________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher>
+
+    def test_rail_fence_cipher(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("abc", 2), "acb")
+E       AssertionError: None != 'acb'
+
+tests/test_solution.py:57: AssertionError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_2 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_2>
+
+    def test_rail_fence_cipher_2(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("hello", 2), "hloel")
+E       AssertionError: None != 'hloel'
+
+tests/test_solution.py:61: AssertionError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_3 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_3>
+
+    def test_rail_fence_cipher_3(self):
+        encryption_utils = EncryptionUtils("longkey")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("AbCdEfG", 2), "ACEGbdf")
+E       AssertionError: None != 'ACEGbdf'
+
+tests/test_solution.py:65: AssertionError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_4 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_4>
+
+    def test_rail_fence_cipher_4(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("Hello, World! 123", 2), "Hlo ol!13el,Wrd 2")
+E       AssertionError: None != 'Hlo ol!13el,Wrd 2'
+
+tests/test_solution.py:69: AssertionError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_5 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_5>
+
+    def test_rail_fence_cipher_5(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("", 2), "")
+E       AssertionError: None != ''
+
+tests/test_solution.py:73: AssertionError
+_________ EncryptionUtilsTestRailFenceCipher.test_rail_fence_cipher_6 __________
+
+self = <tests.test_solution.EncryptionUtilsTestRailFenceCipher testMethod=test_rail_fence_cipher_6>
+
+    def test_rail_fence_cipher_6(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.rail_fence_cipher("abcdefg", 3), "aebdfcg")
+E       AssertionError: None != 'aebdfcg'
+
+tests/test_solution.py:77: AssertionError
+______________________ EncryptionUtilsTestMain.test_main _______________________
+
+self = <tests.test_solution.EncryptionUtilsTestMain testMethod=test_main>
+
+    def test_main(self):
+        encryption_utils = EncryptionUtils("key")
+>       self.assertEqual(encryption_utils.caesar_cipher("abc", 1), "bcd")
+E       AssertionError: None != 'bcd'
+
+tests/test_solution.py:83: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::EncryptionUtilsTestCaesarCipher::test_caesar_cipher
+FAILED tests/test_solution.py::EncryptionUtilsTestCaesarCipher::test_caesar_cipher_2
+FAILED tests/test_solution.py::EncryptionUtilsTestCaesarCipher::test_caesar_cipher_3
+FAILED tests/test_solution.py::EncryptionUtilsTestCaesarCipher::test_caesar_cipher_4
+FAILED tests/test_solution.py::EncryptionUtilsTestCaesarCipher::test_caesar_cipher_5
+FAILED tests/test_solution.py::EncryptionUtilsTestCaesarCipher::test_caesar_cipher_6
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_2
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_3
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_4
+FAILED tests/test_solution.py::EncryptionUtilsTestVigenereCipher::test_vigenere_cipher_5
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_2
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_3
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_4
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_5
+FAILED tests/test_solution.py::EncryptionUtilsTestRailFenceCipher::test_rail_fence_cipher_6
+FAILED tests/test_solution.py::EncryptionUtilsTestMain::test_main - Assertion...
+18 failed in 0.03s
+</output>

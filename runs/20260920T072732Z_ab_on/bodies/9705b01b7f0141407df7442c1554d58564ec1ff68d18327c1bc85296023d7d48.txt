@@ -1,0 +1,5 @@
+THOUGHT: I have added the `setNum` and `get` methods to the `AvgPartition` class in `solution.py`. Let's run the tests again to see if the issue is resolved.
+
+```mswea_bash_command
+python -m pytest -q
+```

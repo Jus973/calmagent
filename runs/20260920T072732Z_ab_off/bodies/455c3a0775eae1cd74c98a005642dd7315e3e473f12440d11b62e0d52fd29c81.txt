@@ -1,0 +1,22 @@
+THOUGHT: Now that the `setNum` method is implemented, let's move on to the `get` method. The `get` method should calculate the start and end positions based on the index of the partition and return the corresponding block.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+
+    def get(self, index):
+        """
+        Calculate the size of each block and the remainder of the division, and calculate the corresponding start and end positions based on the index of the partition.
+        :param index: the index of the partition,int.
+        :return: the corresponding block, list.
+        >>> a = AvgPartition([1, 2, 3, 4], 2)
+        >>> a.get(0)
+        [1, 2]
+        """
+        block_size, remainder = self.setNum()
+        if index < 0 or index >= self.limit:
+            raise IndexError("Index out of range")
+        start = index * block_size + min(index, remainder)
+        end = start + block_size + (index < remainder)
+        return self.lst[start:end]
+EOF
+```

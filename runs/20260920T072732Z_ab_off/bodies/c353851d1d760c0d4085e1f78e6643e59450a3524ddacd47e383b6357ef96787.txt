@@ -1,0 +1,20 @@
+THOUGHT: The test failures indicate that the `ComplexCalculator` class methods are not returning the expected results. I need to implement these methods in `solution.py`.
+
+```mswea_bash_command
+cat <<'EOF' > solution.py
+class ComplexCalculator:
+    def add(self, a, b):
+        return a + b
+
+    def subtract(self, a, b):
+        return a - b
+
+    def multiply(self, a, b):
+        return a * b
+
+    def divide(self, a, b):
+        if b == 0:
+            raise ValueError("Cannot divide by zero")
+        return a / b
+EOF
+```

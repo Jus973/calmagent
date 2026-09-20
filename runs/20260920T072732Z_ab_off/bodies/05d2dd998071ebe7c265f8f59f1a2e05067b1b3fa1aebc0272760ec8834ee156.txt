@@ -1,0 +1,5 @@
+THOUGHT: I see that the `solution.py` file is present in the current directory. The next step is to analyze the codebase and understand what needs to be implemented.
+
+```mswea_bash_command
+cat solution.py
+```

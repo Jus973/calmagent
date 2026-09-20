@@ -1,0 +1,6 @@
+THOUGHT: I need to implement the `find_blank` method first. This method will help me locate the blank tile in the puzzle state.
+
+```mswea_bash_command
+sed -i '' '/def find_blank(self, state):/,/return i, j:/c\
+    def find_blank(self, state):\\n        for i in range(3):\\n            for j in range(3):\\n                if state[i][j] == 0:\\n                    return i, j' solution.py
+```

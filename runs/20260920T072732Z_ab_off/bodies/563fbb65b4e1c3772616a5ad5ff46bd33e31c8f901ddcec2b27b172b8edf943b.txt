@@ -1,0 +1,5 @@
+THOUGHT: Now that I have implemented the methods in `solution.py`, let's run the tests again to see if they pass.
+
+```mswea_bash_command
+python -m pytest -q
+```

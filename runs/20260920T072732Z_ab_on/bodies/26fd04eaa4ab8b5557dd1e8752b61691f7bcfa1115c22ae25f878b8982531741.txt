@@ -1,0 +1,20 @@
+THOUGHT: The test failures indicate that the `setNum` and `get` methods are not returning the expected values. I need to implement these methods correctly in `solution.py`.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+class AvgPartition:
+    def __init__(self, nums, k):
+        self.nums = nums
+        self.k = k
+
+    def setNum(self):
+        return (len(self.nums) // self.k, len(self.nums) % self.k)
+
+    def get(self, index):
+        if index < 0 or index >= self.k:
+            raise IndexError("Index out of range")
+        start = index * (len(self.nums) // self.k)
+        end = start + len(self.nums) // self.k
+        return self.nums[start:end]
+EOF
+```

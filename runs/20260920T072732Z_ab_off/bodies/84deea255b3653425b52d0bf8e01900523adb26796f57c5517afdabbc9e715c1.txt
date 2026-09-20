@@ -1,0 +1,5 @@
+THOUGHT: I have updated the `total`, `due`, and `promotion` methods to correctly apply the discounts. Let me run the tests again to see if the issues are resolved.
+
+```mswea_bash_command
+python -m pytest -q
+```

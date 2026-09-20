@@ -1,0 +1,1 @@
+trace proxy on http://127.0.0.1:8999 -> http://127.0.0.1:11434, trace -> runs/20260920T072732Z_ab_off/trace.jsonl, dedup=False

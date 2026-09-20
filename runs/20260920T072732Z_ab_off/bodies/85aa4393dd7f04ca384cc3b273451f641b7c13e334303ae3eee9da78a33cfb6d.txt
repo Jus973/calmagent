@@ -1,0 +1,5 @@
+THOUGHT: The `factorial` method is already implemented correctly. Now, let's verify if the implementation works by running the tests.
+
+```mswea_bash_command
+python -m pytest -q
+```

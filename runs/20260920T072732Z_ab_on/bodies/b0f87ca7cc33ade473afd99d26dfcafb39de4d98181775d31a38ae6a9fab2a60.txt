@@ -1,0 +1,5 @@
+THOUGHT: I have added the `caesar_cipher`, `vigenere_cipher`, and `rail_fence_cipher` methods to the `EncryptionUtils` class. Now, I need to run the tests again to see if they pass.
+
+```mswea_bash_command
+./run_tests.sh
+```

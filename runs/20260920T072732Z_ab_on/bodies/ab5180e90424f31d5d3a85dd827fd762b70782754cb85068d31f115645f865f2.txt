@@ -1,0 +1,5 @@
+THOUGHT: I see that `solution.py` is the file I need to edit. Let me open it and understand its structure.
+
+```mswea_bash_command
+cat solution.py
+```

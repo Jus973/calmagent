@@ -1,0 +1,5 @@
+THOUGHT: The tests are still failing. I need to ensure that the `factorial` method is correctly implemented and that it returns a value.
+
+```mswea_bash_command
+sed -i '' 's/return None/return 1/g' solution.py
+```

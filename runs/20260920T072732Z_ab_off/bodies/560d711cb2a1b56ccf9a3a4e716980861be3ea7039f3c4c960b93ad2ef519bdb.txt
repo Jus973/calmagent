@@ -1,0 +1,5 @@
+THOUGHT: Now that the `move` method is implemented, let's run the tests again to see if it resolves any of the failures.
+
+```mswea_bash_command
+python -m pytest -q
+```

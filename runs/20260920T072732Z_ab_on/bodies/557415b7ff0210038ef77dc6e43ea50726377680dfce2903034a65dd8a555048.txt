@@ -1,0 +1,5 @@
+<returncode>2</returncode>
+<output>
+/bin/sh: -c: line 1: unexpected EOF while looking for matching `''
+/bin/sh: -c: line 2: syntax error: unexpected end of file
+</output>

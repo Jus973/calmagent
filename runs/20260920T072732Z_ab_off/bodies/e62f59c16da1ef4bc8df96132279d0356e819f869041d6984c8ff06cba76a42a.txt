@@ -1,0 +1,5 @@
+THOUGHT: The test failures indicate that the conversion rates are not being applied correctly. Let's adjust the `convert` method to ensure it uses the correct rates.
+
+```mswea_bash_command
+sed -i '' 's/return amount * (self.rates[to_currency] / self.rates[from_currency])/return amount * self.rates[to_currency] / self.rates[from_currency]/' solution.py
+```

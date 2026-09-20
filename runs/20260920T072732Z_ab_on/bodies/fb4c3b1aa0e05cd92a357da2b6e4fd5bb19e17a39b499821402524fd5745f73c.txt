@@ -1,0 +1,4 @@
+<returncode>1</returncode>
+<output>
+sed: 1: "s/return self.nums[star ...": bad flag in substitute command: '/'
+</output>

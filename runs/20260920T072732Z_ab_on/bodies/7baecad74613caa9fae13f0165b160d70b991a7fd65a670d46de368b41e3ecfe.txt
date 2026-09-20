@@ -1,0 +1,17 @@
+THOUGHT: It seems there is still an issue with the sed command. Let me try a different approach by using a here-document to ensure the entire command is correctly formatted.
+
+```mswea_bash_command
+cat <<'EOF' | sed -i '' '/def move(self, state, direction):/,/return new_state:/c&' solution.py
+    def move(self, state, direction):
+        i, j = self.find_blank(state)
+        if direction == 'up' and i > 0:
+            state[i][j], state[i-1][j] = state[i-1][j], state[i][j]
+        elif direction == 'down' and i < 2:
+            state[i][j], state[i+1][j] = state[i+1][j], state[i][j]
+        elif direction == 'left' and j > 0:
+            state[i][j], state[i][j-1] = state[i][j-1], state[i][j]
+        elif direction == 'right' and j < 2:
+            state[i][j], state[i][j+1] = state[i][j+1], state[i][j]
+        return new_state:
+EOF
+```

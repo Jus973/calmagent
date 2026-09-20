@@ -1,0 +1,62 @@
+<returncode>1</returncode>
+<output>
+.......FFF.                                                              [100%]
+=================================== FAILURES ===================================
+________________________ AvgPartitionTestGet.test_get_3 ________________________
+
+self = <tests.test_solution.AvgPartitionTestGet testMethod=test_get_3>
+
+    def test_get_3(self):
+        a = AvgPartition([1, 2, 3, 4, 5], 2)
+>       self.assertEqual(a.get(0), [1, 2, 3])
+E       AssertionError: Lists differ: [1, 2] != [1, 2, 3]
+E       
+E       Second list contains 1 additional elements.
+E       First extra element 2:
+E       3
+E       
+E       - [1, 2]
+E       + [1, 2, 3]
+E       ?      +++
+
+tests/test_solution.py:38: AssertionError
+________________________ AvgPartitionTestGet.test_get_4 ________________________
+
+self = <tests.test_solution.AvgPartitionTestGet testMethod=test_get_4>
+
+    def test_get_4(self):
+        a = AvgPartition([1, 2, 3, 4, 5], 2)
+>       self.assertEqual(a.get(1), [4, 5])
+E       AssertionError: Lists differ: [3, 4] != [4, 5]
+E       
+E       First differing element 0:
+E       3
+E       4
+E       
+E       - [3, 4]
+E       + [4, 5]
+
+tests/test_solution.py:42: AssertionError
+________________________ AvgPartitionTestGet.test_get_5 ________________________
+
+self = <tests.test_solution.AvgPartitionTestGet testMethod=test_get_5>
+
+    def test_get_5(self):
+        a = AvgPartition([1, 2, 3, 4, 5], 3)
+>       self.assertEqual(a.get(0), [1, 2])
+E       AssertionError: Lists differ: [1] != [1, 2]
+E       
+E       Second list contains 1 additional elements.
+E       First extra element 1:
+E       2
+E       
+E       - [1]
+E       + [1, 2]
+
+tests/test_solution.py:46: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::AvgPartitionTestGet::test_get_3 - AssertionErr...
+FAILED tests/test_solution.py::AvgPartitionTestGet::test_get_4 - AssertionErr...
+FAILED tests/test_solution.py::AvgPartitionTestGet::test_get_5 - AssertionErr...
+3 failed, 8 passed in 0.02s
+</output>

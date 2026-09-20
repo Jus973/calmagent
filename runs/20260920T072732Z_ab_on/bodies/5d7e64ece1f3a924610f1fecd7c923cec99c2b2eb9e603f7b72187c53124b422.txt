@@ -1,0 +1,5 @@
+THOUGHT: I have added the logic for the `clear_expr` and `check_balanced_brackets` methods. Now, I need to verify if the implementation is correct by running the tests.
+
+```mswea_bash_command
+python -m pytest -q
+```

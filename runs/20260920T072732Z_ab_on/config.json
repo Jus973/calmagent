@@ -1,0 +1,29 @@
+{
+  "arm": "on",
+  "agent": "mini-swe",
+  "model": "qwen2.5-coder:7b",
+  "cap_s": 480,
+  "proxy_flags": [
+    "--dedup",
+    "--dedup-min-bytes",
+    "200"
+  ],
+  "git_commit": "b6c83a5475f63444e9c8c0bd599907cfbfc61b0d",
+  "ollama_version": "0.21.2",
+  "tasks": [
+    "ClassEval_10",
+    "ClassEval_24",
+    "ClassEval_27",
+    "ClassEval_35",
+    "ClassEval_37",
+    "ClassEval_47",
+    "ClassEval_6",
+    "ClassEval_7",
+    "ClassEval_3",
+    "ClassEval_33"
+  ],
+  "interleaved": true,
+  "concurrency": 1,
+  "proxy": "bench_agent.trace_proxy",
+  "started_utc": "20260920T072732Z"
+}

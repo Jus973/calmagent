@@ -1,0 +1,43 @@
+<returncode>1</returncode>
+<output>
+..FFF...................                                                 [100%]
+=================================== FAILURES ===================================
+_________________ CurrencyConverterTestConvert.test_convert_3 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_3>
+
+    def test_convert_3(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'CNY', 'GBP')
+>       self.assertAlmostEqual(res, 7.1999999999999)
+E       AssertionError: 7.3 != 7.1999999999999 within 7 places (0.10000000000010001 difference)
+
+tests/test_solution.py:20: AssertionError
+_________________ CurrencyConverterTestConvert.test_convert_4 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_4>
+
+    def test_convert_4(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'USD', 'GBP')
+>       self.assertAlmostEqual(res, 46.08)
+E       AssertionError: 46.72 != 46.08 within 7 places (0.6400000000000006 difference)
+
+tests/test_solution.py:25: AssertionError
+_________________ CurrencyConverterTestConvert.test_convert_5 __________________
+
+self = <tests.test_solution.CurrencyConverterTestConvert testMethod=test_convert_5>
+
+    def test_convert_5(self):
+        cc = CurrencyConverter()
+        res = cc.convert(64, 'USD', 'CAD')
+>       self.assertAlmostEqual(res, 78.72)
+E       AssertionError: 84.48 != 78.72 within 7 places (5.760000000000005 difference)
+
+tests/test_solution.py:30: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_3
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_4
+FAILED tests/test_solution.py::CurrencyConverterTestConvert::test_convert_5
+3 failed, 21 passed in 0.03s
+</output>

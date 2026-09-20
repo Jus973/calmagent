@@ -1,0 +1,4 @@
+<returncode>1</returncode>
+<output>
+sed: 1: "/def move(self, state,  ...": command c expects \ followed by text
+</output>

@@ -1,0 +1,247 @@
+<returncode>1</returncode>
+<warning>
+The output of your last command was too long.
+Please try a different command that produces less output.
+If you're looking at a file you can try use head, tail or sed to view a smaller number of lines selectively.
+If you're using grep or find and it produced too much output, you can use a more selective search pattern.
+If you really need to see something from the full command's output, you can redirect output to a file and then search in that file.
+</warning><output_head>
+FFFFFFFFFFFFFFFFFFFFFFFFFFF                                              [100%]
+=================================== FAILURES ===================================
+_________________ ArrangementCalculatorTestCount.test_count_1 __________________
+
+self = <tests.test_solution.ArrangementCalculatorTestCount testMethod=test_count_1>
+
+    def test_count_1(self):
+>       res = ArrangementCalculator.count(5, 3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+n = 5, m = 3
+
+    @staticmethod
+    def count(n, m=None):
+        if m is None or n == m:
+            return ArrangementCalculator.factorial(n)
+        else:
+>           return ArrangementCalculator.factorial(n) // ArrangementCalculator.factorial(n - m)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for //: 'NoneType' and 'NoneType'
+
+solution.py:79: TypeError
+_________________ ArrangementCalculatorTestCount.test_count_2 __________________
+
+self = <tests.test_solution.ArrangementCalculatorTestCount testMethod=test_count_2>
+
+    def test_count_2(self):
+>       res = ArrangementCalculator.count(4, 3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+n = 4, m = 3
+
+    @staticmethod
+    def count(n, m=None):
+        if m is None or n == m:
+            return ArrangementCalculator.factorial(n)
+        else:
+>           return ArrangementCalculator.factorial(n) // ArrangementCalculator.factorial(n - m)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for //: 'NoneType' and 'NoneType'
+
+solution.py:79: TypeError
+_________________ ArrangementCalculatorTestCount.test_count_3 __________________
+
+self = <tests.test_solution.ArrangementCalculatorTestCount testMethod=test_count_3>
+
+    def test_count_3(self):
+>       res = ArrangementCalculator.count(6, 3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+n = 6, m = 3
+
+    @staticmethod
+    def count(n, m=None):
+        if m is None or n == m:
+            return ArrangementCalculator.factorial(n)
+        else:
+>           return ArrangementCalculator.factorial(n) // ArrangementCalculator.factorial(n - m)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for //: 'NoneType' and 'NoneType'
+
+solution.py:79: TypeError
+_________________ ArrangementCalculatorTestCount.test_count_4 __________________
+
+self = <tests.test_solution.ArrangementCalculatorTestCount testMethod=test_count_4>
+
+    def test_count_4(self):
+>       res = ArrangementCalculator.count(7, 3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+n = 7, m = 3
+
+    @staticmethod
+    def count(n, m=None):
+        if m is None or n == m:
+            return ArrangementCalculator.factorial(n)
+        else:
+>           return ArrangementCalculator.factorial(n) // ArrangementCalculator.factorial(n - m)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for //: 'NoneType' and 'NoneType'
+
+solution.py:79: TypeError
+_________________ ArrangementCalculatorTestCount.test_count_5 __________________
+
+self = <tests.test_solution.ArrangementCalculatorTestCount testMethod=test_count_5>
+
+    def test_count_5(self):
+        res = ArrangementCalculator.count(4, 4)
+>       self.assertEqual(res, 24)
+E       AssertionError: None != 24
+
+tests/test_solution.py:25: AssertionError
+______________ ArrangementCalculatorTestCountAll.test_count_all_1 ______________
+
+self = <tests.test_solution.ArrangementCalculatorTestCountAll testMethod=test_count_all_1>
+
+    def test_count_all_1(self):
+>       res = ArrangementCalculator.count_all(4)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+solution.py:83: in count_all
+    return sum(ArrangementCalculator.count(n, m) for m in range(1, n + 1))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:83: in <genexpr>
+    return sum(ArrangementCalculator.count(n, m) for m in range(1, n + 1))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+n = 4, m = 1
+
+    @staticmethod
+    def count(n, m=None):
+        if m is None or n == m:
+            return ArrangementCalculator.factorial(n)
+        else:
+>           return ArrangementCalculator.fa
+</output_head>
+<elided_chars>
+14270 characters elided
+</elided_chars>
+<output_tail>
+entCalculatorTestFactorial.test_factorial_1 ______________
+
+self = <tests.test_solution.ArrangementCalculatorTestFactorial testMethod=test_factorial_1>
+
+    def test_factorial_1(self):
+        res = ArrangementCalculator.factorial(4)
+>       self.assertEqual(res, 24)
+E       AssertionError: None != 24
+
+tests/test_solution.py:125: AssertionError
+_____________ ArrangementCalculatorTestFactorial.test_factorial_2 ______________
+
+self = <tests.test_solution.ArrangementCalculatorTestFactorial testMethod=test_factorial_2>
+
+    def test_factorial_2(self):
+        res = ArrangementCalculator.factorial(5)
+>       self.assertEqual(res, 120)
+E       AssertionError: None != 120
+
+tests/test_solution.py:129: AssertionError
+_____________ ArrangementCalculatorTestFactorial.test_factorial_3 ______________
+
+self = <tests.test_solution.ArrangementCalculatorTestFactorial testMethod=test_factorial_3>
+
+    def test_factorial_3(self):
+        res = ArrangementCalculator.factorial(3)
+>       self.assertEqual(res, 6)
+E       AssertionError: None != 6
+
+tests/test_solution.py:133: AssertionError
+_____________ ArrangementCalculatorTestFactorial.test_factorial_4 ______________
+
+self = <tests.test_solution.ArrangementCalculatorTestFactorial testMethod=test_factorial_4>
+
+    def test_factorial_4(self):
+        res = ArrangementCalculator.factorial(2)
+>       self.assertEqual(res, 2)
+E       AssertionError: None != 2
+
+tests/test_solution.py:137: AssertionError
+_____________ ArrangementCalculatorTestFactorial.test_factorial_5 ______________
+
+self = <tests.test_solution.ArrangementCalculatorTestFactorial testMethod=test_factorial_5>
+
+    def test_factorial_5(self):
+        res = ArrangementCalculator.factorial(1)
+>       self.assertEqual(res, 1)
+E       AssertionError: None != 1
+
+tests/test_solution.py:141: AssertionError
+_____________ ArrangementCalculatorTest.test_arrangementcalculator _____________
+
+self = <tests.test_solution.ArrangementCalculatorTest testMethod=test_arrangementcalculator>
+
+    def test_arrangementcalculator(self):
+>       res = ArrangementCalculator.count(5, 3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_solution.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+n = 5, m = 3
+
+    @staticmethod
+    def count(n, m=None):
+        if m is None or n == m:
+            return ArrangementCalculator.factorial(n)
+        else:
+>           return ArrangementCalculator.factorial(n) // ArrangementCalculator.factorial(n - m)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for //: 'NoneType' and 'NoneType'
+
+solution.py:79: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::ArrangementCalculatorTestCount::test_count_1
+FAILED tests/test_solution.py::ArrangementCalculatorTestCount::test_count_2
+FAILED tests/test_solution.py::ArrangementCalculatorTestCount::test_count_3
+FAILED tests/test_solution.py::ArrangementCalculatorTestCount::test_count_4
+FAILED tests/test_solution.py::ArrangementCalculatorTestCount::test_count_5
+FAILED tests/test_solution.py::ArrangementCalculatorTestCountAll::test_count_all_1
+FAILED tests/test_solution.py::ArrangementCalculatorTestCountAll::test_count_all_2
+FAILED tests/test_solution.py::ArrangementCalculatorTestCountAll::test_count_all_3
+FAILED tests/test_solution.py::ArrangementCalculatorTestCountAll::test_count_all_4
+FAILED tests/test_solution.py::ArrangementCalculatorTestCountAll::test_count_all_5
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelect::test_select_1
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelect::test_select_2
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelect::test_select_3
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelect::test_select_4
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelect::test_select_5
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelect::test_select_6
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelectAll::test_select_all_1
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelectAll::test_select_all_2
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelectAll::test_select_all_3
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelectAll::test_select_all_4
+FAILED tests/test_solution.py::ArrangementCalculatorTestSelectAll::test_select_all_5
+FAILED tests/test_solution.py::ArrangementCalculatorTestFactorial::test_factorial_1
+FAILED tests/test_solution.py::ArrangementCalculatorTestFactorial::test_factorial_2
+FAILED tests/test_solution.py::ArrangementCalculatorTestFactorial::test_factorial_3
+FAILED tests/test_solution.py::ArrangementCalculatorTestFactorial::test_factorial_4
+FAILED tests/test_solution.py::ArrangementCalculatorTestFactorial::test_factorial_5
+FAILED tests/test_solution.py::ArrangementCalculatorTest::test_arrangementcalculator
+27 failed in 0.08s
+
+</output_tail>

@@ -1,0 +1,5 @@
+THOUGHT: Now that the `factorial` method is correctly implemented as a static method, let's verify if the implementation works by running the tests again.
+
+```mswea_bash_command
+python -m pytest -q
+```

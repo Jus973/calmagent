@@ -1,0 +1,5 @@
+THOUGHT: I have added the implementation of the `IPAddress` class methods to the `solution.py` file. Now, I will run the tests again to see if the issue is resolved.
+
+```mswea_bash_command
+./run_tests.sh
+```

@@ -1,0 +1,14 @@
+THOUGHT: The errors indicate that the `factorial` method is not being recognized as a static method within the `ArrangementCalculator` class. I need to ensure that the `factorial` method is correctly defined and accessible.
+
+```mswea_bash_command
+sed -i '' '/def factorial(n):/,/pass$/c\
+    @staticmethod\
+    def factorial(n):\
+        if n == 0 or n == 1:\
+            return 1\
+        else:\
+            result = 1\
+            for i in range(2, n + 1):\
+                result *= i\
+            return result' solution.py
+```

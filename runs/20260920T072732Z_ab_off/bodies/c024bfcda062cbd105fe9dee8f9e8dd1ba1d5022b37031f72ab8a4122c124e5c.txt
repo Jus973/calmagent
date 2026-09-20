@@ -1,0 +1,5 @@
+<returncode>1</returncode>
+<output>
+sed: 5: "/vigenere_cipher/a\
+    ...": command c expects \ followed by text
+</output>

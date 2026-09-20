@@ -1,0 +1,10 @@
+<returncode>0</returncode>
+<output>
+total 24
+drwxr-xr-x@ 6 justinzhang  staff   192 Sep 20 02:56 .
+drwx------@ 3 justinzhang  staff    96 Sep 20 04:05 ..
+-rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TASK.md
+-rw-r--r--@ 1 justinzhang  staff    75 Sep 20 02:56 conftest.py
+-rw-r--r--@ 1 justinzhang  staff  1402 Sep 20 02:56 solution.py
+drwxr-xr-x@ 4 justinzhang  staff   128 Sep 20 02:56 tests
+</output>

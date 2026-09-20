@@ -1,0 +1,46 @@
+THOUGHT: The test suite is failing because the `total` and `due` methods of the `DiscountStrategy` class are returning `None` instead of the expected values. I need to implement these methods correctly.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+class DiscountStrategy:
+    FidelityPromo = 'FidelityPromo'
+    BulkItemPromo = 'BulkItemPromo'
+    LargeOrderPromo = 'LargeOrderPromo'
+
+    def __init__(self, customer, cart, promo=None):
+        self.customer = customer
+        self.cart = cart
+        self.promo = promo
+
+    def total(self):
+        total = sum(item['quantity'] * item['price'] for item in self.cart)
+        if self.promo == self.FidelityPromo:
+            total -= total * 0.1
+        elif self.promo == self.BulkItemPromo:
+            total -= sum(item['quantity'] * item['price'] * 0.2 for item in self.cart if item['quantity'] > 5)
+        elif self.promo == self.LargeOrderPromo:
+            total -= total * 0.1
+        return total
+
+    def due(self):
+        total = self.total()
+        if self.promo == self.FidelityPromo:
+            total -= total * 0.1
+        elif self.promo == self.BulkItemPromo:
+            total -= sum(item['quantity'] * item['price'] * 0.2 for item in self.cart if item['quantity'] > 5)
+        elif self.promo == self.LargeOrderPromo:
+            total -= total * 0.1
+        return total
+
+    def promotion(self, order):
+        if self.promo == self.FidelityPromo:
+            return order.total() * 0.1
+        elif self.promo == self.BulkItemPromo:
+            return sum(item['quantity'] * item['price'] * 0.2 for item in self.cart if item['quantity'] > 5)
+        elif self.promo == self.LargeOrderPromo:
+            return order.total() * 0.1
+        else:
+            return 0
+EOF
+./run_tests.sh
+```

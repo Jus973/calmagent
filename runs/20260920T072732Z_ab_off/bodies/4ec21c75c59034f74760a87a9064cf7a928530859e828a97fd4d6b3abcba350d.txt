@@ -1,0 +1,14 @@
+THOUGHT: I need to implement the missing methods for the Caesar cipher, Vigenere cipher, and Rail Fence cipher. Let's start with the Caesar cipher.
+
+```mswea_bash_command
+sed -i '' '/caesar_cipher/a\
+    ciphertext = ""\
+    for char in plaintext:\
+        if char.isalpha():\
+            shift_base = 65 if char.isupper() else 97\
+            shifted_char = chr((ord(char) - shift_base + shift) % 26 + shift_base)\
+            ciphertext += shifted_char\
+        else:\
+            ciphertext += char\
+    return ciphertext' solution.py
+```

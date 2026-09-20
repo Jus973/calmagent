@@ -1,0 +1,11 @@
+THOUGHT: The `ArrangementCalculator` class has several methods that need implementation. Let's start with the `count` method, which calculates permutations.
+
+```mswea_bash_command
+sed -i '' '/def count(n, m=None):/,/pass$/c\
+    @staticmethod\
+    def count(n, m=None):\
+        if m is None or n == m:\
+            return ArrangementCalculator.factorial(n)\
+        else:\
+            return ArrangementCalculator.factorial(n) // ArrangementCalculator.factorial(n - m)' solution.py
+```

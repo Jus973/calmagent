@@ -1,0 +1,18 @@
+THOUGHT: The error persists because the `a` (append) command in `sed` requires a backslash before the newline. Let me correct that again.
+
+```mswea_bash_command
+sed -i '' '/vigenere_cipher/a\
+    ciphertext = ""\
+    key_length = len(self.key)\
+    for i in range(len(plaintext)):\\
+        char = plaintext[i]\
+        if char.isalpha():\\
+            shift_base = 65 if char.isupper() else 97\\
+            key_char = self.key[i % key_length]\\
+            key_shift = ord(key_char) - 65 if key_char.isupper() else ord(key_char) - 97\\
+            shifted_char = chr((ord(char) - shift_base + key_shift) % 26 + shift_base)\
+            ciphertext += shifted_char\
+        else:\\
+            ciphertext += char\
+    return ciphertext' solution.py
+```

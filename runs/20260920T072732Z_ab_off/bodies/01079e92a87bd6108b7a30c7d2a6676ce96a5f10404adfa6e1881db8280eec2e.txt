@@ -1,0 +1,38 @@
+THOUGHT: The `BalancedBrackets` class is defined with methods to clear non-bracket characters and check for balanced brackets. I need to implement the logic for these methods.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+
+    def clear_expr(self):
+        """
+        Clears the expression of all characters that are not brackets.
+        >>> b = BalancedBrackets("a(b)c")
+        >>> b.clear_expr()
+        >>> b.expr
+        '()'
+        """
+        self.expr = ''.join(char for char in self.expr if char in self.left_brackets + self.right_brackets)
+
+    def check_balanced_brackets(self):
+        """
+        Checks if the expression has balanced brackets.
+        :return: True if the expression has balanced brackets, False otherwise.
+        >>> b = BalancedBrackets("a(b)c")
+        >>> b.check_balanced_brackets()
+        True
+        """
+        for char in self.expr:
+            if char in self.left_brackets:
+                self.stack.append(char)
+            elif char in self.right_brackets:
+                pos = self.right_brackets.index(char)
+                if ((len(self.stack) > 0) and (self.left_brackets[pos] == self.stack[len(self.stack)-1])):
+                    self.stack.pop()
+                else:
+                    return False
+        if len(self.stack) == 0:
+            return True
+        else:
+            return False
+EOF
+```

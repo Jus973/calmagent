@@ -1,0 +1,5 @@
+THOUGHT: I have edited the `solution.py` file to implement the required methods. Now, I will run the tests again to verify if the issues are resolved.
+
+```mswea_bash_command
+./run_tests.sh
+```

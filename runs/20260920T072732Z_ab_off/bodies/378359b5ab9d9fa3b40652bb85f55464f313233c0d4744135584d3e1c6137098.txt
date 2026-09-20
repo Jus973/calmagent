@@ -1,0 +1,10 @@
+THOUGHT: The `select_all` method should generate a list of all arrangements by selecting at least 1 item and at most the number of internal datas.
+
+```mswea_bash_command
+sed -i '' '/def select_all(self):/,/pass$/c\
+    def select_all(self):\
+        total = []\
+        for i in range(1, len(self.datas) + 1):\
+            total.extend(list(itertools.combinations(self.datas, i)))\
+        return total' solution.py
+```

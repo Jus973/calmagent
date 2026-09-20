@@ -1,0 +1,5 @@
+THOUGHT: I need to check the contents of `solution.py` to understand what class and methods are expected.
+
+```mswea_bash_command
+cat solution.py
+```

@@ -1,0 +1,5 @@
+THOUGHT: The test failures indicate that the `get` method is not returning the expected sublists. I need to adjust the `get` method to correctly handle the partitioning.
+
+```mswea_bash_command
+sed -i '' 's/return self.nums[start:end]/return self.nums[start:start + len(self.nums) // self.k]/' solution.py
+```

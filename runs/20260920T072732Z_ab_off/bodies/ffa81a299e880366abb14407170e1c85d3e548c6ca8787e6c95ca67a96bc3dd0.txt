@@ -1,0 +1,24 @@
+THOUGHT: The `AvgPartition` class is defined with an initializer and two methods: `setNum` and `get`. The `setNum` method is supposed to calculate the size of each block and the remainder of the division. The `get` method should return the corresponding block based on the index.
+
+I need to implement these methods to ensure that the test suite passes. Let's start with the `setNum` method.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+
+    def setNum(self):
+        """
+        Calculate the size of each block and the remainder of the division.
+        :return: the size of each block and the remainder of the division, tuple.
+        >>> a = AvgPartition([1, 2, 3, 4], 2)
+        >>> a.setNum()
+        (2, 0)
+        """
+        length = len(self.lst)
+        num_blocks = self.limit
+        if num_blocks <= 0:
+            raise ValueError("Number of partitions must be greater than 0")
+        block_size = length // num_blocks
+        remainder = length % num_blocks
+        return block_size, remainder
+EOF
+```

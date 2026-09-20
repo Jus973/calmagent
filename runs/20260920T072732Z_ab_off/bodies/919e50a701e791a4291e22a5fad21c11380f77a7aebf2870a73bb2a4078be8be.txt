@@ -1,0 +1,44 @@
+THOUGHT: The test failures indicate that the `due` and `promotion` methods are not correctly applying the discounts. I need to adjust the logic for calculating the discounts.
+
+```mswea_bash_command
+cat <<'EOF' > solution.py
+class DiscountStrategy:
+    FidelityPromo = 'FidelityPromo'
+    BulkItemPromo = 'BulkItemPromo'
+    LargeOrderPromo = 'LargeOrderPromo'
+
+    def __init__(self, customer, cart, promo=None):
+        self.customer = customer
+        self.cart = cart
+        self.promo = promo
+
+    def total(self):
+        total = sum(item['quantity'] * item['price'] for item in self.cart)
+        if self.promo == self.FidelityPromo:
+            total -= total * 0.1
+        elif self.promo == self.BulkItemPromo:
+            total -= sum(item['quantity'] * item['price'] * 0.25 for item in self.cart if item['quantity'] > 5)
+        elif self.promo == self.LargeOrderPromo:
+            total -= total * 0.1
+        return total
+
+    def due(self):
+        total = self.total()
+        if self.promo == self.FidelityPromo:
+            total -= total * 0.1
+        elif self.promo == self.BulkItemPromo:
+            total -= sum(item['quantity'] * item['price'] * 0.25 for item in self.cart if item['quantity'] > 5)
+        elif self.promo == self.LargeOrderPromo:
+            total -= total * 0.1
+        return total
+
+    def promotion(self, order):
+        if self.promo == self.FidelityPromo:
+            return order.total() * 0.1
+        elif self.promo == self.BulkItemPromo:
+            return sum(item['quantity'] * item['price'] * 0.25 for item in self.cart if item['quantity'] > 5)
+        elif self.promo == self.LargeOrderPromo:
+            return order.total() * 0.1
+        return 0
+EOF
+```

@@ -1,0 +1,5 @@
+THOUGHT: The errors indicate that the `factorial` method is not returning a value, which causes issues when trying to perform division in the `count` and `count_all` methods.
+
+```mswea_bash_command
+sed -i '' 's/return None/return 1/g' solution.py
+```

@@ -1,0 +1,24 @@
+THOUGHT: I need to implement the missing methods in `ArrangementCalculator` based on their docstrings and examples provided.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+    @staticmethod
+    def count(n, m=None):
+        if m is None or n == m:
+            return ArrangementCalculator.factorial(n)
+        else:
+            return ArrangementCalculator.factorial(n) // ArrangementCalculator.factorial(n - m)
+
+    @staticmethod
+    def count_all(n):
+        return sum(ArrangementCalculator.count(n, m) for m in range(1, n + 1))
+
+    def select(self, m=None):
+        if m is None:
+            m = len(self.datas)
+        return list(itertools.combinations(self.datas, m))
+
+    def select_all(self):
+        return [list(itertools.combinations(self.datas, m)) for m in range(1, len(self.datas) + 1)]
+EOF
+```

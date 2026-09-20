@@ -1,0 +1,5 @@
+THOUGHT: I need to verify that the implementation works by running the tests again.
+
+```mswea_bash_command
+python -m pytest -q
+```

@@ -1,0 +1,5 @@
+THOUGHT: The `convert` method looks correct. Let's manually check the conversion rates to ensure they are accurate.
+
+```mswea_bash_command
+python -c "from solution import CurrencyConverter; cc = CurrencyConverter(); print(cc.convert(64, 'CNY', 'GBP'))"
+```

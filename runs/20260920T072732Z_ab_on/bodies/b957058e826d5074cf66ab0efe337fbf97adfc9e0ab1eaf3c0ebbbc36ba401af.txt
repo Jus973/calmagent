@@ -1,0 +1,6 @@
+THOUGHT: Now that the `find_blank` method is implemented, I will move on to implementing the `move` method. This method will handle moving the blank tile in the specified direction.
+
+```mswea_bash_command
+sed -i '' '/def move(self, state, direction):/,/return new_state:/c\
+    def move(self, state, direction):\\n        i, j = self.find_blank(state)\\n        if direction == \'up\' and i > 0:\\n            state[i][j], state[i-1][j] = state[i-1][j], state[i][j]\\n        elif direction == \'down\' and i < 2:\\n            state[i][j], state[i+1][j] = state[i+1][j], state[i][j]\\n        elif direction == \'left\' and j > 0:\\n            state[i][j], state[i][j-1] = state[i][j-1], state[i][j]\\n        elif direction == \'right\' and j < 2:\\n            state[i][j], state[i][j+1] = state[i][j+1], state[i][j]\\n        return state' solution.py
+```

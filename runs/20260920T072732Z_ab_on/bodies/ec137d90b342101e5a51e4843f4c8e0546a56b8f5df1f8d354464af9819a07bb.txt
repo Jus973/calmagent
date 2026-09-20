@@ -1,0 +1,22 @@
+Format error:
+
+<error>
+Expected exactly 1 action, found 0.
+</error>
+
+Here is general guidance on how to format your response:
+
+Please always provide EXACTLY ONE action in triple backticks, found 0 actions.
+
+Please format your action in triple backticks as shown in <response_example>.
+
+<response_example>
+Here are some thoughts about why you want to perform the action.
+
+```mswea_bash_command
+<action>
+```
+</response_example>
+
+If you have completed your assignment, please consult the first message about how to
+submit your solution (you will not be able to continue working on this task after that).

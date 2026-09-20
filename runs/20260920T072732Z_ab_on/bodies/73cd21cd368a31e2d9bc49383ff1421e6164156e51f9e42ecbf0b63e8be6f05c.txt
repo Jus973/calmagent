@@ -1,0 +1,183 @@
+<returncode>1</returncode>
+<output>
+FFFFFFFFFFFFFFFF                                                         [100%]
+=================================== FAILURES ===================================
+_____________________ IPAddressTestIsValid.test_is_valid_1 _____________________
+
+self = <tests.test_solution.IPAddressTestIsValid testMethod=test_is_valid_1>
+
+    def test_is_valid_1(self):
+        ipaddress = IPAddress("10.10.10.10")
+>       self.assertEqual(ipaddress.is_valid(), True)
+E       AssertionError: None != True
+
+tests/test_solution.py:9: AssertionError
+_____________________ IPAddressTestIsValid.test_is_valid_2 _____________________
+
+self = <tests.test_solution.IPAddressTestIsValid testMethod=test_is_valid_2>
+
+    def test_is_valid_2(self):
+        ipaddress = IPAddress("-1.10.10.10")
+>       self.assertEqual(ipaddress.is_valid(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:13: AssertionError
+_____________________ IPAddressTestIsValid.test_is_valid_3 _____________________
+
+self = <tests.test_solution.IPAddressTestIsValid testMethod=test_is_valid_3>
+
+    def test_is_valid_3(self):
+        ipaddress = IPAddress("10.10.10")
+>       self.assertEqual(ipaddress.is_valid(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:17: AssertionError
+_____________________ IPAddressTestIsValid.test_is_valid_4 _____________________
+
+self = <tests.test_solution.IPAddressTestIsValid testMethod=test_is_valid_4>
+
+    def test_is_valid_4(self):
+        ipaddress = IPAddress("a.10.10.10")
+>       self.assertEqual(ipaddress.is_valid(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:21: AssertionError
+_____________________ IPAddressTestIsValid.test_is_valid_5 _____________________
+
+self = <tests.test_solution.IPAddressTestIsValid testMethod=test_is_valid_5>
+
+    def test_is_valid_5(self):
+        ipaddress = IPAddress("300.10.10.10")
+>       self.assertEqual(ipaddress.is_valid(), False)
+E       AssertionError: None != False
+
+tests/test_solution.py:25: AssertionError
+___________________ IPAddressTestGetOctets.test_get_octets_1 ___________________
+
+self = <tests.test_solution.IPAddressTestGetOctets testMethod=test_get_octets_1>
+
+    def test_get_octets_1(self):
+        ipaddress = IPAddress("10.10.10.10")
+>       self.assertEqual(ipaddress.get_octets(), ["10", "10", "10", "10"])
+E       AssertionError: None != ['10', '10', '10', '10']
+
+tests/test_solution.py:31: AssertionError
+___________________ IPAddressTestGetOctets.test_get_octets_2 ___________________
+
+self = <tests.test_solution.IPAddressTestGetOctets testMethod=test_get_octets_2>
+
+    def test_get_octets_2(self):
+        ipaddress = IPAddress("a.10.10.10")
+>       self.assertEqual(ipaddress.get_octets(), [])
+E       AssertionError: None != []
+
+tests/test_solution.py:35: AssertionError
+___________________ IPAddressTestGetOctets.test_get_octets_3 ___________________
+
+self = <tests.test_solution.IPAddressTestGetOctets testMethod=test_get_octets_3>
+
+    def test_get_octets_3(self):
+        ipaddress = IPAddress("-1.10.10.10")
+>       self.assertEqual(ipaddress.get_octets(), [])
+E       AssertionError: None != []
+
+tests/test_solution.py:39: AssertionError
+___________________ IPAddressTestGetOctets.test_get_octets_4 ___________________
+
+self = <tests.test_solution.IPAddressTestGetOctets testMethod=test_get_octets_4>
+
+    def test_get_octets_4(self):
+        ipaddress = IPAddress("300.10.10.10")
+>       self.assertEqual(ipaddress.get_octets(), [])
+E       AssertionError: None != []
+
+tests/test_solution.py:43: AssertionError
+___________________ IPAddressTestGetOctets.test_get_octets_5 ___________________
+
+self = <tests.test_solution.IPAddressTestGetOctets testMethod=test_get_octets_5>
+
+    def test_get_octets_5(self):
+        ipaddress = IPAddress(".10.10.10")
+>       self.assertEqual(ipaddress.get_octets(), [])
+E       AssertionError: None != []
+
+tests/test_solution.py:47: AssertionError
+___________________ IPAddressTestGetBinary.test_get_binary_1 ___________________
+
+self = <tests.test_solution.IPAddressTestGetBinary testMethod=test_get_binary_1>
+
+    def test_get_binary_1(self):
+        ipaddress = IPAddress("10.10.10.10")
+>       self.assertEqual(ipaddress.get_binary(), "00001010.00001010.00001010.00001010")
+E       AssertionError: None != '00001010.00001010.00001010.00001010'
+
+tests/test_solution.py:53: AssertionError
+___________________ IPAddressTestGetBinary.test_get_binary_2 ___________________
+
+self = <tests.test_solution.IPAddressTestGetBinary testMethod=test_get_binary_2>
+
+    def test_get_binary_2(self):
+        ipaddress = IPAddress("a.10.10.10")
+>       self.assertEqual(ipaddress.get_binary(), '')
+E       AssertionError: None != ''
+
+tests/test_solution.py:57: AssertionError
+___________________ IPAddressTestGetBinary.test_get_binary_3 ___________________
+
+self = <tests.test_solution.IPAddressTestGetBinary testMethod=test_get_binary_3>
+
+    def test_get_binary_3(self):
+        ipaddress = IPAddress("-1.10.10.10")
+>       self.assertEqual(ipaddress.get_binary(), '')
+E       AssertionError: None != ''
+
+tests/test_solution.py:61: AssertionError
+___________________ IPAddressTestGetBinary.test_get_binary_4 ___________________
+
+self = <tests.test_solution.IPAddressTestGetBinary testMethod=test_get_binary_4>
+
+    def test_get_binary_4(self):
+        ipaddress = IPAddress("300.10.10.10")
+>       self.assertEqual(ipaddress.get_binary(), '')
+E       AssertionError: None != ''
+
+tests/test_solution.py:65: AssertionError
+___________________ IPAddressTestGetBinary.test_get_binary_5 ___________________
+
+self = <tests.test_solution.IPAddressTestGetBinary testMethod=test_get_binary_5>
+
+    def test_get_binary_5(self):
+        ipaddress = IPAddress(".10.10.10")
+>       self.assertEqual(ipaddress.get_binary(), '')
+E       AssertionError: None != ''
+
+tests/test_solution.py:69: AssertionError
+_________________________ IPAddressTest.test_IPAddress _________________________
+
+self = <tests.test_solution.IPAddressTest testMethod=test_IPAddress>
+
+    def test_IPAddress(self):
+        ipaddress = IPAddress("10.10.10.10")
+>       self.assertEqual(ipaddress.is_valid(), True)
+E       AssertionError: None != True
+
+tests/test_solution.py:75: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::IPAddressTestIsValid::test_is_valid_1 - Assert...
+FAILED tests/test_solution.py::IPAddressTestIsValid::test_is_valid_2 - Assert...
+FAILED tests/test_solution.py::IPAddressTestIsValid::test_is_valid_3 - Assert...
+FAILED tests/test_solution.py::IPAddressTestIsValid::test_is_valid_4 - Assert...
+FAILED tests/test_solution.py::IPAddressTestIsValid::test_is_valid_5 - Assert...
+FAILED tests/test_solution.py::IPAddressTestGetOctets::test_get_octets_1 - As...
+FAILED tests/test_solution.py::IPAddressTestGetOctets::test_get_octets_2 - As...
+FAILED tests/test_solution.py::IPAddressTestGetOctets::test_get_octets_3 - As...
+FAILED tests/test_solution.py::IPAddressTestGetOctets::test_get_octets_4 - As...
+FAILED tests/test_solution.py::IPAddressTestGetOctets::test_get_octets_5 - As...
+FAILED tests/test_solution.py::IPAddressTestGetBinary::test_get_binary_1 - As...
+FAILED tests/test_solution.py::IPAddressTestGetBinary::test_get_binary_2 - As...
+FAILED tests/test_solution.py::IPAddressTestGetBinary::test_get_binary_3 - As...
+FAILED tests/test_solution.py::IPAddressTestGetBinary::test_get_binary_4 - As...
+FAILED tests/test_solution.py::IPAddressTestGetBinary::test_get_binary_5 - As...
+FAILED tests/test_solution.py::IPAddressTest::test_IPAddress - AssertionError...
+16 failed in 0.03s
+</output>

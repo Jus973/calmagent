@@ -1,0 +1,211 @@
+<returncode>1</returncode>
+<warning>
+The output of your last command was too long.
+Please try a different command that produces less output.
+If you're looking at a file you can try use head, tail or sed to view a smaller number of lines selectively.
+If you're using grep or find and it produced too much output, you can use a more selective search pattern.
+If you really need to see something from the full command's output, you can redirect output to a file and then search in that file.
+</warning><output_head>
+......FFFFFFFFFFFF.FFFFFFF                                               [100%]
+=================================== FAILURES ===================================
+______________________ DiscountStrategyTestDue.test_due_2 ______________________
+
+self = <tests.test_solution.DiscountStrategyTestDue testMethod=test_due_2>
+
+    def test_due_2(self):
+        customer = {'name': 'John Doe', 'fidelity': 1200}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.FidelityPromo)
+        expected_due = 237.5
+        actual_due = order.due()
+>       self.assertEqual(actual_due, expected_due)
+E       AssertionError: 202.5 != 237.5
+
+tests/test_solution.py:69: AssertionError
+______________________ DiscountStrategyTestDue.test_due_3 ______________________
+
+self = <tests.test_solution.DiscountStrategyTestDue testMethod=test_due_3>
+
+    def test_due_3(self):
+        customer = {'name': 'John Doe', 'fidelity': 1200}
+        cart = [{'product': 'product1', 'quantity': 20, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.BulkItemPromo)
+        expected_due = 410.0
+        actual_due = order.due()
+>       self.assertEqual(actual_due, expected_due)
+E       AssertionError: 250.0 != 410.0
+
+tests/test_solution.py:78: AssertionError
+______________________ DiscountStrategyTestDue.test_due_4 ______________________
+
+self = <tests.test_solution.DiscountStrategyTestDue testMethod=test_due_4>
+
+    def test_due_4(self):
+        customer = {'name': 'John Doe', 'fidelity': 1200}
+        cart = [{'product': f'product{i}', 'quantity': 1, 'price': 10.0} for i in range(15)]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.LargeOrderPromo)
+        expected_due = 139.5
+        actual_due = order.due()
+>       self.assertEqual(actual_due, expected_due)
+E       AssertionError: 121.5 != 139.5
+
+tests/test_solution.py:86: AssertionError
+______________________ DiscountStrategyTestDue.test_due_5 ______________________
+
+self = <tests.test_solution.DiscountStrategyTestDue testMethod=test_due_5>
+
+    def test_due_5(self):
+        customer = {'name': 'John Doe', 'fidelity': 900}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.FidelityPromo)
+        expected_due = 250.0
+        actual_due = order.due()
+>       self.assertEqual(actual_due, expected_due)
+E       AssertionError: 202.5 != 250.0
+
+tests/test_solution.py:95: AssertionError
+___________ DiscountStrategyTestFidelityPromo.test_fidelity_promo_1 ____________
+
+self = <tests.test_solution.DiscountStrategyTestFidelityPromo testMethod=test_fidelity_promo_1>
+
+    def test_fidelity_promo_1(self):
+        customer = {'name': 'John Doe', 'fidelity': 1000}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.FidelityPromo)
+        expected_discount = 12.5
+        actual_discount = order.promotion(order)
+>       self.assertEqual(actual_discount, expected_discount)
+E       AssertionError: 22.5 != 12.5
+
+tests/test_solution.py:106: AssertionError
+___________ DiscountStrategyTestFidelityPromo.test_fidelity_promo_2 ____________
+
+self = <tests.test_solution.DiscountStrategyTestFidelityPromo testMethod=test_fidelity_promo_2>
+
+    def test_fidelity_promo_2(self):
+        customer = {'name': 'John Doe', 'fidelity': 800}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.FidelityPromo)
+        expected_discount = 0
+        actual_discount = order.promotion(order)
+>       self.assertEqual(actual_discount, expected_discount)
+E       AssertionError: 22.5 != 0
+
+tests/test_solution.py:115: AssertionError
+___________ DiscountStrategyTestFidelityPromo.test_fidelity_promo_3 ____________
+
+self = <tests.test_solution.DiscountStrategyTestFidelityPromo testMethod=test_fidelity_promo_3>
+
+    def test_fidelity_promo_3(self):
+        customer = {'name': 'John Doe', 'fidelity': 0}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.FidelityPromo)
+        expected_discount = 0
+        actual_discount = order.promotion(order)
+>       self.assertEqual(actual_discount, expected_discount)
+E       AssertionError: 22.5 != 0
+
+tests/test_solution.py:124: AssertionError
+___________ DiscountStrategyTestFidelityPromo.test_fidelity_promo_4 ____________
+
+self = <test
+</output_head>
+<elided_chars>
+6032 characters elided
+</elided_chars>
+<output_tail>
+tStrategy(customer, cart, DiscountStrategy.LargeOrderPromo)
+        expected_discount = 70.0
+        actual_discount = order.promotion(order)
+>       self.assertAlmostEqual(actual_discount, expected_discount)
+E       AssertionError: 90.0 != 70.0 within 7 places (20.0 difference)
+
+tests/test_solution.py:215: AssertionError
+_________ DiscountStrategyTestLargeOrderPromo.test_large_order_promo_4 _________
+
+self = <tests.test_solution.DiscountStrategyTestLargeOrderPromo testMethod=test_large_order_promo_4>
+
+    def test_large_order_promo_4(self):
+        customer = {'name': 'John Doe', 'fidelity': 1200}
+        cart = [{'product': f'product{i}', 'quantity': 1, 'price': 10.0} for i in range(1000)]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.LargeOrderPromo)
+        expected_discount = 700.0
+        actual_discount = order.promotion(order)
+>       self.assertAlmostEqual(actual_discount, expected_discount)
+E       AssertionError: 900.0 != 700.0 within 7 places (200.0 difference)
+
+tests/test_solution.py:223: AssertionError
+_________ DiscountStrategyTestLargeOrderPromo.test_large_order_promo_5 _________
+
+self = <tests.test_solution.DiscountStrategyTestLargeOrderPromo testMethod=test_large_order_promo_5>
+
+    def test_large_order_promo_5(self):
+        customer = {'name': 'John Doe', 'fidelity': 1200}
+        cart = [{'product': f'product{i}', 'quantity': 1, 'price': 10.0} for i in range(1)]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.LargeOrderPromo)
+        expected_discount = 0.0
+        actual_discount = order.promotion(order)
+>       self.assertAlmostEqual(actual_discount, expected_discount)
+E       AssertionError: 0.9 != 0.0 within 7 places (0.9 difference)
+
+tests/test_solution.py:231: AssertionError
+__________________ DiscountStrategyTest.test_DiscountStrategy __________________
+
+self = <tests.test_solution.DiscountStrategyTest testMethod=test_DiscountStrategy>
+
+    def test_DiscountStrategy(self):
+        customer = {'name': 'John Doe', 'fidelity': 1200}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart)
+        expected_total = 250.0
+        actual_total = order.total()
+        self.assertEqual(actual_total, expected_total)
+    
+        customer = {'name': 'John Doe', 'fidelity': 1200}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart)
+        expected_due = 250.0
+        actual_due = order.due()
+        self.assertEqual(actual_due, expected_due)
+    
+        customer = {'name': 'John Doe', 'fidelity': 1000}
+        cart = [{'product': 'product1', 'quantity': 10, 'price': 20.0},
+                {'product': 'product2', 'quantity': 5, 'price': 10.0}]
+        order = DiscountStrategy(customer, cart, DiscountStrategy.FidelityPromo)
+        expected_discount = 12.5
+        actual_discount = order.promotion(order)
+>       self.assertEqual(actual_discount, expected_discount)
+E       AssertionError: 22.5 != 12.5
+
+tests/test_solution.py:258: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_solution.py::DiscountStrategyTestDue::test_due_2 - Assertio...
+FAILED tests/test_solution.py::DiscountStrategyTestDue::test_due_3 - Assertio...
+FAILED tests/test_solution.py::DiscountStrategyTestDue::test_due_4 - Assertio...
+FAILED tests/test_solution.py::DiscountStrategyTestDue::test_due_5 - Assertio...
+FAILED tests/test_solution.py::DiscountStrategyTestFidelityPromo::test_fidelity_promo_1
+FAILED tests/test_solution.py::DiscountStrategyTestFidelityPromo::test_fidelity_promo_2
+FAILED tests/test_solution.py::DiscountStrategyTestFidelityPromo::test_fidelity_promo_3
+FAILED tests/test_solution.py::DiscountStrategyTestFidelityPromo::test_fidelity_promo_4
+FAILED tests/test_solution.py::DiscountStrategyTestFidelityPromo::test_fidelity_promo_5
+FAILED tests/test_solution.py::DiscountStrategyTestBulkItemPromo::test_bulk_item_promo_1
+FAILED tests/test_solution.py::DiscountStrategyTestBulkItemPromo::test_bulk_item_promo_2
+FAILED tests/test_solution.py::DiscountStrategyTestBulkItemPromo::test_bulk_item_promo_3
+FAILED tests/test_solution.py::DiscountStrategyTestBulkItemPromo::test_bulk_item_promo_5
+FAILED tests/test_solution.py::DiscountStrategyTestLargeOrderPromo::test_large_order_promo_1
+FAILED tests/test_solution.py::DiscountStrategyTestLargeOrderPromo::test_large_order_promo_2
+FAILED tests/test_solution.py::DiscountStrategyTestLargeOrderPromo::test_large_order_promo_3
+FAILED tests/test_solution.py::DiscountStrategyTestLargeOrderPromo::test_large_order_promo_4
+FAILED tests/test_solution.py::DiscountStrategyTestLargeOrderPromo::test_large_order_promo_5
+FAILED tests/test_solution.py::DiscountStrategyTest::test_DiscountStrategy - ...
+19 failed, 7 passed in 0.07s
+
+</output_tail>

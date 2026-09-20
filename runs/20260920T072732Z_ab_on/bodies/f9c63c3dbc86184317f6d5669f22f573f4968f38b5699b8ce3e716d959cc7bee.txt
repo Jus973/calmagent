@@ -1,0 +1,5 @@
+<returncode>0</returncode>
+<output>
+................                                                         [100%]
+16 passed in 0.01s
+</output>

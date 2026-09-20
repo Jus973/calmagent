@@ -1,0 +1,37 @@
+THOUGHT: The test suite is failing because the `IPAddress` class methods are not implemented correctly. Specifically, the `is_valid`, `get_octets`, and `get_binary` methods are returning `None` instead of the expected values.
+
+I will edit the `solution.py` file to implement these methods according to the requirements.
+
+```mswea_bash_command
+cat <<'EOF' >> solution.py
+
+class IPAddress:
+    def __init__(self, ip):
+        self.ip = ip
+
+    def is_valid(self):
+        parts = self.ip.split('.')
+        if len(parts) != 4:
+            return False
+        for part in parts:
+            if not part.isdigit():
+                return False
+            num = int(part)
+            if num < 0 or num > 255:
+                return False
+        return True
+
+    def get_octets(self):
+        if self.is_valid():
+            return self.ip.split('.')
+        else:
+            return []
+
+    def get_binary(self):
+        if self.is_valid():
+            binary_parts = [format(int(part), '08b') for part in self.ip.split('.')]
+            return '.'.join(binary_parts)
+        else:
+            return ''
+EOF
+```

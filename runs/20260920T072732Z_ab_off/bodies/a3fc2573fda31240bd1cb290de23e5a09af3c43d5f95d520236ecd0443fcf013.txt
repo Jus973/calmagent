@@ -1,0 +1,5 @@
+THOUGHT: The manual check confirms that the conversion rate for `CNY` to `GBP` is correct. Let's try running the tests again.
+
+```mswea_bash_command
+python -m pytest -q
+```

@@ -40,6 +40,13 @@ composition needs every class to pass, so the rest would only add facts nobody i
 draws its next sample as soon as its previous one lands and stops once it has a passing fill, and generation
 is cancelled at the `∃` exit (late emissions are inert, so nothing is lost).
 
+Completions are streamed and each one **ends when the method it was asked for is complete** — including any
+private helper that method calls, and never inside an unfinished `<think>` block or before the prefix parses.
+The prompt asks for one method, but a 7B model keeps going: fences, prose, the neighbouring methods. Those
+tokens are decoded at the same rate as the ones we need and nothing downstream reads them, so the request is
+cut instead. The fill that lands is byte-identical to the one the full completion would have produced
+(`tests/test_stream.py`); `--no-stop-at-fill` decodes to the end. Streamed samples also carry `ttft_ms`.
+
 `--cache outcomes.jsonl` reuses test results across runs: a test
 class's result depends only on the test module and the fills it can reach, both content hashes, so re-solving
 a class — or one sharing helpers — skips the subprocess. Reused results are marked `reused:` in the log and
@@ -53,7 +60,7 @@ python3.11 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/python -m pytest -q
 ```
 
-Serving is any OpenAI-compatible endpoint, configured by env only: `CALM_BASE_URL`, `CALM_MODEL`, `CALM_NO_N=1` if the server ignores `n`, `CALM_MAX_INFLIGHT`. On a Mac with Ollama, start the server with a per-sequence context big enough for the prompts (`OLLAMA_CONTEXT_LENGTH` is the **total** across parallel sequences; the defaults gave 512 tokens/sequence against ~615-token prompts):
+Serving is any OpenAI-compatible endpoint, configured by env only: `CALM_BASE_URL`, `CALM_MODEL`, `CALM_NO_N=1` if the server ignores `n`, `CALM_MAX_INFLIGHT`, `CALM_STREAM=1` to stream every sample (the early cut streams its own requests regardless; a server that answers a streamed request with a whole completion is read as one). On a Mac with Ollama, start the server with a per-sequence context big enough for the prompts (`OLLAMA_CONTEXT_LENGTH` is the **total** across parallel sequences; the defaults gave 512 tokens/sequence against ~615-token prompts):
 
 ```bash
 OLLAMA_NUM_PARALLEL=4 OLLAMA_CONTEXT_LENGTH=16384 OLLAMA_FLASH_ATTENTION=1 OLLAMA_KV_CACHE_TYPE=q8_0 ollama serve
@@ -70,6 +77,13 @@ python -m calm_coder.bench.experiment --arms a_greedy,c,calm --N 8 --seeds 0 --l
 python -m calm_coder.bench.confluence runs/<dir>        # H5
 python -m calm_coder.bench.metrics runs/<dir>           # metrics.json + summary.md
 python -m calm_coder.bench.charts runs/<dir>            # six charts, PNG + SVG
+```
+
+Latency is measured separately, one lever at a time, against a deterministic in-process server, because
+what the levers change is scheduling and a real model's sampling variance would swamp it:
+
+```bash
+python -m calm_coder.bench.latency --repeat 3 --tail short   # results/latency.md
 ```
 
 Arms: **CALM** (N fills per method → stub-context method tests → composition search), **C** (N whole-class samples, same oracle tests: the fair baseline), **C@tokens** (only the first C samples that fit in CALM's completion tokens: the headline comparison), **A** (holistic pass@1, unbiased from C's samples, plus a greedy sample). N ∈ {1,2,4,8} by nested subsampling of one N=8 generation. Agents never see tests; every arm is oracle-verified, so the headline number is coverage (as in *Large Language Monkeys*).

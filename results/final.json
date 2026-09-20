@@ -1,0 +1,146 @@
+{
+ "arms": [
+  "c",
+  "v2",
+  "wcr"
+ ],
+ "n_tasks": 10,
+ "seeds": [
+  0
+ ],
+ "N_per_arm": {
+  "c": 8,
+  "v2": 4,
+  "wcr": 4
+ },
+ "solve": {
+  "c": {
+   "rate": 0.6,
+   "ci": [
+    0.3126695474501864,
+    0.8318224187964902
+   ],
+   "ci_kind": "wilson",
+   "k": 6.0,
+   "n": 10,
+   "seeds_per_task": [
+    1
+   ],
+   "missing_tasks": []
+  },
+  "v2": {
+   "rate": 0.8,
+   "ci": [
+    0.49015684672072335,
+    0.9433190520193067
+   ],
+   "ci_kind": "wilson",
+   "k": 8.0,
+   "n": 10,
+   "seeds_per_task": [
+    1
+   ],
+   "missing_tasks": []
+  },
+  "wcr": {
+   "rate": 0.6,
+   "ci": [
+    0.3126695474501864,
+    0.8318224187964902
+   ],
+   "ci_kind": "wilson",
+   "k": 6.0,
+   "n": 10,
+   "seeds_per_task": [
+    1
+   ],
+   "missing_tasks": []
+  }
+ },
+ "paired": {
+  "v2-c": {
+   "unit": "task",
+   "n_tasks": 10,
+   "mcnemar_tasks": 10,
+   "ambiguous_tasks": 0,
+   "arm_only": 2,
+   "base_only": 0,
+   "mcnemar_p": 0.5,
+   "diff": 0.2,
+   "bootstrap_ci": [
+    0.0,
+    0.5
+   ]
+  },
+  "wcr-c": {
+   "unit": "task",
+   "n_tasks": 10,
+   "mcnemar_tasks": 10,
+   "ambiguous_tasks": 0,
+   "arm_only": 0,
+   "base_only": 0,
+   "mcnemar_p": 1.0,
+   "diff": 0.0,
+   "bootstrap_ci": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "systems": {
+  "c": {
+   "tasks": 10,
+   "decode_tokens_mean": 3796.7,
+   "prompt_tokens_mean": 3968.8,
+   "cached_tokens_mean": 3597.2,
+   "requests_mean": 8.0,
+   "ttfv_ms_median": 69485.5,
+   "over_budget": 0
+  },
+  "v2": {
+   "tasks": 10,
+   "decode_tokens_mean": 2567.0,
+   "prompt_tokens_mean": 10598.9,
+   "cached_tokens_mean": 9935.5,
+   "requests_mean": 4.5,
+   "ttfv_ms_median": 198897.5,
+   "over_budget": 0
+  },
+  "wcr": {
+   "tasks": 10,
+   "decode_tokens_mean": 2825.2,
+   "prompt_tokens_mean": 6298.5,
+   "cached_tokens_mean": 6099.0,
+   "requests_mean": 3.2,
+   "ttfv_ms_median": 133984.0,
+   "over_budget": 0
+  }
+ },
+ "v2": {
+  "v2": {
+   "repair_rounds_mean": 0.9,
+   "solved_by_seed_samples": 6,
+   "solved_total": 8,
+   "dead_slots_after_sampling_mean": 1.1,
+   "dead_slots_at_end_mean": 0.2,
+   "feedback": [
+    "F1"
+   ]
+  },
+  "wcr": {
+   "repair_rounds_mean": 0.4,
+   "solved_by_seed_samples": 6,
+   "solved_total": 6,
+   "dead_slots_after_sampling_mean": 1.1,
+   "dead_slots_at_end_mean": 1.1,
+   "feedback": [
+    "F1"
+   ]
+  }
+ },
+ "runs": [
+  "runs/20260919T214805Z_pilot_c",
+  "runs/20260919T232052Z_pilot_v2"
+ ],
+ "excluded": []
+}

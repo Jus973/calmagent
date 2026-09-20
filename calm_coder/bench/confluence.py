@@ -10,6 +10,7 @@ import json
 import random
 from pathlib import Path
 
+from calm_coder.jsonl import read_jsonl
 from calm_coder.store.defs import Composition
 from calm_coder.store.derive import complete, done, verified
 from calm_coder.store.store import Store
@@ -39,7 +40,7 @@ def check_run(d: Path, orders: int = 20) -> dict:
     out = {"files": len(files), "pass": 0, "fail": 0, "orders": orders, "failures": [], "events_total": 0}
     for f in files:
         task = task_from_row(rows[f.name.split("__")[0]])
-        events = [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
+        events = read_jsonl(f)
         out["events_total"] += len(events)
         ok, diffs = check_log(events, task, orders)
         out["pass" if ok else "fail"] += 1

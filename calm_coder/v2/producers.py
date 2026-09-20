@@ -12,7 +12,7 @@ import asyncio
 import hashlib
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Callable, ClassVar, Sequence
 
 from calm_coder.agents.fill import Emission, ingest
 from calm_coder.serve.prompts import (
@@ -82,8 +82,6 @@ class ProduceResult:
     cached_tokens: int | None = None
     requests: int = 0
     seed_comps: list[dict] = field(default_factory=list)   # whole-class samples' own bindings
-    new_fills: list[str] = field(default_factory=list)
-    texts: list[str] = field(default_factory=list)
 
 
 async def warmup(client: "Client", task: "Task", budget: Budget,
@@ -102,20 +100,6 @@ async def warmup(client: "Client", task: "Task", budget: Budget,
     budget.spend(s.completion_tokens)
     return ProduceResult(producer="warmup", decode_tokens=s.completion_tokens,
                          prompt_tokens=s.prompt_tokens, cached_tokens=s.cached_tokens, requests=1)
-
-
-async def _sample_group(client: "Client", task: "Task", arm: str, slot: str, rnd: int, n: int,
-                        messages: list[dict], t_start: float, *, run_seed: int, temperature: float,
-                        top_p: float | None, max_tokens: int) -> list[Emission]:
-    """One request per (slot, round) with n choices: the server computes the shared prefix once.
-
-    Clients whose server ignores `n` fan the request out themselves with seed+i, so the sample
-    identities are the same either way.
-    """
-    seed = seed_for(run_seed, task.task_id, arm, slot, rnd, 0)
-    samples = await client.sample(messages, n=n, temperature=temperature, top_p=top_p,
-                                  max_tokens=max_tokens, seed=seed)
-    return [_emission(task, arm, slot, rnd, i, s, t_start, seed + i) for i, s in enumerate(samples)]
 
 
 def _emission(task: "Task", arm: str, slot: str, rnd: int, idx: int, s, t_start: float,
@@ -140,90 +124,108 @@ def _totals(res: ProduceResult, emissions: Sequence[Emission], requests: int) ->
     return res
 
 
-class WholeClassProducer:
-    """k whole-class samples, decomposed into slot candidates on insert."""
+@dataclass
+class _Producer:
+    """Sampling parameters and the two round shapes every producer is built out of: `n` samples of
+    the whole class, or `per_slot` samples of each of several slots. Subclasses only choose the
+    prompts and how many samples the round asks for."""
 
-    name = "whole_class"
+    name: ClassVar[str] = ""
 
-    def __init__(self, client: "Client", *, k: int, arm: str, rnd: int = 0, run_seed: int = 0,
-                 temperature: float = SAMPLING["temperature"], top_p: float | None = SAMPLING["top_p"],
-                 max_tokens: int = SAMPLING["max_tokens_class"]):
-        self.client, self.k, self.arm, self.rnd, self.run_seed = client, k, arm, rnd, run_seed
-        self.temperature, self.top_p, self.max_tokens = temperature, top_p, max_tokens
+    client: "Client"
+    n: int
+    arm: str
+    rnd: int = 0
+    run_seed: int = 0
+    temperature: float = SAMPLING["temperature"]
+    top_p: float | None = SAMPLING["top_p"]
+    max_tokens: int = SAMPLING["max_tokens_slot"]
 
-    async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
+    async def _group(self, task: "Task", slot: str, n: int, messages: list[dict], t_start: float,
+                     max_tokens: int) -> list[Emission]:
+        """One request per (slot, round) with n choices: the server computes the shared prefix once.
+
+        Clients whose server ignores `n` fan the request out themselves with seed+i, so the sample
+        identities are the same either way.
+        """
+        seed = seed_for(self.run_seed, task.task_id, self.arm, slot, self.rnd, 0)
+        samples = await self.client.sample(messages, n=n, temperature=self.temperature,
+                                           top_p=self.top_p, max_tokens=max_tokens, seed=seed)
+        return [_emission(task, self.arm, slot, self.rnd, i, s, t_start, seed + i)
+                for i, s in enumerate(samples)]
+
+    async def _class_round(self, task: "Task", store: Store, budget: Budget,
+                           messages: Callable[[], list[dict]]) -> ProduceResult:
+        """n whole-class samples, each decomposed into slot candidates and kept as its own
+        composition (`seed_comps`), which is what makes pooling lossless."""
         t_start = time.monotonic()
         res = ProduceResult(producer=self.name)
-        max_tokens = cap_tokens(budget, self.k, self.max_tokens)
+        max_tokens = cap_tokens(budget, self.n, self.max_tokens)
         if not max_tokens:
             return res
-
-        emissions = await _sample_group(self.client, task, self.arm, SPINE, self.rnd, self.k,
-                                        whole_class_messages(task), t_start, run_seed=self.run_seed,
-                                        temperature=self.temperature, top_p=self.top_p,
-                                        max_tokens=max_tokens)
+        emissions = await self._group(task, SPINE, self.n, messages(), t_start, max_tokens)
         for e in emissions:
             ing = ingest_class_sample(task, store, e.text,
                                       {"producer": self.name, "arm": self.arm, "round": self.rnd,
                                        "sample_idx": e.sample_idx, "seed": e.sample_seed})
             e.extract_error = ing.error
             e.def_hashes = ing.def_hashes
-            res.new_fills += [h for h in ing.bindings.values()]
-            res.texts.append(e.text)
             if ing.complete and not ing.error:
                 res.seed_comps.append(dict(ing.bindings))
         budget.spend(sum(e.completion_tokens for e in emissions))
         return _totals(res, emissions, 1)
 
+    async def _slot_round(self, task: "Task", store: Store, budget: Budget,
+                          prompts: dict[str, list[dict]], per_slot: int, max_tokens: int,
+                          t_start: float, key) -> ProduceResult:
+        """per_slot samples of every slot in `prompts`, one request per slot."""
+        res = ProduceResult(producer=self.name)
+        groups = await asyncio.gather(*(
+            self._group(task, slot, per_slot, msgs, t_start, max_tokens)
+            for slot, msgs in prompts.items()))
+        emissions = sorted((e for g in groups for e in g), key=key)
+        for e in emissions:
+            ingest(task, store, e, extra={"producer": self.name, "round": self.rnd})
+        budget.spend(sum(e.completion_tokens for e in emissions))
+        return _totals(res, emissions, len(prompts))
 
-class PerMethodProducer:
+
+@dataclass
+class WholeClassProducer(_Producer):
+    """n whole-class samples, decomposed into slot candidates on insert."""
+
+    name = "whole_class"
+    max_tokens: int = SAMPLING["max_tokens_class"]
+
+    async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
+        return await self._class_round(task, store, budget, lambda: whole_class_messages(task))
+
+
+@dataclass
+class PerMethodProducer(_Producer):
     """The v1 arm's producer: n independent samples per slot, straight from the skeleton."""
 
     name = "per_method"
 
-    def __init__(self, client: "Client", *, n: int, arm: str, rnd: int = 0, run_seed: int = 0,
-                 temperature: float = SAMPLING["temperature"], top_p: float | None = SAMPLING["top_p"],
-                 max_tokens: int = SAMPLING["max_tokens_slot"]):
-        self.client, self.n, self.arm, self.rnd, self.run_seed = client, n, arm, rnd, run_seed
-        self.temperature, self.top_p, self.max_tokens = temperature, top_p, max_tokens
-
     async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
         t_start = time.monotonic()
-        res = ProduceResult(producer=self.name)
         max_tokens = cap_tokens(budget, self.n * len(task.slots), self.max_tokens)
         if not max_tokens:
-            return res
-
-        groups = await asyncio.gather(*(
-            _sample_group(self.client, task, self.arm, s.id, self.rnd, self.n,
-                          slot_messages(task, s.id), t_start, run_seed=self.run_seed,
-                          temperature=self.temperature, top_p=self.top_p, max_tokens=max_tokens)
-            for s in task.slots))
-        emissions = sorted((e for g in groups for e in g),
-                           key=lambda e: (task.slot(e.slot).order, e.sample_idx))
-        for e in emissions:
-            ingest(task, store, e, extra={"producer": self.name, "round": self.rnd})
-            if e.fill_hash:
-                res.new_fills.append(e.fill_hash)
-        budget.spend(sum(e.completion_tokens for e in emissions))
-        return _totals(res, emissions, len(task.slots))
+            return ProduceResult(producer=self.name)
+        prompts = {s.id: slot_messages(task, s.id) for s in task.slots}
+        return await self._slot_round(task, store, budget, prompts, self.n, max_tokens, t_start,
+                                      key=lambda e: (task.slot(e.slot).order, e.sample_idx))
 
 
-class RepairProducer:
+@dataclass
+class RepairProducer(_Producer):
     """Targeted repair: for each dead slot, regenerate only that method, conditioned on the
     skeleton, the current best class, and that slot's failing test output at the feedback level."""
 
     name = "repair"
-
-    def __init__(self, client: "Client", *, n: int, arm: str, rnd: int, run_seed: int = 0,
-                 level: Level = "F1",
-                 temperature: float = SAMPLING["temperature"], top_p: float | None = SAMPLING["top_p"],
-                 max_tokens: int = SAMPLING["max_tokens_slot"]):
-        self.client, self.n, self.arm, self.rnd, self.level = client, n, arm, rnd, level
-        self.run_seed = run_seed
-        self.temperature, self.top_p, self.max_tokens = temperature, top_p, max_tokens
-        self.targets: tuple[str, ...] = ()
-        self.per_slot = 0
+    level: Level = "F1"
+    targets: tuple[str, ...] = ()
+    per_slot: int = 0
 
     def plan(self, store: Store, task: "Task") -> tuple["Composition | None", tuple[str, ...]]:
         comp = state.best_class(store, task)
@@ -231,81 +233,47 @@ class RepairProducer:
 
     async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
         t_start = time.monotonic()
-        res = ProduceResult(producer=self.name)
         comp, targets = self.plan(store, task)
         self.targets = targets
         if not targets:
-            return res
+            return ProduceResult(producer=self.name)
         # `n` is the round's sample count, not a per-slot one: a round of targeted repair asks for
         # as many samples as a whole-class repair round does, so the two arms spend alike.
         self.per_slot = per_slot = max(1, self.n // len(targets))
         max_tokens = cap_tokens(budget, per_slot * len(targets), self.max_tokens)
         if not max_tokens:
-            return res
+            return ProduceResult(producer=self.name)
         current = state.class_source(store, task, comp)
         # Every request of this round shares everything up to the end of the current-class block.
         prompts = {slot: slot_repair_messages(
             task, slot, current,
             render(state.slot_failures(store, task, slot, comp), self.level, slot_id=slot))
             for slot in targets}
-
-        groups = await asyncio.gather(*(
-            _sample_group(self.client, task, self.arm, slot, self.rnd, per_slot, prompts[slot],
-                          t_start, run_seed=self.run_seed, temperature=self.temperature,
-                          top_p=self.top_p, max_tokens=max_tokens)
-            for slot in targets))
-        emissions = sorted((e for g in groups for e in g), key=lambda e: (e.slot, e.sample_idx))
-        for e in emissions:
-            ingest(task, store, e, extra={"producer": self.name, "round": self.rnd})
-            if e.fill_hash:
-                res.new_fills.append(e.fill_hash)
-        budget.spend(sum(e.completion_tokens for e in emissions))
-        return _totals(res, emissions, len(targets))
+        return await self._slot_round(task, store, budget, prompts, per_slot, max_tokens, t_start,
+                                      key=lambda e: (e.slot, e.sample_idx))
 
 
-class WholeClassRepairProducer:
+@dataclass
+class WholeClassRepairProducer(_Producer):
     """The fair baseline for repair: same feedback, same information, whole class regenerated.
     Candidates are still decomposed into the store so the arms log identically, but the WCR arm's
     verdict is taken from the samples themselves (no recombination)."""
 
     name = "whole_class_repair"
+    level: Level = "F1"
+    max_tokens: int = SAMPLING["max_tokens_class"]
 
-    def __init__(self, client: "Client", *, n: int, arm: str, rnd: int, run_seed: int = 0,
-                 level: Level = "F1",
-                 temperature: float = SAMPLING["temperature"], top_p: float | None = SAMPLING["top_p"],
-                 max_tokens: int = SAMPLING["max_tokens_class"]):
-        self.client, self.n, self.arm, self.rnd, self.level = client, n, arm, rnd, level
-        self.run_seed = run_seed
-        self.temperature, self.top_p, self.max_tokens = temperature, top_p, max_tokens
-
-    async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
-        t_start = time.monotonic()
-        res = ProduceResult(producer=self.name)
-        max_tokens = cap_tokens(budget, self.n, self.max_tokens)
-        if not max_tokens:
-            return res
+    def _messages(self, task: "Task", store: Store) -> list[dict]:
         comp = state.best_class(store, task)
         current = state.class_source(store, task, comp)
-        failures = [f for slot in state.dead_slots(store, task, comp)
-                    for f in state.slot_failures(store, task, slot, comp)]
-        seen, uniq = set(), []
-        for f in failures:
-            if f.test_class not in seen:
-                seen.add(f.test_class)
-                uniq.append(f)
-        messages = whole_class_repair_messages(task, current, render(uniq, self.level))
+        seen: set[str] = set()
+        uniq = []
+        for slot in state.dead_slots(store, task, comp):
+            for f in state.slot_failures(store, task, slot, comp):
+                if f.test_class not in seen:
+                    seen.add(f.test_class)
+                    uniq.append(f)
+        return whole_class_repair_messages(task, current, render(uniq, self.level))
 
-        emissions = await _sample_group(self.client, task, self.arm, SPINE, self.rnd, self.n, messages,
-                                        t_start, run_seed=self.run_seed, temperature=self.temperature,
-                                        top_p=self.top_p, max_tokens=max_tokens)
-        for e in emissions:
-            ing = ingest_class_sample(task, store, e.text,
-                                      {"producer": self.name, "arm": self.arm, "round": self.rnd,
-                                       "sample_idx": e.sample_idx, "seed": e.sample_seed})
-            e.extract_error = ing.error
-            e.def_hashes = ing.def_hashes
-            res.texts.append(e.text)
-            if ing.complete and not ing.error:
-                res.seed_comps.append(dict(ing.bindings))
-        budget.spend(sum(e.completion_tokens for e in emissions))
-        return _totals(res, emissions, 1)
+    async def produce(self, task: "Task", store: Store, budget: Budget) -> ProduceResult:
+        return await self._class_round(task, store, budget, lambda: self._messages(task, store))

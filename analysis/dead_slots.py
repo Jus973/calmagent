@@ -14,12 +14,11 @@ Writes <dir>/analysis/dead_slots.{jsonl,md}; the run's own logs are never touche
 from __future__ import annotations
 
 import argparse
-import json
 from collections import Counter
 from pathlib import Path
 
 from calm_coder.bench.classeval import load_rows, task_from_row
-from calm_coder.bench.posthoc import _rows
+from calm_coder.jsonl import read_jsonl, write_jsonl
 from calm_coder.store.store import Store
 from calm_coder.v2 import state
 
@@ -60,14 +59,15 @@ def main() -> None:
     out_dir = d / "analysis"
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = {r["task_id"]: r for r in load_rows()}
-    results = [r for r in _rows(d / "results.jsonl")
+    all_results = read_jsonl(d / "results.jsonl")
+    results = [r for r in all_results
                if r["arm"] == a.arm and r.get("N") == a.N and r["seed"] == a.seed]
     if not results:
         raise SystemExit(f"no results in {d} for arm={a.arm} N={a.N} seed={a.seed}; "
-                         f"arms present: {sorted({r['arm'] for r in _rows(d / 'results.jsonl')})}")
+                         f"arms present: {sorted({r['arm'] for r in all_results})}")
     out, totals, skipped = [], Counter(), []
     for r in sorted(results, key=lambda r: r["task_id"]):
-        ev = _rows(d / "events" / f"{r['task_id']}__{a.arm}__s{a.seed}.jsonl")
+        ev = read_jsonl(d / "events" / f"{r['task_id']}__{a.arm}__s{a.seed}.jsonl")
         if not ev or r["task_id"] not in rows:
             skipped.append(r["task_id"])
             continue
@@ -85,7 +85,7 @@ def main() -> None:
             totals["interface_errors"] += info["interface_errors"]
             totals["value_errors"] += info["value_errors"]
             totals["unattributed"] += info["unattributed"]
-    (out_dir / "dead_slots.jsonl").write_text("".join(json.dumps(r) + "\n" for r in out))
+    write_jsonl(out_dir / "dead_slots.jsonl", out)
     md = ["# Dead slots", "",
           f"{totals['unsolved']} of {totals['tasks']} tasks unsolved at N={a.N} ({a.arm}).",
           f"{totals['dead_slots']} dead slots in them; {totals['one_dead_slot']} unsolved tasks have exactly one "

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import random
 import time
 from pathlib import Path
@@ -18,6 +17,7 @@ from rich.console import Console
 
 from calm_coder.bench.confluence import derived
 from calm_coder.cli import solve
+from calm_coder.jsonl import read_jsonl
 from calm_coder.store.store import Store
 from calm_coder.task import task_from_files
 from calm_coder.viz.live import replay
@@ -57,13 +57,13 @@ def main() -> None:
         return
     task = task_from_files(HERE / "task.py", HERE / "test_task.py")
     if a.offline:
-        events = [json.loads(l) for l in EVENTS.read_text().splitlines() if l.strip()]
+        events = read_jsonl(EVENTS)
         replay(events, task, a.delay)
     else:
         EVENTS.parent.mkdir(exist_ok=True)
         src, res = asyncio.run(solve(task, n=a.N, seed=a.seed, live=True, max_comps=64, events_out=EVENTS))
         console.print("[green]verified[/green]" if src else f"[red]not verified ({res.unsolvable_reason})[/red]")
-        events = [json.loads(l) for l in EVENTS.read_text().splitlines() if l.strip()]
+        events = read_jsonl(EVENTS)
     shuffled(task, events)
 
 

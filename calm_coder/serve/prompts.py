@@ -1,7 +1,7 @@
 """Prompts (§3.7). Slot prompts share one prefix per task: everything slot-specific is the last line."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from calm_coder.task import Task
@@ -46,24 +46,6 @@ def whole_class_messages(task: "Task") -> list[dict]:
     ]
 
 
-def incremental_messages(task: "Task", filled: Mapping[str, str], slot_id: str) -> list[dict]:
-    """Baseline B: skeleton with previously generated methods substituted in."""
-    import ast
-    import textwrap
-    mod = ast.parse(task.skeleton)
-    cdef = next(n for n in mod.body if isinstance(n, ast.ClassDef))
-    for i, node in enumerate(cdef.body):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in filled:
-            try:
-                cdef.body[i] = ast.parse(textwrap.dedent(filled[node.name])).body[0]
-            except (SyntaxError, IndexError):
-                pass
-    return [
-        {"role": "system", "content": SLOT_SYSTEM},
-        {"role": "user", "content": f"{ast.unparse(mod)}\n\nImplement `{slot_id}` now."},
-    ]
-
-
 def shared_prefix(task: "Task") -> str:
     """Everything every request for a task has in common, up to the end of the skeleton block.
 
@@ -84,11 +66,12 @@ def warmup_messages(task: "Task", system: str) -> list[dict]:
     return [{"role": "system", "content": system}, {"role": "user", "content": shared_prefix(task)}]
 
 
-def slot_repair_messages(task: "Task", slot_id: str, current_class: str, feedback: str) -> list[dict]:
-    """Targeted repair: skeleton, then the current best class, then the one slot to rewrite.
+def _repair_messages(task: "Task", current_class: str, feedback: str, system: str,
+                     instruction: str) -> list[dict]:
+    """Skeleton, then the current best class, then the feedback, then what to rewrite.
 
-    Ordering matters: within a round every dead slot of a task shares everything up to the end of
-    CURRENT_CLASS_BLOCK, so only the last block differs.
+    Ordering matters: within a round every repair request of a task shares everything up to the
+    end of the current-class block, so only the last block differs.
     """
     body = [shared_prefix(task)]
     if current_class:
@@ -96,21 +79,22 @@ def slot_repair_messages(task: "Task", slot_id: str, current_class: str, feedbac
                     f"```python\n{current_class.strip()}\n```")
     if feedback:
         body.append(feedback)
-    body.append(f"Rewrite only `{slot_id}`, keeping its signature. Output that method alone.")
-    return [{"role": "system", "content": SLOT_SYSTEM}, {"role": "user", "content": "\n\n".join(body)}]
+    body.append(instruction)
+    return [{"role": "system", "content": system}, {"role": "user", "content": "\n\n".join(body)}]
+
+
+def slot_repair_messages(task: "Task", slot_id: str, current_class: str, feedback: str) -> list[dict]:
+    """Targeted repair: the one slot to rewrite."""
+    return _repair_messages(task, current_class, feedback, SLOT_SYSTEM,
+                            f"Rewrite only `{slot_id}`, keeping its signature. "
+                            "Output that method alone.")
 
 
 def whole_class_repair_messages(task: "Task", current_class: str, feedback: str) -> list[dict]:
     """The fair baseline for repair: same information, whole class regenerated."""
-    body = [shared_prefix(task)]
-    if current_class:
-        body.append("The current implementation of the class is:\n"
-                    f"```python\n{current_class.strip()}\n```")
-    if feedback:
-        body.append(feedback)
-    body.append("Rewrite the whole class so that it is correct. "
-                "Output one Python code block containing the full class.")
-    return [{"role": "system", "content": CLASS_SYSTEM}, {"role": "user", "content": "\n\n".join(body)}]
+    return _repair_messages(task, current_class, feedback, CLASS_SYSTEM,
+                            "Rewrite the whole class so that it is correct. "
+                            "Output one Python code block containing the full class.")
 
 
 def repair_messages(task: "Task", slot_id: str, failure: str) -> list[dict]:

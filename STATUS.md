@@ -23,13 +23,16 @@
     budget enforcement, repair of a dead slot, report statistics.
   * replay-first demo page (`calm_coder/demo/web/`) fed by `calm_coder.demo.export_web`.
 * Docs: `ARCHITECTURE.md`, `PREREG.md`.
+* A pilot run against a real model (qwen2.5-coder:7b via Ollama, 10 tasks, seed 0): arm C for the
+  budgets, then `v2` and `wcr` under them, reported in `results/pilot.md` with the generated
+  `results/final.md` / `results/final.json`.
 
 ## Not done
 
-* The v2 evaluation run itself (needs the local model server): a C run for budgets, then
-  `--arms v2,v2_pm,v2_f0,wcr --budget-from <C run>`, then `analysis/final_report.py`.
-* Phase 0 recon numbers: `analysis/pool_existing.py` and `analysis/dead_slots.py` are written but
-  have not been run against `runs/` yet.
+* The preregistered evaluation: 50 tasks, 3 seeds, `--arms v2,v2_pm,v2_f0,v2_f2,wcr`. The pilot is
+  10 tasks at one seed, so no hypothesis in `PREREG.md` is settled.
+* Phase 0 recon numbers: `analysis/pool_existing.py` is written but has not been run against the
+  v1 `runs/`.
 * PREREG H6 (prompt tokens vs the v1 layout) and the solve-rate/token curve beyond the per-arm N
   sweep are not implemented; the report does not claim them.
 * Lint: `ruff` is not installed in this environment, so only `pytest` has been run.
@@ -66,6 +69,7 @@ python -m http.server -d calm_coder/demo/web 8000
   tasks where class-level tests dominate this can target more slots than strictly necessary. When
   nothing names a slot at all the task is bucketed as unattributed and excluded from the
   "one dead slot" statistic.
-* Prompt-token accounting depends on the server reporting `prompt_tokens_details.cached_tokens`;
-  Ollama does not, so cache counters are `null` there and the prefix claim rests on the prompt
-  construction test rather than on measured cache hits.
+* Prompt-token accounting depends on the server reporting `prompt_tokens_details.cached_tokens`.
+  Ollama does report it (the pilot measured ~94% of v2's prompt tokens as cache hits); a server
+  that omits it leaves the counters `null` and the prefix claim rests on the prompt construction
+  test alone.

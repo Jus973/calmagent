@@ -14,22 +14,18 @@ import argparse
 import ast
 import asyncio
 import itertools
-import json
 import time
 from pathlib import Path
 
 from calm_coder.agents.scheduler import Scheduler
 from calm_coder.bench.classeval import load_rows, task_from_row
+from calm_coder.jsonl import append_jsonl, read_jsonl, write_jsonl
 from calm_coder.runner.sandbox import run_tests_async
 from calm_coder.serve.extract import ExtractError, extract_class
 from calm_coder.store.defs import Composition, Outcome, emission_to_defs
 from calm_coder.store.derive import verified
 from calm_coder.store.materialize import materialize
 from calm_coder.store.store import Store
-
-
-def _rows(p: Path) -> list[dict]:
-    return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
 
 
 async def exhaustive(task, store: Store, cands: dict[str, list[str]], cap: int, par: int) -> dict:
@@ -116,35 +112,31 @@ async def recombine(task, samples: list[dict], cap: int, par: int, max_comps: in
 async def main_async(d: Path, cap: int, par: int) -> None:
     out = d / "posthoc"
     (out / "events").mkdir(parents=True, exist_ok=True)
-    done = {(r["task_id"], r["analysis"]) for r in _rows(out / "results.jsonl")}
+    done = {(r["task_id"], r["analysis"]) for r in read_jsonl(out / "results.jsonl")}
     rows = {r["task_id"]: r for r in load_rows()}
-    results = _rows(d / "results.jsonl")
+    results = read_jsonl(d / "results.jsonl")
     calm8 = {r["task_id"]: r for r in results if r["arm"] == "calm" and r["N"] == 8 and r["seed"] == 0}
     c8 = {r["task_id"]: r for r in results if r["arm"] == "c" and r["N"] == 8 and r["seed"] == 0}
     samples = {}
-    for s in _rows(d / "class_samples.jsonl"):
+    for s in read_jsonl(d / "class_samples.jsonl"):
         if s["arm"] == "c" and s["seed"] == 0:
             samples.setdefault(s["task_id"], {})[s["sample_idx"]] = s
     for tid in sorted(set(calm8) & set(c8), key=lambda t: int(t.split("_")[1])):
         task = task_from_row(rows[tid])
         if (tid, "ceiling") not in done:
-            ev = _rows(d / "events" / f"{tid}__calm__s0.jsonl")
+            ev = read_jsonl(d / "events" / f"{tid}__calm__s0.jsonl")
             r = await ceiling(task, ev, cap, par)
-            events = r.pop("events", [])
-            (out / "events" / f"{tid}__ceiling.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
+            write_jsonl(out / "events" / f"{tid}__ceiling.jsonl", r.pop("events", []))
             row = {"task_id": tid, "analysis": "ceiling", "calm_solved": calm8[tid]["solved"],
                    "calm_comps": calm8[tid]["comps_tested"], **r}
-            with open(out / "results.jsonl", "a") as f:
-                f.write(json.dumps(row) + "\n")
+            append_jsonl(out / "results.jsonl", row)
             print(row)
         if (tid, "recombine") not in done:
             r = await recombine(task, list(samples.get(tid, {}).values()), cap, par, max_comps=64)
-            events = r.pop("events", [])
-            (out / "events" / f"{tid}__recombine.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
+            write_jsonl(out / "events" / f"{tid}__recombine.jsonl", r.pop("events", []))
             row = {"task_id": tid, "analysis": "recombine", "c8_solved": c8[tid]["solved"],
                    "c8_n_pass": c8[tid]["n_pass"], **r}
-            with open(out / "results.jsonl", "a") as f:
-                f.write(json.dumps(row) + "\n")
+            append_jsonl(out / "results.jsonl", row)
             print(row)
 
 

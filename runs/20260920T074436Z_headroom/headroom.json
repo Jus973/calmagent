@@ -1,0 +1,49 @@
+{
+  "trace_dirs": [
+    "20260920T065649Z_probe",
+    "20260920T064723Z_probe"
+  ],
+  "requests": 42,
+  "sessions": 1,
+  "prompt_tokens": 347775,
+  "completion_tokens": 4514,
+  "upstream_wall_s": 509.0,
+  "constants": {
+    "cold_ms_per_prompt_token": 5.96,
+    "decode_ms_per_token": 50.0
+  },
+  "I2_prefix_lint": {
+    "achievable_prefix_share": 0.916,
+    "new_tokens_no_cache_could_hold": 29222,
+    "churn_tokens": 0,
+    "headroom_s": 0.0,
+    "divergence_causes": {
+      "first_request_in_session": 2,
+      "appended_only": 40
+    }
+  },
+  "I3_memo": {
+    "duplicate_requests": 0,
+    "duplicate_share": 0.0,
+    "headroom_s": 0.0
+  },
+  "I4_dedup": {
+    "duplicate_bytes_after_divergence": 68659,
+    "duplicate_bytes_inside_cached_prefix_not_charged": 1189296,
+    "duplicate_tool_result_bytes": 0,
+    "headroom_s": 102.3
+  },
+  "I5_calm_run": {
+    "shell_commands_seen": 23,
+    "distinct": 13,
+    "repeated_commands": 10,
+    "test_commands": 5,
+    "test_command_reruns": 2,
+    "top_repeated_test_commands": [
+      [
+        "python -m pytest -q",
+        3
+      ]
+    ]
+  }
+}

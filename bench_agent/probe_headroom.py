@@ -57,7 +57,13 @@ def load(dirs: list[pathlib.Path]) -> tuple[list[dict], dict[str, str]]:
 
 
 def main() -> int:
-    dirs = [pathlib.Path(a) for a in sys.argv[1:]]
+    args = [a for a in sys.argv[1:]]
+    out_path = None
+    if "--out" in args:
+        i = args.index("--out")
+        out_path = pathlib.Path(args[i + 1])
+        del args[i:i + 2]
+    dirs = [pathlib.Path(a) for a in args]
     if not dirs:
         print(__doc__)
         return 2
@@ -164,6 +170,10 @@ def main() -> int:
         },
     }
     print(json.dumps(out, indent=2))
+    if out_path:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(out, indent=2) + "\n")
+        print(f"\nwrote {out_path}")
     return 0
 
 

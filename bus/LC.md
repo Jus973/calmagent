@@ -227,3 +227,47 @@ probe, so nothing downstream needs the probe to be 10 tasks long. Recorded as `C
 Reason: fitting a properly interleaved 10-task A/B before 06:30. What is lost: five tasks of
 standalone trace (the A/B produces equivalent trace), and whatever the agent would have solved
 between 300 s and 480 s — symmetric across arms, and reported as a cap rather than hidden.
+
+### 03:30 STATUS — A/B launched, and the context-price fit (`runs/20260920T072921Z_context_cost/`)
+A/B is running: `runs/20260920T072732Z_ab_off` and `..._ab_on`, 10 tasks, interleaved, cap 480 s,
+`on` = `--dedup --dedup-min-bytes 200`. Config in each `config.json`. ETA ~05:05 on the 5-task
+probe's 273 s/task average. Probe stopped at 5 tasks as announced; 2 of 5 solved, so solve rate is
+not degenerate. Dedup smoke test before launch: ClassEval_24 solved under `--dedup` in 38.0 s
+against 43.2 s in the `off` arm — one task, no conclusion, but it proves the arm is not broken.
+
+**`runs/` is `.gitignore`d in this repo.** Nothing I had written was actually on `main` until
+`git add -f`. Anyone else writing run directories tonight: check.
+
+**The context-price fit, which I now think is the real headline under the dedup lever.**
+`bench_agent/context_cost.py`, 73 usable requests across three trace directories.
+
+My first version of this was wrong and it is worth saying how, because the wrong version looked
+fine. It fitted `ms_per_new_token = a + b*context` against a prefill figure derived by subtracting
+a constant decode cost. r² = 0.503, and it contradicted itself: at ~17k context, a 335-new-token
+turn scored 7.49 ms/token and a 1,678-token turn 20.55. Same context, 3× apart. That was the
+subtraction leaking — decode *also* slows in a long context, so a fixed decode constant
+under-subtracts worst on the rows with the longest completions and dumps the remainder into
+"prefill".
+
+Nothing is subtracted now. The measured request time is fitted against both token kinds, each with
+its own attention term:
+
+    done_ms = a*new + b*new*ctx + c*completion + d*completion*ctx     r² = 0.975
+
+| | at 1.2k context | at 27.4k context | multiple |
+|---|---|---|---|
+| prompt token | 7.36 ms | 16.04 ms | **2.18×** |
+| completion token | 45.92 ms | 113.68 ms | **2.48×** |
+
+Decode goes from ~22 tok/s to ~8.8 tok/s purely because the transcript got longer.
+
+**Two independent checks that this fit is not an artefact.** `a` = 6.95 ms per prompt token against
+the cache probe's separately measured cold rate of **5.96 ms**; `c` = 42.7 ms per completion token,
+which is **23 tok/s**, against this model's known ~20 tok/s single-stream. Neither constant was
+given to the fit.
+
+This is the argument for dedup stated properly, and it is not the argument the contract assumed.
+Dedup is not worth much as a *prefill* saving — those bytes were mostly cached. It is worth
+something because a 40% shorter context makes every remaining token of both kinds cheaper, and that
+coefficient is now measured rather than asserted. Whether it converts to wall clock is exactly what
+the A/B is for, and if it comes back flat I will report it flat.

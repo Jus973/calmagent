@@ -449,3 +449,36 @@ volatile tool output — `ls` mtimes, `git status`, test durations — so a seco
 can reuse the first one's prefix. Tonight's measurement says the ceiling is set 40 tokens in, and
 nobody would find that line without a proxy. Second is `calm-run`, on a repo whose test suite takes
 longer than 20 ms.
+
+### 06:21 STATUS — the headline is now a distribution, not a conversation
+`runs/20260920T091729Z_replay_sweep/`, `bench_agent/replay_sweep.py`. The 05:18 FINAL quoted
+3.61–3.69x from one conversation. That invited the obvious objection — the longest conversation is
+where dedup has the most to remove, so picking it picks the answer — so I replayed **all ten**
+conversations the A/B recorded, 149 requests, agent removed, arm order alternating.
+
+| conv | reqs | dedup off → on | speedup | prompt |
+|---|---|---|---|---|
+| 2 | 25 | 469.0 → 128.0 s | 3.67x | −61% |
+| 1 | 25 | 300.3 → 121.3 s | 2.48x | −28% |
+| 3 | 22 | 499.6 → 202.9 s | 2.46x | −38% |
+| 5 | 14 | 415.5 → 173.3 s | 2.40x | −40% |
+| 4 | 17 | 485.2 → 250.6 s | 1.94x | −24% |
+| 0 | 25 | 161.5 → 137.5 s | 1.17x | −21% |
+| 7 | 5 | 41.2 → 40.5 s | 1.02x | 0% |
+| 6 | 6 | 43.8 → 43.4 s | 1.01x | 0% |
+| 8 | 5 | 45.5 → 45.4 s | 1.00x | 0% |
+| 9 | 5 | 33.2 → 33.5 s | **0.99x** | 0% |
+
+**Pooled: 2,495 s → 1,176 s = 2.12x on 37% fewer prompt tokens. Median 1.55x. Range 0.99–3.67x.
+Four of ten show no effect.** README, STATUS and the demo now lead with the pooled figure; the
+3.67x survives only inside the distribution.
+
+Two things I want on the record rather than smoothed over. Conversation 9 comes out at **0.99x** —
+marginally *slower*. That is the hashing the lever does for no return on a conversation with
+nothing to deduplicate, and it is in the table. And conversation 2 reproduced at 3.67x here against
+3.61–3.69x in the separate two-order run an hour earlier, which is the best evidence I have that
+these replays measure the lever and not the machine.
+
+The honest one-line summary of dedup is now: **it does nothing when you do not need it, costs about
+1% when it does nothing, and returns 2–3.7x on the long looping runs that were burning the time.**
+That is a better claim than the 3.67x was, because it is the one that survives someone checking it.

@@ -394,3 +394,58 @@ not), but the *reason* in that file is now incomplete. I have not rewritten DECI
 is CF's file and the decision itself does not change. If CF arrives: the honest line is "I-2 has no
 within-session headroom on a well-behaved agent, and real cross-run headroom whose size we cannot
 yet quote for a real repo."
+
+### 05:18 FINAL
+
+**What is on `main`.** All of it from this machine; DV and CF never appeared (no `calm_proxy/`, no
+`analysis/proxy_report.py`, no `bus/DV.md`, no `bus/CF.md`), so the fallbacks in the contract's
+"if the split is failing" section were all taken: my `trace_proxy.py` instead of DV's package,
+`quick_report.py` instead of CF's `proxy_report.py`, and `bus/DECISIONS.md` and `README.md` under
+the CF-silent rule.
+
+| | |
+|---|---|
+| bench | `bench_agent/`: `make_tasks` + `verify_tasks` (10 ClassEval tasks, every reference verified), `run_agent`, `_mini_driver`, `ab`, `trace_proxy` (`--dedup`), `probe_cache`, `probe_headroom`, `context_cost`, `cross_run`, `replay_bench`, `quick_report`, `publish`, `demo` |
+| tests | 155 passing, 11 of them new for the proxy's dedup and conversation boundaries |
+| runs | cache probe, 5-task probe, 10-task A/B (both arms), context-cost fit, cross-run, three replay benches — all `git add -f`, because `runs/` is `.gitignore`d |
+| docs | `README.md` (submission text), `results/proxy.md` (generated), `STATUS.md`, `bus/DECISIONS.md` |
+
+**The result.** Dedup: **61% fewer prompt tokens, 3.61–3.69x less server time** on the longest
+recorded conversation with full decode (6.95–7.18x on prompt processing alone), **1.00–1.02x on a
+short one**, **solve rate unchanged** at 4/10 in both arms of a 10-task paired A/B, McNemar
+p = 1.000. Both orders of every replay agree to within 4%.
+
+**What was cut, and why.** The probe stopped at 5 tasks of 10 so a properly interleaved A/B would
+fit before 06:30 — the A/B's own `off` arm serves the same analyses. I-6 affinity was never
+started (cut-order #1). I-3 memo was dropped on a measured zero. I-5 `calm-run` is not implemented
+here at all: it is DV's, and its headroom on this bench is ~40 ms because a ClassEval suite runs in
+20 ms, so building it tonight would have bought a number nobody could honestly quote.
+
+**The three things I would want a reviewer to check first, because they are where I could be
+wrong.**
+1. *The A/B's total wall clock is confounded and I have said so in the table itself, not just in
+   prose.* The arms fork at the first rewritten message and stop being the same agent. Everything
+   headline-worthy comes from `replay_bench.py`, which removes the agent entirely. If someone
+   quotes "2568 s → 1498 s" from the pooled table as the lever's effect, they are quoting the
+   confound.
+2. *The cross-run 13.7% is triggered by our own harness.* The diverging line is the parent temp
+   directory's mtime, and `run_agent.py` makes that directory fresh per task. The mechanism is
+   real and general; the trigger is ours. It is written into the script's docstring and the JSON's
+   `caveat` field so it cannot be separated from the number.
+3. *`prefill_s` in the reports is derived, not measured.* Ollama does not split prefill from decode
+   on the OpenAI-compatible endpoint and mini-swe-agent does not stream, so there is no
+   first-token boundary. `context_cost.py` avoids the subtraction entirely by fitting the measured
+   request time against both token kinds; that fit (r² = 0.975) recovers 6.95 ms/prompt token
+   against the cache probe's independently measured 5.96, and 23 tok/s against this model's known
+   ~20, neither of which it was given.
+
+**Three claims I deliberately did not make.** That we improved the cache (this agent's cache
+already captures 94.8% of what there is). That dedup saves 620 s of prefill (those bytes were
+cached; the defensible figure is 102 s). That dedup helps solve rate (1–1 discordant at n=10 is a
+coin flip, and the mechanism that produces it is the confound, not the lever).
+
+**For whoever picks this up.** The highest-value unbuilt thing is the cross-run lint: normalise
+volatile tool output — `ls` mtimes, `git status`, test durations — so a second run of the same task
+can reuse the first one's prefix. Tonight's measurement says the ceiling is set 40 tokens in, and
+nobody would find that line without a proxy. Second is `calm-run`, on a repo whose test suite takes
+longer than 20 ms.

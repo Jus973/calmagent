@@ -129,27 +129,30 @@ def section_cross_run() -> None:
 
 
 def section_replay() -> None:
-    # Skip directories still being written: a run in flight must not break the demo.
-    dirs = [d for d in sorted(glob.glob(str(RUNS / "*_replay_*")))
-            if (pathlib.Path(d) / "summary.json").exists()]
+    d = newest("*_replay_sweep", "summary.json")
     rule("5. The lever itself, with the agent taken out of the loop")
-    if not dirs:
-        print("  no completed replay bench recorded")
+    if not d:
+        print("  no completed replay sweep recorded")
         return
-    print("  Same recorded requests, one variable changed, both arm orders, no agent:")
-    for d in dirs:
-        s_ = json.loads((pathlib.Path(d) / "summary.json").read_text())
-        off = s_["arms"]["off_on::off"]
-        on = s_["arms"]["off_on::on"]
-        print(f"    {pathlib.Path(d).name}  ({s_['requests']} requests, mode={s_['mode']})")
-        print(f"      dedup off  {off['total_wall_s']:>8.1f} s   {off['prompt_tokens']:>9,} prompt tokens")
-        print(f"      dedup on   {on['total_wall_s']:>8.1f} s   {on['prompt_tokens']:>9,} prompt tokens"
-              f"   ({s_['prompt_token_reduction_off_on']:.1%} fewer)")
-        print(f"      => \033[1m{s_['verdict']}\033[0m"
-              f"   (orders agree: {s_['orders_agree']})")
-    print("  This is the longest recorded conversation, which is where dedup has the most to")
-    print("  remove. A short successful run has almost nothing repeated yet and gains almost")
-    print("  nothing -- the lever is aimed at the runs that were wasting the time.")
+    data = json.loads((d / "summary.json").read_text())
+    s_, convs = data["summary"], data["conversations"]
+    print(f"  source: {d}")
+    print(f"  Every one of the {s_['conversations']} conversations the A/B recorded -- not the")
+    print(f"  flattering one -- replayed with the agent removed, so the lever is the only variable.")
+    print(f"\n    {'conv':>4} {'reqs':>5} {'dedup off':>11} {'dedup on':>10} {'speedup':>9} {'prompt':>8}")
+    for c in sorted(convs, key=lambda c: -c["speedup"]):
+        print(f"    {c['conversation']:>4} {c['requests']:>5} {c['off_wall_s']:>10.1f}s "
+              f"{c['on_wall_s']:>9.1f}s {c['speedup']:>8.2f}x "
+              f"{-c['prompt_token_reduction']:>7.0%}")
+    print(f"\n  pooled: {s_['pooled_off_wall_s']:.0f} s -> {s_['pooled_on_wall_s']:.0f} s = "
+          f"\033[1m{s_['pooled_speedup']:.2f}x\033[0m on "
+          f"{s_['pooled_prompt_token_reduction']:.0%} fewer prompt tokens "
+          f"(median {s_['median_speedup']:.2f}x)")
+    print(f"  {s_['conversations_with_no_effect']} of {s_['conversations']} conversations show no "
+          f"effect at all -- they are the short ones, with nothing")
+    print("  repeated yet. The lever does nothing when you do not need it. Quoting the "
+          f"{s_['max_speedup']:.2f}x alone")
+    print("  would be quoting a choice of conversation.")
 
 
 def section_ab() -> None:

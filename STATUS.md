@@ -2,11 +2,13 @@
 
 ## USER: read this first
 
-1. **There is a headline number, and it is real.** Content-addressed dedup cut the prompt by
-   **61%** and server time by **3.6x** (458 s → 127 s) on the longest recorded agent conversation,
-   with **solve rate unchanged** (4/10 both arms, McNemar p = 1.000, 10 paired tasks). On a *short*
-   conversation it does nothing at all (1.00x). Both are in `README.md`; neither is quotable
-   without the other. Run directories: `runs/20260920T085217Z_replay_full/`,
+1. **There is a headline number, and it is real.** Across **all 10** conversations the benchmark
+   recorded (149 requests, replayed with the agent removed so the lever is the only variable),
+   content-addressed dedup cut prompt tokens **37%** and server time **2.12x** (2495 s → 1176 s),
+   with **solve rate unchanged** (4/10 both arms, McNemar p = 1.000, 10 paired tasks). Per
+   conversation the range is **0.99x to 3.67x and 4 of the 10 show no effect at all** — it does
+   nothing on short runs and pays on long looping ones. Do not let anyone quote the 3.67x on its
+   own. Run directories: `runs/20260920T091729Z_replay_sweep/`,
    `runs/20260920T072732Z_ab_off|on/`.
 
 2. **Nothing is blocked and no permission prompt was ever hit.** One thing to know: I restarted
@@ -75,7 +77,11 @@ between any agent and a local model server. Instructions and the shared contract
   McNemar p = 1.000. Dedup removed 1.6 MB from prompts across 477 replacements.
 - **05:15** Replay bench, agent removed, both arm orders: **3.61–3.69x** on the longest
   conversation with full decode, **6.95–7.18x** on prompt processing alone, **1.00–1.02x** on a
-  short conversation.
+  short conversation. Orders agree to within 4%.
+- **06:19** Replay sweep over **all 10** recorded conversations (`runs/20260920T091729Z_replay_sweep/`):
+  pooled **2.12x** on **37%** fewer prompt tokens, median 1.55x, range 0.99–3.67x, 4 of 10 with no
+  effect. This replaced the single-conversation figure as the headline — one conversation was a
+  choice, ten is a distribution.
 
 ## How to reproduce tonight's numbers
 

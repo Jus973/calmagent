@@ -4,12 +4,14 @@
 > 0.25, and nothing in the OpenAI API tells you which one just happened. This is the instrument
 > that tells you, and the one lever that turned out to be worth pulling once it had.
 
-**Headline, measured:** on the longest recorded agent conversation, content-addressed dedup cut the
-prompt by **61%** and server time by **3.6x** (458 s → 127 s), with the **solve rate
-unchanged** across a 10-task paired A/B (4/10 both arms, McNemar p = 1.000). On a *short*
-conversation it does nothing at all (1.00x) — both numbers are below, because one without the
-other would be a sales pitch. Three of the four candidate levers were killed by their own
-measurements before being built.
+**Headline, measured:** across every one of the 10 agent conversations a 10-task benchmark
+recorded — 149 requests, replayed with the agent removed so the lever is the only variable —
+content-addressed dedup cut prompt tokens by **37%** and server time by **2.12x**
+(2495 s → 1176 s), with **solve rate unchanged** in the paired A/B (4/10 both arms,
+McNemar p = 1.000). The effect is **0.99x to 3.67x** depending on the conversation, and **4 of the
+10 show no effect at all**; the whole distribution is below, because the maximum on its own would
+be a sales pitch. Three of the four candidate levers were killed by their own measurements before
+being built.
 
 Drop it between any agent and Ollama / vLLM / llama.cpp. It records every request, shows where the
 prompt cache is being missed and why, and shortens the prompts that are safe to shorten — without
@@ -102,24 +104,38 @@ the two arms become different agents taking different numbers of turns. A run th
 instead of the 480 s cap usually means the agent gave up early, not that tokens got cheaper.
 
 So `bench_agent/replay_bench.py` removes the agent. It replays the requests a recorded run really
-sent, once with the lever off and once with it on, and changes nothing else. Both orders are run,
-because a machine that drifts should say so rather than be mistaken for a lever.
+sent, once with the lever off and once with it on, and changes nothing else — same prompts, same
+order, same server. `replay_sweep.py` then does that for **every one of the 10 conversations** the
+A/B recorded, not the flattering one, alternating which arm goes first.
 
-| recorded conversation | requests | prompt tokens | server time, dedup off → on | speedup |
+`runs/20260920T091729Z_replay_sweep/` — all 10 conversations, 149 requests, full decode:
+
+| conversation | requests | prompt tokens | server time, dedup off → on | speedup |
 |---|---|---|---|---|
-| **longest**, full decode | 25 | 305,232 → 117,984 (61% fewer) | 457.6 s → **126.8 s** | **3.61–3.69x** |
-| the same, prompt processing only | 25 | 305,232 → 117,984 | 313.6 s → **45.1 s** | 6.95–7.18x |
-| **a short one**, full decode | 6 | 9,996 → 9,996 (0% fewer) | 38.5 s → 38.5 s | 1.00–1.02x |
+| 2 | 25 | 305,232 → 117,984 (61%) | 469.0 s → 128.0 s | **3.67x** |
+| 1 | 25 | 99,633 → 71,418 (28%) | 300.3 s → 121.3 s | **2.48x** |
+| 3 | 22 | 285,283 → 177,859 (38%) | 499.6 s → 202.9 s | **2.46x** |
+| 5 | 14 | 151,169 → 90,189 (40%) | 415.5 s → 173.3 s | **2.40x** |
+| 4 | 17 | 214,701 → 163,549 (24%) | 485.2 s → 250.6 s | **1.94x** |
+| 0 | 25 | 169,163 → 133,871 (21%) | 161.5 s → 137.5 s | **1.17x** |
+| 7 | 5 | 14,086 → 14,086 (0%) | 41.2 s → 40.5 s | **1.02x** |
+| 6 | 6 | 9,996 → 9,996 (0%) | 43.8 s → 43.4 s | **1.01x** |
+| 8 | 5 | 12,423 → 12,423 (0%) | 45.5 s → 45.4 s | **1.00x** |
+| 9 | 5 | 7,540 → 7,540 (0%) | 33.2 s → 33.5 s | **0.99x** |
 
-Directories: `runs/20260920T085217Z_replay_full/`, `runs/20260920T083923Z_replay_prefill/`,
-`runs/20260920T091237Z_replay_full_short/`. In every case the two
-orders agree to within 4%, so these are the lever and not the machine.
+**Pooled over the whole run: 2495 s → 1176 s, a 2.12x speedup on
+37% fewer prompt tokens.** Median 1.55x. Range 0.99–3.67x.
 
-**Read the last row as carefully as the first.** On a short successful conversation dedup removes
-nothing and saves nothing — there is not yet anything repeated to remove. That is the shape of this
-lever and it is not a defect: it does nothing when you do not need it, and it is aimed squarely at
-the long looping runs that were burning the time. Any single headline number for it is a statement
-about which conversation you picked, which is why all three are here.
+**Four of the ten conversations show no effect at all**, and they are all the short ones — five or
+six requests, nothing repeated yet, nothing to remove. One of them comes out at 0.99x, i.e.
+marginally slower, which is the hashing the lever does for no return. That is the honest shape of
+this thing: **it does nothing when you do not need it, and it pays on exactly the long looping runs
+that were burning the time.** Quoting the 3.67x alone would be quoting a choice of conversation,
+which is why the whole distribution is here and the pooled figure is the one in the headline.
+
+Order-independence was checked separately, on two conversations replayed in both arm orders
+(`runs/20260920T085217Z_replay_full/`, `runs/20260920T083923Z_replay_prefill/`): the orders agreed
+to within 4%, and the long conversation reproduced at 3.67x here against 3.61–3.69x there.
 
 ### Does it survive contact with a real agent?
 

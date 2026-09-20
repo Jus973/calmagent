@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 from typing import Any
 
 import aiohttp
@@ -15,6 +16,7 @@ from aiohttp import web
 
 from .config import Config
 from .middleware import dedup as dedupmw
+from .middleware import memo as memomw
 from .middleware import trace as tracemw
 from .middleware.prefix import PrefixTracker
 from .middleware.trace import TraceWriter
@@ -62,6 +64,11 @@ class Proxy:
         trace_dir = config.trace_dir if config.has("trace") else None
         self.tracer = TraceWriter(trace_dir)
         self.prefix = PrefixTracker() if config.has("prefix") else None
+        self.memo = (
+            memomw.MemoStore(config.trace_dir or Path(".calm"))
+            if config.has("memo")
+            else None
+        )
         self._client: aiohttp.ClientSession | None = None
 
     # -- lifecycle ---------------------------------------------------------
@@ -169,7 +176,23 @@ class Proxy:
         if self.prefix is not None:
             record["prefix"] = self.prefix.observe(session, messages)
 
+        chat = request.rel_url.path.endswith("/chat/completions")
         started = time.monotonic()
+        if self.memo is not None and memomw.eligible(upstream_body):
+            key = memomw.memo_key(upstream_body)
+            record["memo"]["key"] = key
+            stored = self.memo.get(key)
+            if stored is not None:
+                return await self._memo_hit(
+                    request,
+                    record,
+                    started,
+                    stored["response"],
+                    client_stream,
+                    chat,
+                    include_usage=client_stream and not strip_usage_chunk,
+                )
+
         try:
             headers = _request_headers(request)
             headers["Content-Length"] = str(len(payload))
@@ -191,7 +214,7 @@ class Proxy:
         try:
             if client_stream or _is_event_stream(upstream):
                 return await self._stream_response(
-                    request, upstream, record, started, strip_usage_chunk, client_stream
+                    request, upstream, record, started, strip_usage_chunk, client_stream, chat
                 )
             return await self._buffered_response(upstream, record, started)
         finally:
@@ -211,6 +234,8 @@ class Proxy:
             record["usage"] = tracemw.usage_record(parsed.get("usage"))
             if upstream.status >= 400:
                 record["error"] = _error_text(parsed)
+            elif self.memo is not None and record["memo"]["key"]:
+                self.memo.put(record["memo"]["key"], parsed, record["model"])
         elif upstream.status >= 400:
             record["error"] = f"upstream status {upstream.status}"
         self.tracer.append(record)
@@ -228,6 +253,7 @@ class Proxy:
         started: float,
         strip_usage_chunk: bool,
         client_stream: bool,
+        chat: bool = True,
     ) -> web.StreamResponse:
         out = web.StreamResponse(
             status=upstream.status, headers=_response_headers(upstream.headers)
@@ -236,6 +262,9 @@ class Proxy:
         buffer = b""
         usage: dict[str, Any] | None = None
         completion = []
+        tool_calls: list[dict[str, Any]] | None = None
+        finish_reason: str | None = None
+        stream_id: str | None = None
         async for chunk in upstream.content.iter_any():
             if record["timing_ms"]["first_token"] is None:
                 record["timing_ms"]["first_token"] = _ms(started)
@@ -244,8 +273,15 @@ class Proxy:
             for event in events:
                 forward = True
                 for payload in sse.data_payloads(event):
-                    if isinstance(payload, dict) and payload.get("usage") is not None:
-                        usage = payload["usage"]
+                    if isinstance(payload, dict):
+                        if payload.get("usage") is not None:
+                            usage = payload["usage"]
+                        stream_id = payload.get("id") or stream_id
+                        for choice in payload.get("choices") or []:
+                            delta = choice.get("delta") or {}
+                            if delta.get("tool_calls"):
+                                tool_calls = delta["tool_calls"]
+                            finish_reason = choice.get("finish_reason") or finish_reason
                     completion.append(sse.chunk_text(payload))
                     if strip_usage_chunk and sse.is_usage_only(payload):
                         forward = False
@@ -257,9 +293,55 @@ class Proxy:
         record["timing_ms"]["done"] = _ms(started)
         if upstream.status >= 400:
             record["error"] = f"upstream status {upstream.status}"
+        elif self.memo is not None and record["memo"]["key"]:
+            self.memo.put(
+                record["memo"]["key"],
+                memomw.response_from_stream(
+                    "".join(completion),
+                    tool_calls,
+                    finish_reason,
+                    usage,
+                    record["model"],
+                    stream_id,
+                    chat,
+                ),
+                record["model"],
+            )
         if not client_stream:
             record["stream"] = False
         self.tracer.append(record)
+        await out.write_eof()
+        return out
+
+    async def _memo_hit(
+        self,
+        request: web.Request,
+        record: dict[str, Any],
+        started: float,
+        response: dict[str, Any],
+        client_stream: bool,
+        chat: bool,
+        include_usage: bool,
+    ) -> web.StreamResponse:
+        record["memo"]["hit"] = True
+        record["upstream_status"] = 200
+        record["usage"] = tracemw.usage_record(response.get("usage"))
+        record["timing_ms"]["first_token"] = _ms(started)
+        record["timing_ms"]["done"] = _ms(started)
+        self.tracer.append(record)
+        if not client_stream:
+            return web.json_response(response, headers={memomw.MEMO_HEADER: "hit"})
+        out = web.StreamResponse(
+            status=200,
+            headers={
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                memomw.MEMO_HEADER: "hit",
+            },
+        )
+        await out.prepare(request)
+        for frame in memomw.sse_frames(response, include_usage, chat):
+            await out.write(frame)
         await out.write_eof()
         return out
 

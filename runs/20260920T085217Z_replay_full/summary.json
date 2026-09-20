@@ -1,0 +1,866 @@
+{
+  "trace_dir": "runs/20260920T072732Z_ab_off",
+  "conversation": 2,
+  "mode": "full",
+  "requests": 25,
+  "arms": {
+    "off_on::off": {
+      "dedup": false,
+      "mode": "full",
+      "requests": 25,
+      "total_wall_s": 457.55,
+      "prompt_tokens": 305232,
+      "completion_tokens": 2284,
+      "median_wall_ms": 5889.7,
+      "messages_replaced": 0,
+      "bytes_removed": 0,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2696.6,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 3887.7,
+          "prompt_tokens": 1247,
+          "completion_tokens": 51,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 10213.8,
+          "prompt_tokens": 1987,
+          "completion_tokens": 119,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 6934.9,
+          "prompt_tokens": 2130,
+          "completion_tokens": 124,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 5889.7,
+          "prompt_tokens": 2278,
+          "completion_tokens": 103,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 6204.6,
+          "prompt_tokens": 2405,
+          "completion_tokens": 109,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 6,
+          "wall_ms": 2727.3,
+          "prompt_tokens": 2538,
+          "completion_tokens": 46,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 7,
+          "wall_ms": 24921.5,
+          "prompt_tokens": 5123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 8,
+          "wall_ms": 3185.1,
+          "prompt_tokens": 5284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 9,
+          "wall_ms": 28723.0,
+          "prompt_tokens": 7873,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 10,
+          "wall_ms": 3529.2,
+          "prompt_tokens": 8034,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 11,
+          "wall_ms": 34875.3,
+          "prompt_tokens": 10623,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 12,
+          "wall_ms": 3981.0,
+          "prompt_tokens": 10784,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 13,
+          "wall_ms": 39362.0,
+          "prompt_tokens": 13373,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 14,
+          "wall_ms": 4181.0,
+          "prompt_tokens": 13534,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 15,
+          "wall_ms": 42916.0,
+          "prompt_tokens": 16123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 16,
+          "wall_ms": 4445.1,
+          "prompt_tokens": 16284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 17,
+          "wall_ms": 46457.8,
+          "prompt_tokens": 18873,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 18,
+          "wall_ms": 4662.9,
+          "prompt_tokens": 19034,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 19,
+          "wall_ms": 50126.6,
+          "prompt_tokens": 21623,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 20,
+          "wall_ms": 5459.5,
+          "prompt_tokens": 21784,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 21,
+          "wall_ms": 53847.5,
+          "prompt_tokens": 24373,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 22,
+          "wall_ms": 5150.1,
+          "prompt_tokens": 24534,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 23,
+          "wall_ms": 57780.2,
+          "prompt_tokens": 27123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 24,
+          "wall_ms": 5387.2,
+          "prompt_tokens": 27284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        }
+      ]
+    },
+    "off_on::on": {
+      "dedup": true,
+      "mode": "full",
+      "requests": 25,
+      "total_wall_s": 126.78,
+      "prompt_tokens": 117984,
+      "completion_tokens": 1485,
+      "median_wall_ms": 2965.2,
+      "messages_replaced": 192,
+      "bytes_removed": 791064,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2750.9,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 4652.8,
+          "prompt_tokens": 1247,
+          "completion_tokens": 51,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 11876.4,
+          "prompt_tokens": 1987,
+          "completion_tokens": 119,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 7508.8,
+          "prompt_tokens": 2130,
+          "completion_tokens": 124,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 6335.2,
+          "prompt_tokens": 2278,
+          "completion_tokens": 103,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 6708.8,
+          "prompt_tokens": 2405,
+          "completion_tokens": 109,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 6,
+          "wall_ms": 2965.2,
+          "prompt_tokens": 2538,
+          "completion_tokens": 46,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 7,
+          "wall_ms": 28542.8,
+          "prompt_tokens": 5123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 8,
+          "wall_ms": 3456.9,
+          "prompt_tokens": 5284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 9,
+          "wall_ms": 9161.0,
+          "prompt_tokens": 5374,
+          "completion_tokens": 137,
+          "dedup_replaced": 1,
+          "dedup_bytes_saved": 10517
+        },
+        {
+          "i": 10,
+          "wall_ms": 3699.3,
+          "prompt_tokens": 5432,
+          "completion_tokens": 50,
+          "dedup_replaced": 2,
+          "dedup_bytes_saved": 10953
+        },
+        {
+          "i": 11,
+          "wall_ms": 2969.3,
+          "prompt_tokens": 5509,
+          "completion_tokens": 34,
+          "dedup_replaced": 4,
+          "dedup_bytes_saved": 21576
+        },
+        {
+          "i": 12,
+          "wall_ms": 3444.3,
+          "prompt_tokens": 5567,
+          "completion_tokens": 50,
+          "dedup_replaced": 5,
+          "dedup_bytes_saved": 22012
+        },
+        {
+          "i": 13,
+          "wall_ms": 2974.6,
+          "prompt_tokens": 5644,
+          "completion_tokens": 34,
+          "dedup_replaced": 7,
+          "dedup_bytes_saved": 32635
+        },
+        {
+          "i": 14,
+          "wall_ms": 2622.8,
+          "prompt_tokens": 5702,
+          "completion_tokens": 37,
+          "dedup_replaced": 8,
+          "dedup_bytes_saved": 33071
+        },
+        {
+          "i": 15,
+          "wall_ms": 2817.4,
+          "prompt_tokens": 5779,
+          "completion_tokens": 34,
+          "dedup_replaced": 10,
+          "dedup_bytes_saved": 43694
+        },
+        {
+          "i": 16,
+          "wall_ms": 2610.3,
+          "prompt_tokens": 5837,
+          "completion_tokens": 37,
+          "dedup_replaced": 11,
+          "dedup_bytes_saved": 44130
+        },
+        {
+          "i": 17,
+          "wall_ms": 2753.1,
+          "prompt_tokens": 5914,
+          "completion_tokens": 34,
+          "dedup_replaced": 13,
+          "dedup_bytes_saved": 54753
+        },
+        {
+          "i": 18,
+          "wall_ms": 2671.9,
+          "prompt_tokens": 5972,
+          "completion_tokens": 37,
+          "dedup_replaced": 14,
+          "dedup_bytes_saved": 55189
+        },
+        {
+          "i": 19,
+          "wall_ms": 2711.5,
+          "prompt_tokens": 6049,
+          "completion_tokens": 34,
+          "dedup_replaced": 16,
+          "dedup_bytes_saved": 65812
+        },
+        {
+          "i": 20,
+          "wall_ms": 2663.3,
+          "prompt_tokens": 6107,
+          "completion_tokens": 37,
+          "dedup_replaced": 17,
+          "dedup_bytes_saved": 66248
+        },
+        {
+          "i": 21,
+          "wall_ms": 2774.2,
+          "prompt_tokens": 6184,
+          "completion_tokens": 34,
+          "dedup_replaced": 19,
+          "dedup_bytes_saved": 76871
+        },
+        {
+          "i": 22,
+          "wall_ms": 2684.9,
+          "prompt_tokens": 6242,
+          "completion_tokens": 37,
+          "dedup_replaced": 20,
+          "dedup_bytes_saved": 77307
+        },
+        {
+          "i": 23,
+          "wall_ms": 2727.6,
+          "prompt_tokens": 6319,
+          "completion_tokens": 34,
+          "dedup_replaced": 22,
+          "dedup_bytes_saved": 87930
+        },
+        {
+          "i": 24,
+          "wall_ms": 2694.3,
+          "prompt_tokens": 6377,
+          "completion_tokens": 37,
+          "dedup_replaced": 23,
+          "dedup_bytes_saved": 88366
+        }
+      ]
+    },
+    "on_off::on": {
+      "dedup": true,
+      "mode": "full",
+      "requests": 25,
+      "total_wall_s": 127.07,
+      "prompt_tokens": 117984,
+      "completion_tokens": 1485,
+      "median_wall_ms": 2956.0,
+      "messages_replaced": 192,
+      "bytes_removed": 791064,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2822.4,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 4447.6,
+          "prompt_tokens": 1247,
+          "completion_tokens": 51,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 11898.7,
+          "prompt_tokens": 1987,
+          "completion_tokens": 119,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 7517.6,
+          "prompt_tokens": 2130,
+          "completion_tokens": 124,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 6286.8,
+          "prompt_tokens": 2278,
+          "completion_tokens": 103,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 6656.8,
+          "prompt_tokens": 2405,
+          "completion_tokens": 109,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 6,
+          "wall_ms": 2956.0,
+          "prompt_tokens": 2538,
+          "completion_tokens": 46,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 7,
+          "wall_ms": 28524.9,
+          "prompt_tokens": 5123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 8,
+          "wall_ms": 3614.5,
+          "prompt_tokens": 5284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 9,
+          "wall_ms": 9584.5,
+          "prompt_tokens": 5374,
+          "completion_tokens": 137,
+          "dedup_replaced": 1,
+          "dedup_bytes_saved": 10517
+        },
+        {
+          "i": 10,
+          "wall_ms": 3652.9,
+          "prompt_tokens": 5432,
+          "completion_tokens": 50,
+          "dedup_replaced": 2,
+          "dedup_bytes_saved": 10953
+        },
+        {
+          "i": 11,
+          "wall_ms": 2969.7,
+          "prompt_tokens": 5509,
+          "completion_tokens": 34,
+          "dedup_replaced": 4,
+          "dedup_bytes_saved": 21576
+        },
+        {
+          "i": 12,
+          "wall_ms": 3483.4,
+          "prompt_tokens": 5567,
+          "completion_tokens": 50,
+          "dedup_replaced": 5,
+          "dedup_bytes_saved": 22012
+        },
+        {
+          "i": 13,
+          "wall_ms": 2980.6,
+          "prompt_tokens": 5644,
+          "completion_tokens": 34,
+          "dedup_replaced": 7,
+          "dedup_bytes_saved": 32635
+        },
+        {
+          "i": 14,
+          "wall_ms": 2632.7,
+          "prompt_tokens": 5702,
+          "completion_tokens": 37,
+          "dedup_replaced": 8,
+          "dedup_bytes_saved": 33071
+        },
+        {
+          "i": 15,
+          "wall_ms": 2775.3,
+          "prompt_tokens": 5779,
+          "completion_tokens": 34,
+          "dedup_replaced": 10,
+          "dedup_bytes_saved": 43694
+        },
+        {
+          "i": 16,
+          "wall_ms": 2638.1,
+          "prompt_tokens": 5837,
+          "completion_tokens": 37,
+          "dedup_replaced": 11,
+          "dedup_bytes_saved": 44130
+        },
+        {
+          "i": 17,
+          "wall_ms": 2701.4,
+          "prompt_tokens": 5914,
+          "completion_tokens": 34,
+          "dedup_replaced": 13,
+          "dedup_bytes_saved": 54753
+        },
+        {
+          "i": 18,
+          "wall_ms": 2662.9,
+          "prompt_tokens": 5972,
+          "completion_tokens": 37,
+          "dedup_replaced": 14,
+          "dedup_bytes_saved": 55189
+        },
+        {
+          "i": 19,
+          "wall_ms": 2712.6,
+          "prompt_tokens": 6049,
+          "completion_tokens": 34,
+          "dedup_replaced": 16,
+          "dedup_bytes_saved": 65812
+        },
+        {
+          "i": 20,
+          "wall_ms": 2669.9,
+          "prompt_tokens": 6107,
+          "completion_tokens": 37,
+          "dedup_replaced": 17,
+          "dedup_bytes_saved": 66248
+        },
+        {
+          "i": 21,
+          "wall_ms": 2725.4,
+          "prompt_tokens": 6184,
+          "completion_tokens": 34,
+          "dedup_replaced": 19,
+          "dedup_bytes_saved": 76871
+        },
+        {
+          "i": 22,
+          "wall_ms": 2715.7,
+          "prompt_tokens": 6242,
+          "completion_tokens": 37,
+          "dedup_replaced": 20,
+          "dedup_bytes_saved": 77307
+        },
+        {
+          "i": 23,
+          "wall_ms": 2739.8,
+          "prompt_tokens": 6319,
+          "completion_tokens": 34,
+          "dedup_replaced": 22,
+          "dedup_bytes_saved": 87930
+        },
+        {
+          "i": 24,
+          "wall_ms": 2695.4,
+          "prompt_tokens": 6377,
+          "completion_tokens": 37,
+          "dedup_replaced": 23,
+          "dedup_bytes_saved": 88366
+        }
+      ]
+    },
+    "on_off::off": {
+      "dedup": false,
+      "mode": "full",
+      "requests": 25,
+      "total_wall_s": 468.19,
+      "prompt_tokens": 305232,
+      "completion_tokens": 2284,
+      "median_wall_ms": 6400.1,
+      "messages_replaced": 0,
+      "bytes_removed": 0,
+      "rows": [
+        {
+          "i": 0,
+          "wall_ms": 2801.4,
+          "prompt_tokens": 984,
+          "completion_tokens": 49,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 1,
+          "wall_ms": 4439.4,
+          "prompt_tokens": 1247,
+          "completion_tokens": 51,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 2,
+          "wall_ms": 12153.9,
+          "prompt_tokens": 1987,
+          "completion_tokens": 119,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 3,
+          "wall_ms": 7716.7,
+          "prompt_tokens": 2130,
+          "completion_tokens": 124,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 4,
+          "wall_ms": 6400.1,
+          "prompt_tokens": 2278,
+          "completion_tokens": 103,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 5,
+          "wall_ms": 6698.8,
+          "prompt_tokens": 2405,
+          "completion_tokens": 109,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 6,
+          "wall_ms": 2938.9,
+          "prompt_tokens": 2538,
+          "completion_tokens": 46,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 7,
+          "wall_ms": 28358.4,
+          "prompt_tokens": 5123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 8,
+          "wall_ms": 3415.7,
+          "prompt_tokens": 5284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 9,
+          "wall_ms": 31758.5,
+          "prompt_tokens": 7873,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 10,
+          "wall_ms": 3660.1,
+          "prompt_tokens": 8034,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 11,
+          "wall_ms": 35184.5,
+          "prompt_tokens": 10623,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 12,
+          "wall_ms": 3900.5,
+          "prompt_tokens": 10784,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 13,
+          "wall_ms": 38736.1,
+          "prompt_tokens": 13373,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 14,
+          "wall_ms": 4131.9,
+          "prompt_tokens": 13534,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 15,
+          "wall_ms": 42854.1,
+          "prompt_tokens": 16123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 16,
+          "wall_ms": 4397.8,
+          "prompt_tokens": 16284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 17,
+          "wall_ms": 46359.3,
+          "prompt_tokens": 18873,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 18,
+          "wall_ms": 4681.9,
+          "prompt_tokens": 19034,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 19,
+          "wall_ms": 50168.4,
+          "prompt_tokens": 21623,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 20,
+          "wall_ms": 4884.6,
+          "prompt_tokens": 21784,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 21,
+          "wall_ms": 53942.7,
+          "prompt_tokens": 24373,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 22,
+          "wall_ms": 5287.1,
+          "prompt_tokens": 24534,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 23,
+          "wall_ms": 57844.7,
+          "prompt_tokens": 27123,
+          "completion_tokens": 137,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        },
+        {
+          "i": 24,
+          "wall_ms": 5478.1,
+          "prompt_tokens": 27284,
+          "completion_tokens": 50,
+          "dedup_replaced": 0,
+          "dedup_bytes_saved": 0
+        }
+      ]
+    }
+  },
+  "speedup_off_on": 3.609,
+  "prompt_token_reduction_off_on": 0.6135,
+  "speedup_on_off": 3.685,
+  "prompt_token_reduction_on_off": 0.6135,
+  "orders_agree": true,
+  "verdict": "dedup speedup 3.61-3.69x on full"
+}

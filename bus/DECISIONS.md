@@ -1,10 +1,13 @@
 # DECISIONS — what ships
 
-> Owner: CF. **Written by LC under the 03:55 fallback rule** (contract, Clock row T+1:00): CF's
-> decision was not on `main`, and as of 03:20 neither `bus/CF.md`, `bus/DV.md`, `calm_proxy/` nor
-> `analysis/proxy_report.py` exists on `main`. If CF lands a `DECISIONS.md`, **theirs wins** and
-> this file should be replaced wholesale, not merged. Everything below is reversible: no lever has
-> been deleted, only ranked.
+> Owner: CF. **Written by LC at 03:13, ahead of the 03:55 fallback rather than after it.** CF's
+> deadline has not passed; as of 03:13 neither `bus/CF.md`, `bus/DV.md`, `calm_proxy/` nor
+> `analysis/proxy_report.py` exists on `main`, and the A/B cannot start without a flag list, so
+> this is written now to unblock the run rather than to settle the question. **If CF lands a
+> `DECISIONS.md` at any point, theirs wins** and this file should be replaced wholesale, not
+> merged; if that happens after the A/B has started I will rerun it against CF's flags — there is
+> time for one rerun before 06:30 and not for two. Nothing below is destructive: no lever has been
+> deleted, only ranked.
 
 ## The decision
 

@@ -2,7 +2,7 @@
 name = "calm-coder"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["httpx", "rich", "datasets", "numpy", "matplotlib"]
+dependencies = ["httpx", "rich", "datasets", "numpy", "matplotlib", "aiohttp"]
 
 [project.optional-dependencies]
 dev = ["pytest", "hypothesis"]
@@ -11,7 +11,8 @@ dev = ["pytest", "hypothesis"]
 testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
-include = ["calm_coder*"]
+include = ["calm_coder*", "calm_proxy*"]
 
 [project.scripts]
 calm = "calm_coder.cli:main"
+calm-proxy = "calm_proxy.cli:main"

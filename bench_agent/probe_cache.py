@@ -17,6 +17,7 @@ import json
 import pathlib
 import time
 import urllib.request
+import uuid
 
 BASE = "http://127.0.0.1:11434"
 
@@ -55,27 +56,46 @@ def main() -> int:
     ap.add_argument("--model", default="qwen2.5-coder:7b")
     ap.add_argument("--lines", type=int, default=400, help="filler lines in the system message")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--quick", action="store_true",
+                    help="cold prefix then warm prefix only: the demo moment, ~40 s instead of ~3 min")
+    ap.add_argument("--warmup", action="store_true",
+                    help="load the model first so the demo's first timing is prefill, not a 7 GB read")
     args = ap.parse_args()
 
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    a = system_message("AAA", args.lines)
-    b = system_message("BBB", args.lines)
+    # A unique tag per invocation, so "cold" is genuinely cold every time this is run. Without it
+    # the second run of the day measures the FIRST run's cache and reports cold == warm, which on
+    # a demo looks exactly like the lever not working.
+    run_tag = uuid.uuid4().hex[:8]
+    a = system_message(f"AAA-{run_tag}", args.lines)
+    b = system_message(f"BBB-{run_tag}", args.lines)
+
+    if args.warmup or args.quick:
+        # Load the weights on a throwaway prompt. Without this the first timing includes a ~7 GB
+        # read from disk, which is not the thing being measured and makes the cold number a lie.
+        print("warming up the model (not measured)...", flush=True)
+        chat(args.model, [{"role": "user", "content": "hi"}], num_predict=1)
 
     # (label, system message, what the label means)
+    plan_quick = [
+        ("a_cold", a, "first sight of prefix A"),
+        ("a_warm", a, "same prefix A, different last user message"),
+    ]
     plan = [
         ("a_cold", a, "first sight of prefix A"),
         ("a_warm", a, "same prefix A, different last user message"),
         ("b_cold", b, "a different prefix arrives on the same server slot"),
         ("a_after_b", a, "back to A: was A's prefix evicted by B?"),
         ("a_again", a, "A immediately after A"),
-        ("a_ts_churn_1", "[2026-09-20 02:38:11] " + a, "a timestamp at the FRONT of the system message"),
-        ("a_ts_churn_2", "[2026-09-20 02:38:47] " + a, "same, one tick later"),
+        ("a_ts_churn_1", f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] " + a,
+         "a timestamp at the FRONT of the system message"),
+        ("a_ts_churn_2", f"[{time.strftime('%Y-%m-%d %H:%M:%S')} +1] " + a, "same, one tick later"),
     ]
 
     rows = []
-    for i, (label, sysmsg, note) in enumerate(plan):
+    for i, (label, sysmsg, note) in enumerate(plan_quick if args.quick else plan):
         r = chat(args.model, [
             {"role": "system", "content": sysmsg},
             {"role": "user", "content": f"Say OK {i}"},
@@ -89,14 +109,26 @@ def main() -> int:
     by = {r["label"]: r for r in rows}
     cold = by["a_cold"]["prompt_eval_ms_per_token"]
     warm = by["a_warm"]["prompt_eval_ms_per_token"]
+    if args.quick:
+        c, w = by["a_cold"], by["a_warm"]
+        print(f"\n  same {c['prompt_tokens']:,}-token prompt, one cold and one warm:")
+        print(f"    cold  {c['prompt_eval_ms']:>9,.0f} ms")
+        print(f"    warm  {w['prompt_eval_ms']:>9,.0f} ms")
+        print(f"    => {cold / warm:.0f}x on prompt evaluation\n")
     summary = {
         "model": args.model,
+        "run_tag": run_tag,
         "prompt_tokens": by["a_cold"]["prompt_tokens"],
         "cold_ms_per_prompt_token": cold,
         "warm_ms_per_prompt_token": warm,
         "cache_speedup_on_prompt_eval": round(cold / warm, 1) if warm else None,
-        "evicted_by_one_interleaved_request": by["a_after_b"]["prompt_eval_ms"] > 0.5 * by["a_cold"]["prompt_eval_ms"],
-        "front_churn_costs_full_reprefill": by["a_ts_churn_1"]["prompt_eval_ms"] > 0.5 * by["a_cold"]["prompt_eval_ms"],
+        "evicted_by_one_interleaved_request":
+            by["a_after_b"]["prompt_eval_ms"] > 0.5 * by["a_cold"]["prompt_eval_ms"]
+            if "a_after_b" in by else None,
+        "front_churn_costs_full_reprefill":
+            by["a_ts_churn_1"]["prompt_eval_ms"] > 0.5 * by["a_cold"]["prompt_eval_ms"]
+            if "a_ts_churn_1" in by else None,
+        "quick_mode": args.quick,
         "cached_tokens_reported_by_server": False,
         "note": "cached_tokens is absent from Ollama /v1 usage; prompt_eval_count does not "
                 "shrink on a cache hit. prompt_eval_duration is the only cache instrument here.",

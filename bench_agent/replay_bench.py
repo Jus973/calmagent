@@ -43,24 +43,46 @@ from bench_agent.trace_proxy import Tracer
 UPSTREAM = "http://127.0.0.1:11434/v1/chat/completions"
 
 
-def load_conversation(trace_dir: pathlib.Path, task: str | None) -> list[dict]:
-    """Rebuild the real request bodies from a trace directory."""
+def split_conversations(rows: list[dict]) -> list[list[dict]]:
+    """Split one trace file into the separate conversations it recorded.
+
+    A session id cannot do this: it is the hash of the first system message, and an agent framework
+    sends the same system message for every task, so ten tasks share one id. Two structural signals
+    are used instead, in order of reliability:
+
+    * `seq` restarting at 1 -- the bench starts a fresh proxy per task, so this is exact when it
+      is present;
+    * the message list getting shorter than the previous request's -- a conversation only ever
+      extends itself.
+    """
+    convs: list[list[dict]] = []
+    cur: list[dict] = []
+    for r in sorted(rows, key=lambda x: x["ts"]):
+        restart = bool(cur) and (
+            r.get("seq", 0) <= cur[-1].get("seq", 0)
+            or len(r["messages"]) < len(cur[-1]["messages"])
+        )
+        if restart:
+            convs.append(cur)
+            cur = []
+        cur.append(r)
+    if cur:
+        convs.append(cur)
+    return convs
+
+
+def load_conversation(trace_dir: pathlib.Path, index: int) -> list[dict]:
+    """Rebuild the real request bodies of one recorded conversation, longest first."""
     bodies = {p.stem: p.read_text(errors="replace") for p in (trace_dir / "bodies").glob("*.txt")}
     rows = [json.loads(l) for l in (trace_dir / "trace.jsonl").read_text().splitlines() if l.strip()]
-    # One trace directory holds every task the arm ran; a session id identifies a conversation.
-    by_session: dict[str, list[dict]] = {}
-    for r in rows:
-        by_session.setdefault(r["session"], []).append(r)
-    sessions = sorted(by_session.values(), key=len, reverse=True)
-    if task:
-        for s in sessions:
-            first = bodies.get(s[0]["messages"][-1]["sha"], "") if s[0]["messages"] else ""
-            if task in first:
-                sessions = [s]
-                break
-    chosen = sessions[0]
+    convs = sorted(split_conversations(rows), key=len, reverse=True)
+    if not convs:
+        return []
+    print(f"  {len(convs)} conversations in {trace_dir.name}: lengths "
+          f"{[len(c) for c in convs]}; replaying #{index}", flush=True)
+    chosen = convs[min(index, len(convs) - 1)]
     out = []
-    for r in sorted(chosen, key=lambda x: x["seq"]):
+    for r in chosen:
         msgs = [{"role": m["role"], "content": bodies.get(m["sha"], "")} for m in r["messages"]]
         if any(not m["content"] for m in msgs):
             continue  # a body we do not have; skip rather than send a truncated prompt
@@ -83,7 +105,9 @@ def replay(conv: list[dict], dedup: bool, mode: str, tmp: pathlib.Path) -> dict:
     tracer = Tracer(tmp, cold_ms=5.96, dedup=dedup, dedup_min_bytes=200)
     rows = []
     for i, req in enumerate(conv):
-        msgs, replaced, saved = tracer.apply_dedup("replay", req["messages"])
+        key = tracer.conversation_key("replay", req["messages"])
+        msgs, replaced, saved = tracer.apply_dedup(key, req["messages"])
+        tracer.prev["replay"] = req["messages"]
         max_tokens = 1 if mode == "prefill" else max(req["completion_tokens"], 1)
         wall, usage = send(req["model"], msgs, max_tokens)
         rows.append({"i": i, "wall_ms": round(wall, 1),
@@ -105,7 +129,8 @@ def replay(conv: list[dict], dedup: bool, mode: str, tmp: pathlib.Path) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("trace_dir")
-    ap.add_argument("--task", default="")
+    ap.add_argument("--conversation", type=int, default=0,
+                    help="which recorded conversation to replay, 0 = the longest")
     ap.add_argument("--mode", default="prefill", choices=["prefill", "full"])
     ap.add_argument("--max-requests", type=int, default=0, help="0 = the whole conversation")
     ap.add_argument("--out", required=True)
@@ -113,7 +138,7 @@ def main() -> int:
 
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    conv = load_conversation(pathlib.Path(args.trace_dir), args.task or None)
+    conv = load_conversation(pathlib.Path(args.trace_dir), args.conversation)
     if args.max_requests:
         conv = conv[: args.max_requests]
     if not conv:
@@ -133,7 +158,7 @@ def main() -> int:
             print(f"  [{'/'.join(order)}] {arm:>3}: {r['total_wall_s']:>7.2f} s  "
                   f"prompt={r['prompt_tokens']:>8,}  replaced={r['messages_replaced']}", flush=True)
 
-    summary = {"trace_dir": args.trace_dir, "task": args.task, "mode": args.mode,
+    summary = {"trace_dir": args.trace_dir, "conversation": args.conversation, "mode": args.mode,
                "requests": len(conv), "arms": results}
     for order in ("off_on", "on_off"):
         off, on = results[f"{order}::off"], results[f"{order}::on"]

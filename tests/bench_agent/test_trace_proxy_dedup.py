@@ -90,3 +90,53 @@ def test_dedup_off_is_a_no_op(tmp_path: pathlib.Path) -> None:
     conv = [msg("system", "sys"), msg("user", LONG), msg("assistant", "a"), msg("user", LONG)]
     out, replaced, saved = t.apply_dedup("s", conv)
     assert (out, replaced, saved) == (conv, 0, 0)
+
+
+# --- conversation boundaries ---------------------------------------------------------------
+#
+# A session id is the hash of the first system message, and an agent framework sends the same
+# system message for every task it runs. With a long-lived proxy that puts ten tasks under one id,
+# and the dedup memory is keyed by it -- so without a boundary, task 2's first sight of a string
+# gets rewritten into a reference to a message number that only existed in task 1.
+
+SHARED_SYSTEM = "You are a helpful assistant that can interact with a computer. " * 8
+
+
+def test_a_shorter_message_list_starts_a_new_conversation(tracer: Tracer) -> None:
+    long_conv = [msg("system", SHARED_SYSTEM)] + [msg("user", f"turn {i}" * 40) for i in range(6)]
+    k1 = tracer.conversation_key("sess", long_conv)
+    tracer.prev["sess"] = long_conv
+    k2 = tracer.conversation_key("sess", [msg("system", SHARED_SYSTEM), msg("user", "fresh task")])
+    assert k1 != k2
+
+
+def test_a_new_task_does_not_inherit_the_previous_task_s_dedup_memory(tracer: Tracer) -> None:
+    """The bug this guards: content first seen in task 2 must not be replaced by a reference."""
+    task1 = [msg("system", SHARED_SYSTEM), msg("user", "a"), msg("assistant", "b"),
+             msg("user", LONG)]
+    k1 = tracer.conversation_key("sess", task1)
+    tracer.apply_dedup(k1, task1)
+    tracer.prev["sess"] = task1
+
+    task2 = [msg("system", SHARED_SYSTEM), msg("user", LONG)]
+    k2 = tracer.conversation_key("sess", task2)
+    out, replaced, _ = tracer.apply_dedup(k2, task2)
+    assert replaced == 0, "task 2's first sight of this content was deleted"
+    assert out[1]["content"] == LONG
+
+
+def test_an_extending_request_stays_in_the_same_conversation(tracer: Tracer) -> None:
+    conv = [msg("system", SHARED_SYSTEM), msg("user", "a")]
+    k1 = tracer.conversation_key("sess", conv)
+    tracer.prev["sess"] = conv
+    conv = conv + [msg("assistant", "b"), msg("user", "c")]
+    assert tracer.conversation_key("sess", conv) == k1
+
+
+def test_a_changed_first_message_starts_a_new_conversation(tracer: Tracer) -> None:
+    conv = [msg("system", SHARED_SYSTEM), msg("user", "a"), msg("assistant", "b")]
+    k1 = tracer.conversation_key("sess", conv)
+    tracer.prev["sess"] = conv
+    k2 = tracer.conversation_key("sess", [msg("system", "a different system prompt"),
+                                          msg("user", "a"), msg("assistant", "b")])
+    assert k1 != k2

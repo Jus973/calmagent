@@ -80,12 +80,40 @@ class Tracer:
         # session -> content sha -> the label the first copy was given. Grow-only and keyed by
         # content, which is what makes every rewrite reproducible across turns.
         self.seen_content: dict[str, dict[str, int]] = {}
+        self.epoch: dict[str, int] = {}
 
-    def apply_dedup(self, session: str, messages: list[dict]) -> tuple[list[dict], int, int]:
-        """Replace repeated message content with a stable reference to its first occurrence."""
+    def conversation_key(self, session: str, messages: list[dict]) -> str:
+        """Distinguish one conversation from the next within a single session id.
+
+        A session id is the hash of the first system message, and an agent framework sends the
+        same system message for every task it runs -- so with a long-lived proxy, ten tasks share
+        one id. That matters because the dedup memory is keyed by it: a message from task 1 could
+        otherwise be "replaced" in task 2 by a reference to a message number that task 2 never had,
+        which would delete content the agent needed rather than compress it.
+
+        A new conversation is detected structurally, not by name: an ongoing conversation only ever
+        extends its predecessor, so a request whose message list is shorter than the last one, or
+        whose opening message differs, is a new one.
+        """
+        prev = self.prev.get(session)
+        e = self.epoch.setdefault(session, 0)
+        if prev is not None and messages:
+            restarted = len(messages) < len(prev) or (
+                prev and str(prev[0].get("content", "")) != str(messages[0].get("content", "")))
+            if restarted:
+                e += 1
+                self.epoch[session] = e
+                self.seen_content.pop(f"{session}#{e - 1}", None)
+        return f"{session}#{e}"
+
+    def apply_dedup(self, conversation: str, messages: list[dict]) -> tuple[list[dict], int, int]:
+        """Replace repeated message content with a stable reference to its first occurrence.
+
+        `conversation` must come from `conversation_key`, not a bare session id.
+        """
         if not self.dedup:
             return messages, 0, 0
-        first = self.seen_content.setdefault(session, {})
+        first = self.seen_content.setdefault(conversation, {})
         out, replaced, saved = [], 0, 0
         for i, m in enumerate(messages):
             content = m.get("content")
@@ -215,8 +243,10 @@ def make_handler(tracer: Tracer, upstream: str):
 
             messages = payload.get("messages") or []
             stream = bool(payload.get("stream"))
-            messages, dedup_replaced, dedup_saved = tracer.apply_dedup(
-                sha(str(messages[0].get("content", "")) if messages else "empty")[:16], messages)
+            session = sha(str(messages[0].get("content", "")) if messages else "empty")[:16]
+            # Must be computed before `prefix_against_previous`, which overwrites `prev`.
+            conversation = tracer.conversation_key(session, messages)
+            messages, dedup_replaced, dedup_saved = tracer.apply_dedup(conversation, messages)
             if dedup_replaced:
                 payload["messages"] = messages
                 raw = json.dumps(payload).encode()
@@ -228,7 +258,6 @@ def make_handler(tracer: Tracer, upstream: str):
                 payload.setdefault("stream_options", {})["include_usage"] = True
                 raw = json.dumps(payload).encode()
                 injected_usage = True
-            session = sha(str(messages[0].get("content", "")) if messages else "empty")[:16]
             msg_rows = []
             for m in messages:
                 content = str(m.get("content", ""))
@@ -241,7 +270,8 @@ def make_handler(tracer: Tracer, upstream: str):
             prefix = tracer.prefix_against_previous(session, messages)
 
             record = {
-                "ts": t_submit, "session": session, "model": payload.get("model"),
+                "ts": t_submit, "session": session, "conversation": conversation,
+                "model": payload.get("model"),
                 "stream": stream,
                 "params": {"temperature": payload.get("temperature"),
                            "seed": payload.get("seed"),

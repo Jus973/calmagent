@@ -92,14 +92,22 @@ async def warmup(client: "Client", task: "Task", budget: Budget,
     still being computed; this removes the question. `system` is the system message of the round
     about to be sent, so what is warmed is a real prefix of it. Its tokens are counted like any
     other.
+
+    Every member of a fleet is warmed, since each holds its own cache; the extra requests are one
+    token each and are charged to the budget like the rest.
     """
     if budget.exhausted:
         return ProduceResult(producer="warmup")
-    (s,) = await client.sample(warmup_messages(task, system), n=1,
-                               temperature=0.0, max_tokens=1, seed=0)
-    budget.spend(s.completion_tokens)
-    return ProduceResult(producer="warmup", decode_tokens=s.completion_tokens,
-                         prompt_tokens=s.prompt_tokens, cached_tokens=s.cached_tokens, requests=1)
+    msgs = warmup_messages(task, system)
+    batches = await asyncio.gather(*(
+        c.sample(msgs, n=1, temperature=0.0, max_tokens=1, seed=0) for c in client.members))
+    samples = [s for b in batches for s in b]
+    budget.spend(sum(s.completion_tokens for s in samples))
+    cached = [s.cached_tokens for s in samples if s.cached_tokens is not None]
+    return ProduceResult(producer="warmup",
+                         decode_tokens=sum(s.completion_tokens for s in samples),
+                         prompt_tokens=sum(s.prompt_tokens for s in samples),
+                         cached_tokens=sum(cached) if cached else None, requests=len(samples))
 
 
 def _emission(task: "Task", arm: str, slot: str, rnd: int, idx: int, s, t_start: float,
@@ -108,7 +116,8 @@ def _emission(task: "Task", arm: str, slot: str, rnd: int, idx: int, s, t_start:
                     sample_seed=seed, text=s.text, completion_tokens=s.completion_tokens,
                     prompt_tokens=s.prompt_tokens, cached_tokens=s.cached_tokens,
                     tokens_estimated=s.tokens_estimated, latency_ms=s.latency_ms,
-                    t_done_ms=int((time.monotonic() - t_start) * 1000), finish_reason=s.finish_reason)
+                    t_done_ms=int((time.monotonic() - t_start) * 1000), finish_reason=s.finish_reason,
+                    model=s.model)
 
 
 def _totals(res: ProduceResult, emissions: Sequence[Emission], requests: int) -> ProduceResult:

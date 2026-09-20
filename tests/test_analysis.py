@@ -12,7 +12,7 @@ from calm_coder.v2.decompose import ingest_class_sample
 from calm_coder.v2.harness import run_v2
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from analysis import dead_slots, final_report, pool_existing  # noqa: E402
+from analysis import cache_value, dead_slots, final_report, pool_existing, tail_waste  # noqa: E402
 
 from test_v2 import BAD_GET, GOOD, fake_server, toy_class  # noqa: E402
 
@@ -122,3 +122,65 @@ def test_dead_slots_names_the_slot_no_candidate_passes(toy):
     info = dead_slots.analyze(toy, res.store.event_log())
     assert info["dead_slots"] == ["get"] and info["report"]["get"]["candidates"] >= 1
     assert info["best_class"] is not None and info["interface_errors"] + info["value_errors"] > 0
+
+
+def test_cache_saving_counts_repeat_work_not_distinct_work():
+    # Two configs of one task. Within a config the second composition repeats one class key, so
+    # one pair of the four is avoidable; pooling the configs makes the whole second config free.
+    comps = [{"keys": ["k1", "k2"], "wall_ms": 100}, {"keys": ["k1", "k3"], "wall_ms": 100}]
+    recs = [{"task_id": "T", "arm": "v2", "seed": 0, "N": n,
+             "keys": [k for c in comps for k in c["keys"]], "comps": comps, "wall_ms": 200}
+            for n in (4, 8)]
+    m = cache_value.summarize(recs)
+    within, task = m["scopes"]["within_config"], m["scopes"]["within_task"]
+    assert within["pairs"] == 8 and within["executions"] == 6 and within["saved"] == 2
+    # Pooling the two configs leaves only the three distinct keys to execute.
+    assert task["executions"] == 3 and task["saved"] == 5
+
+    # No composition is ever skipped whole within a config (each has one fresh key), but the
+    # second config repeats both compositions exactly, so both are skipped there.
+    assert within["skipped"] == 0 and within["wall_floor_frac"] == 0.0
+    assert task["skipped"] == 2 and task["wall_floor_frac"] == pytest.approx(0.5)
+    # The proportional estimate credits the half-known composition the floor ignores.
+    assert within["wall_est_frac"] == pytest.approx(0.25)
+
+
+def test_cache_saving_is_zero_when_nothing_repeats():
+    comps = [{"keys": [f"k{i}"], "wall_ms": 10} for i in range(5)]
+    recs = [{"task_id": "T", "arm": "v2", "seed": 0, "N": 8,
+             "keys": [c["keys"][0] for c in comps], "comps": comps, "wall_ms": 50}]
+    m = cache_value.summarize(recs)
+    for scope in m["scopes"].values():
+        assert scope["saved"] == 0 and scope["skipped"] == 0 and scope["wall_est_frac"] == 0.0
+
+
+def test_tail_waste_measures_only_what_follows_a_complete_method(tmp_path, monkeypatch):
+    kept = "def get(self, k):\n    return self.d.get(k)\n"
+    tail = "\nHere is an explanation of the code above that nothing downstream reads.\n"
+
+    class _Slot:
+        id, order = "get", 0
+
+    class _Task:
+        task_id, class_name, slots = "ClassEval_0", "KV", [_Slot()]
+
+    monkeypatch.setattr(tail_waste, "load_rows", lambda: [{"task_id": "ClassEval_0"}])
+    monkeypatch.setattr(tail_waste, "task_from_row", lambda r: _Task())
+    (tmp_path / "emissions.jsonl").write_text("".join(json.dumps(e) + "\n" for e in [
+        {"task_id": "ClassEval_0", "slot": "get", "text": kept + tail, "completion_tokens": 100},
+        {"task_id": "ClassEval_0", "slot": "get", "text": kept, "completion_tokens": 50},
+        # a whole-class sample was asked for everything, so none of it is tail
+        {"task_id": "ClassEval_0", "slot": "__class__", "text": kept + tail, "completion_tokens": 999},
+    ]))
+    m = tail_waste.measure([tmp_path])
+    # The whole-class sample is not a per-slot request, and the completion that stops exactly at the
+    # end of its method has no cut point at all — nothing after it proves the method ended. Excluding
+    # the tightest completions can only push the measured tail up, never down.
+    assert m["emissions"] == 1 and m["skipped"]["no_cut_point"] == 1
+    assert m["chars"] == len(kept) + len(tail)
+    # The cut keeps the method and drops the prose; where exactly it lands in the blank line
+    # between them is not the point.
+    text = kept + tail
+    assert text[-m["tail_chars"]:].strip() == tail.strip()
+    assert m["cut_at_all_frac"] == 1.0
+    assert m["projected_tokens_saved"] == int(100 * m["tail_frac"])

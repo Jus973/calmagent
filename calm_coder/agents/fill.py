@@ -35,6 +35,7 @@ class Emission:
     finish_reason: str | None
     ttft_ms: int | None = None         # streamed requests only
     stopped_early: bool = False        # the method was complete, so the rest was never decoded
+    model: str | None = None           # the fleet member that produced it
     extract_error: str | None = None
     fill_hash: str | None = None       # alpha-normalized identity
     fill_hash_exact: str | None = None  # exact-unparse identity (no alpha-renaming)
@@ -117,7 +118,7 @@ async def generate_fills(client: "Client", task: "Task", store: Store, *, n: int
                      prompt_tokens=s.prompt_tokens, cached_tokens=s.cached_tokens,
                      tokens_estimated=s.tokens_estimated, latency_ms=s.latency_ms,
                      t_done_ms=int((time.monotonic() - t_start) * 1000), finish_reason=s.finish_reason,
-                     ttft_ms=s.ttft_ms, stopped_early=s.stopped_early)
+                     ttft_ms=s.ttft_ms, stopped_early=s.stopped_early, model=s.model)
         ingest(task, store, e, on_event)
         out.append(e)
         if on_emission:

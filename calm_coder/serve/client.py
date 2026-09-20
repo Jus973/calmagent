@@ -13,7 +13,7 @@ import os
 import re
 import time
 from dataclasses import asdict, dataclass
-from typing import Callable
+from typing import Callable, Sequence
 
 import httpx
 
@@ -33,6 +33,7 @@ class Sample:
     system_fingerprint: str | None = None
     ttft_ms: int | None = None    # None = not streamed, so prefill and decode aren't separable
     stopped_early: bool = False   # the caller had its fill and ended the request
+    model: str | None = None      # which member of a Fleet produced this sample
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -62,6 +63,10 @@ class Client:
 
     def config(self) -> dict:
         return {"base_url": self.base_url, "model": self.model, "no_n": self.no_n, "stream": self.stream}
+
+    @property
+    def members(self) -> list["Client"]:
+        return [self]
 
     async def aclose(self) -> None:
         await self._http.aclose()
@@ -101,7 +106,7 @@ class Client:
         if top_p is not None:
             body["top_p"] = top_p
         data, ms = await self._post(body)
-        return _samples(data, messages, ms, seed)
+        return _samples(data, messages, ms, seed, self.model)
 
     async def _stream_request(self, messages, temperature, max_tokens, seed, top_p,
                               stop_when: Callable[[str], int | None] | None) -> list[Sample]:
@@ -135,7 +140,7 @@ class Client:
                         elif "event-stream" not in r.headers.get("content-type", ""):
                             await r.aread()
                             return _samples(r.json(), messages,
-                                            int((time.monotonic() - t0) * 1000), seed)
+                                            int((time.monotonic() - t0) * 1000), seed, self.model)
                         else:
                             async for line in r.aiter_lines():
                                 if not line.startswith("data:"):
@@ -179,7 +184,7 @@ class Client:
                 latency_ms=ms, seed=seed,
                 cached_tokens=(usage.get("prompt_tokens_details") or {}).get("cached_tokens"),
                 tokens_estimated=estimated, finish_reason="stopped_early" if stopped else finish,
-                ttft_ms=ttft, stopped_early=stopped,
+                ttft_ms=ttft, stopped_early=stopped, model=self.model,
             )]
         raise RuntimeError("unreachable")
 
@@ -223,7 +228,79 @@ class Client:
         return out
 
 
-def _samples(data: dict, messages: list[dict], ms: int, seed: int | None) -> list[Sample]:
+class Fleet:
+    """Several `Client`s behind one `sample`, so the agents writing into a store are different
+    models rather than clones of one.
+
+    A round of n samples is split across members in a fixed order, so which member produces which
+    sample index is a function of (n, member order) alone and not of timing — two runs with the
+    same seed draw the same sample from the same model. Member j's samples start at
+    `seed + offset_j`, which keeps sample identities distinct across members.
+
+    Nothing about the store changes: a definition is still keyed by the hash of its canonical form,
+    so two models that write the same method write one definition, and which model got there first
+    is provenance (`Sample.model`, carried onto the emission), never identity.
+    """
+
+    def __init__(self, clients: Sequence["Client"]):
+        if not clients:
+            raise ValueError("Fleet needs at least one client")
+        self._clients = list(clients)
+        self.model = "+".join(c.model for c in self._clients)
+
+    @classmethod
+    def from_spec(cls, spec: str, **kw) -> "Fleet":
+        """`model[@base_url]` entries, comma separated; a missing base_url falls back to the env."""
+        out = []
+        for part in spec.split(","):
+            if not part.strip():
+                continue
+            model, _, url = part.strip().partition("@")
+            out.append(Client(base_url=url or None, model=model, **kw))
+        return cls(out)
+
+    @property
+    def members(self) -> list["Client"]:
+        return list(self._clients)
+
+    def shares(self, n: int) -> list[int]:
+        """n split as evenly as possible; earlier members take the remainder."""
+        q, r = divmod(n, len(self._clients))
+        return [q + (1 if i < r else 0) for i in range(len(self._clients))]
+
+    def config(self) -> dict:
+        return {"fleet": [c.config() for c in self._clients], "model": self.model}
+
+    async def aclose(self) -> None:
+        await asyncio.gather(*(c.aclose() for c in self._clients))
+
+    async def __aenter__(self) -> "Fleet":
+        return self
+
+    async def __aexit__(self, *exc) -> None:
+        await self.aclose()
+
+    async def metrics_snapshot(self) -> dict[str, float] | None:
+        snaps = await asyncio.gather(*(c.metrics_snapshot() for c in self._clients))
+        out = {f"{c.model}|{k}": v for c, s in zip(self._clients, snaps) if s for k, v in s.items()}
+        return out or None
+
+    async def sample(self, messages: list[dict], n: int = 1, temperature: float = 0.8,
+                     max_tokens: int = 512, seed: int | None = 0, top_p: float | None = None,
+                     stop_when: Callable[[str], int | None] | None = None) -> list[Sample]:
+        shares = self.shares(n)
+        reqs, off = [], 0
+        for c, k in zip(self._clients, shares):
+            if k:
+                reqs.append(c.sample(messages, n=k, temperature=temperature, max_tokens=max_tokens,
+                                     seed=None if seed is None else seed + off, top_p=top_p,
+                                     stop_when=stop_when))
+                off += k
+        return [s for batch in await asyncio.gather(*reqs) for s in batch]
+
+
+def _samples(data: dict, messages: list[dict], ms: int, seed: int | None,
+             model: str | None = None) -> list[Sample]:
     """An unstreamed response body -> one Sample per choice."""
     choices = sorted(data.get("choices", []), key=lambda c: c.get("index", 0))
     texts = [(c.get("message") or {}).get("content") or "" for c in choices]
@@ -241,6 +318,6 @@ def _samples(data: dict, messages: list[dict], ms: int, seed: int | None) -> lis
             text=t, completion_tokens=ct, prompt_tokens=prompt if i == 0 else 0, latency_ms=ms,
             seed=seed, cached_tokens=cached if i == 0 else None,
             tokens_estimated=estimated or len(texts) > 1, finish_reason=c.get("finish_reason"),
-            system_fingerprint=data.get("system_fingerprint"),
+            system_fingerprint=data.get("system_fingerprint"), model=model,
         ))
     return out

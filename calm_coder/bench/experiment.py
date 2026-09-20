@@ -23,7 +23,7 @@ from calm_coder.bench.baselines import whole_class_samples
 from calm_coder.bench.classeval import SUBSET, load_subset
 from calm_coder.jsonl import append_jsonl, read_jsonl
 from calm_coder.runner import tests as rt
-from calm_coder.serve.client import Client
+from calm_coder.serve.client import Client, Fleet
 from calm_coder.serve.prompts import SAMPLING
 from calm_coder.store.derive import reachable
 from calm_coder.store.defs import Composition
@@ -254,6 +254,7 @@ async def main_async(a) -> Path:
                "k": a.k, "repair_n": a.repair_n, "rounds": a.rounds,
                "test_width": a.test_width,
                "sampling": SAMPLING, "per_class_timeout_s": 5, "wall_timeout_s": 20,
+               "models": a.models,
                "model": os.environ.get("CALM_MODEL"), "base_url": os.environ.get("CALM_BASE_URL"),
                "no_n": os.environ.get("CALM_NO_N"),
                "server_env": {k: v for k, v in os.environ.items() if k.startswith("OLLAMA_")},
@@ -272,7 +273,7 @@ async def main_async(a) -> Path:
                                     "budgets": [{"task_id": t, "seed": s, "tokens": v}
                                                 for (t, s), v in sorted(budgets.items(),
                                                                         key=lambda kv: (kv[0][0], kv[0][1] is None, kv[0][1]))]})
-    async with Client() as client:
+    async with (Fleet.from_spec(cfg["models"]) if cfg.get("models") else Client()) as client:
         cfg_client = client.config()
         if not (rd.path / "client.json").exists():
             (rd.path / "client.json").write_text(json.dumps({**cfg_client, "metrics_start": await client.metrics_snapshot()}))
@@ -335,6 +336,9 @@ def main() -> None:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--tasks")
     ap.add_argument("--max-comps", type=int, default=64)
+    ap.add_argument("--models", help="comma-separated `model[@base_url]`: samples are split across "
+                                     "them, so the agents writing into the store are different "
+                                     "models rather than clones of one")
     ap.add_argument("--budget-from", help="run dir whose arm-C decode tokens set each task's v2 budget")
     ap.add_argument("--budget-tokens", type=int, help="flat per-task decode budget when --budget-from is absent")
     ap.add_argument("--feedback", default="F1", choices=["F0", "F1", "F2"])

@@ -482,3 +482,31 @@ these replays measure the lever and not the machine.
 The honest one-line summary of dedup is now: **it does nothing when you do not need it, costs about
 1% when it does nothing, and returns 2–3.7x on the long looping runs that were burning the time.**
 That is a better claim than the 3.67x was, because it is the one that survives someone checking it.
+
+### 06:24 FINAL (amended — supersedes 05:18 on the headline figure only)
+
+The 05:18 entry stands except for the number it led with. **The headline is the pooled sweep, not
+the single conversation:** across all 10 recorded conversations, 149 requests, agent removed —
+**2,495 s → 1,176 s = 2.12x on 37% fewer prompt tokens**, median 1.55x, range 0.99–3.67x, 4 of 10
+with no effect; solve rate unchanged at 4/10 in both A/B arms, McNemar p = 1.000. README, STATUS
+and `bench_agent/demo` all lead with that.
+
+**Verified from a clean clone of `main`** (`git clone` to a temp dir, nothing from my working
+tree): `python -m bench_agent.demo` and `--verify` exit 0, `pytest` is 155 passed / 1 skipped, and
+`quick_report`, `probe_headroom`, `context_cost` and `cross_run` all run against the committed run
+directories. Worth doing because `runs/` is `.gitignore`d here — every run directory needed
+`git add -f`, and a number that only exists in someone's working tree is not a result.
+
+Definition of done, from `AGENT_LOCAL.md`:
+
+- [x] `bus/LC.md` with IDEAs, VERDICTs, STATUS entries, FINAL
+- [x] `bench_agent/tasks/` (10 tasks) + `TASKS.json` on `main`, every reference solution verified
+- [x] a real agent (mini-swe-agent) through a trace proxy; named in `STATUS.md` with the two
+      fixes it needed
+- [x] `runs/20260920T070307Z_probe10_off/` on `main` — 5 tasks, cut from 10 and logged as a `CUT`
+- [x] A/B `off` and `on` on `main` **at 04:38, ahead of the 06:30 mark**
+- [x] `STATUS.md` with "USER: read this first" filled in
+
+Not done, and deliberately: I-5 `calm-run` (DV's, and ~40 ms of headroom on this bench), I-6
+affinity (cut-order #1), and the cross-run lint, which tonight's measurement says is the most
+valuable unbuilt thing but which `bus/DECISIONS.md` does not authorise starting after T+1:00.

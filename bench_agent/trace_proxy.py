@@ -19,6 +19,15 @@ Design notes that are not obvious:
   reading divided by the calibrated cold cost — clearly an estimate, labelled as one, with the
   calibration constant recorded next to it.
 
+* **`--dedup` is the one lever this fallback implements** (I-4), because the probe measured it as
+  the only candidate whose kill number was not hit. When a message's content has already appeared
+  earlier in the same session, its repeat is replaced by a short reference to the first copy. The
+  replacement is keyed by content and is therefore *stable*: the same message is rewritten to the
+  same bytes in every later request, so the shared prefix stays aligned. That stability is the
+  whole lever -- a rewrite that moved would invalidate the prefix behind it, and at ~6 ms per
+  prompt token a single broken 17k-token prefix costs about 100 s, which is more than the lever
+  saves over a whole task.
+
 * **The proxy sees both requests, so it knows the achievable prefix.** `prefix.shared_tokens` is
   how much of this request's prompt is a prefix of the previous request in the same session — what
   a perfectly-behaved cache *could* have reused. The gap between that and the reading above is the
@@ -56,7 +65,8 @@ def approx_tokens(text: str) -> int:
 class Tracer:
     """Owns the trace file, the body store and the per-session previous-request memory."""
 
-    def __init__(self, trace_dir: pathlib.Path, cold_ms: float):
+    def __init__(self, trace_dir: pathlib.Path, cold_ms: float, dedup: bool = False,
+                 dedup_min_bytes: int = 200):
         self.dir = trace_dir
         self.bodies = trace_dir / "bodies"
         self.bodies.mkdir(parents=True, exist_ok=True)
@@ -65,6 +75,39 @@ class Tracer:
         self.lock = threading.Lock()
         self.seq = 0
         self.prev: dict[str, list[dict]] = {}   # session -> previous request's messages
+        self.dedup = dedup
+        self.dedup_min_bytes = dedup_min_bytes
+        # session -> content sha -> the label the first copy was given. Grow-only and keyed by
+        # content, which is what makes every rewrite reproducible across turns.
+        self.seen_content: dict[str, dict[str, int]] = {}
+
+    def apply_dedup(self, session: str, messages: list[dict]) -> tuple[list[dict], int, int]:
+        """Replace repeated message content with a stable reference to its first occurrence."""
+        if not self.dedup:
+            return messages, 0, 0
+        first = self.seen_content.setdefault(session, {})
+        out, replaced, saved = [], 0, 0
+        for i, m in enumerate(messages):
+            content = m.get("content")
+            if i == 0 or not isinstance(content, str) or len(content) < self.dedup_min_bytes:
+                out.append(m)
+                continue
+            h = sha(content)
+            # `first` is keyed by content and remembers WHERE the first copy sits. The index test
+            # matters: every turn re-sends the whole transcript, so without it the original copy
+            # would be rewritten into a reference to itself the moment it was seen a second time,
+            # and the prefix would move under the cache on every single turn.
+            if h not in first:
+                first[h] = i
+            if first[h] != i:
+                ref = (f"[identical to the content of message #{first[h]} earlier in this "
+                       f"conversation, sha256:{h[:16]}]")
+                replaced += 1
+                saved += len(content) - len(ref)
+                out.append({**m, "content": ref})
+            else:
+                out.append(m)
+        return out, replaced, saved
 
     def store_body(self, text: str) -> str:
         h = sha(text)
@@ -172,6 +215,11 @@ def make_handler(tracer: Tracer, upstream: str):
 
             messages = payload.get("messages") or []
             stream = bool(payload.get("stream"))
+            messages, dedup_replaced, dedup_saved = tracer.apply_dedup(
+                sha(str(messages[0].get("content", "")) if messages else "empty")[:16], messages)
+            if dedup_replaced:
+                payload["messages"] = messages
+                raw = json.dumps(payload).encode()
             # Ollama omits `usage` from a streamed response unless asked. Asking is additive and
             # touches nothing in the prompt, so it cannot move the cache or the model's output --
             # it just means a streaming agent is accounted for as well as a blocking one.
@@ -201,7 +249,7 @@ def make_handler(tracer: Tracer, upstream: str):
                 "messages": msg_rows, "prompt_sha": prompt_sha,
                 "prefix": prefix,
                 "memo": {"hit": False, "key": prompt_sha},
-                "dedup": {"replaced": 0, "bytes_saved": 0},
+                "dedup": {"replaced": dedup_replaced, "bytes_saved": dedup_saved},
                 "cold_ms_per_prompt_token": tracer.cold_ms,
                 "proxy": {"injected_stream_usage": injected_usage},
             }
@@ -305,12 +353,16 @@ def main() -> int:
     ap.add_argument("--trace-dir", required=True)
     ap.add_argument("--upstream", default=UPSTREAM)
     ap.add_argument("--cold-ms-per-prompt-token", type=float, default=COLD_MS_PER_PROMPT_TOKEN)
+    ap.add_argument("--dedup", action="store_true",
+                    help="I-4: replace a repeated message with a stable reference to its first copy")
+    ap.add_argument("--dedup-min-bytes", type=int, default=200)
     args = ap.parse_args()
 
-    tracer = Tracer(pathlib.Path(args.trace_dir), args.cold_ms_per_prompt_token)
+    tracer = Tracer(pathlib.Path(args.trace_dir), args.cold_ms_per_prompt_token,
+                    dedup=args.dedup, dedup_min_bytes=args.dedup_min_bytes)
     srv = Server(("127.0.0.1", args.port), make_handler(tracer, args.upstream))
     print(f"trace proxy on http://127.0.0.1:{args.port} -> {args.upstream}, "
-          f"trace -> {args.trace_dir}/trace.jsonl", flush=True)
+          f"trace -> {args.trace_dir}/trace.jsonl, dedup={args.dedup}", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

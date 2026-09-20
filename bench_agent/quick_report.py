@@ -34,7 +34,7 @@ import json
 import math
 import pathlib
 import sys
-from itertools import combinations
+from bench_agent.replay_bench import split_conversations
 
 COLD_MS_PER_PROMPT_TOKEN = 5.96
 DECODE_MS_PER_TOKEN = 50.0
@@ -74,7 +74,19 @@ def load_arm(d: pathlib.Path) -> dict:
             if line.strip():
                 trace.append(json.loads(line))
     cfg = json.loads((d / "config.json").read_text()) if (d / "config.json").exists() else {}
-    return {"dir": d, "results": results, "trace": trace, "config": cfg}
+
+    # Attribute each request to the task it was made for. `ab.py` runs tasks strictly in sequence,
+    # one fresh proxy each, so the nth conversation in the trace is the nth row of results.jsonl.
+    # Without this the pooled table would compare, say, four tasks of one arm against three of the
+    # other, and the difference would be the missing task rather than the lever.
+    order = list(results)
+    convs = sorted(split_conversations(trace), key=lambda c: c[0]["ts"])
+    by_task: dict[str, list[dict]] = {}
+    for i, conv in enumerate(convs):
+        if i < len(order):
+            by_task.setdefault(order[i], []).extend(conv)
+    return {"dir": d, "results": results, "trace": trace, "by_task": by_task,
+            "conversations": len(convs), "config": cfg}
 
 
 def trace_totals(trace: list[dict]) -> dict:
@@ -110,6 +122,11 @@ def main() -> int:
         print(f"- **{name}** `{a['dir'].name}` agent={cfg.get('agent')} model={cfg.get('model')} "
               f"proxy={cfg.get('proxy')} flags={cfg.get('proxy_flags')} "
               f"commit={str(cfg.get('git_commit'))[:8]} ollama={cfg.get('ollama_version')}")
+    for name, a in arms.items():
+        if a["conversations"] != len(a["results"]):
+            print(f"> **WARNING** `{name}`: the trace splits into {a['conversations']} "
+                  f"conversations but {len(a['results'])} tasks were run, so per-task attribution "
+                  f"below may be wrong. Treat the pooled table as approximate.\n")
     print()
 
     # ---- per task ----
@@ -127,13 +144,15 @@ def main() -> int:
         print(f"| {t} | " + " | ".join(cells) + " |")
     print()
 
-    # ---- pooled ----
-    print("## Pooled\n")
+    # ---- pooled, over the tasks BOTH arms ran ----
+    paired_tasks = [t for t in all_tasks if all(t in a["results"] for a in arms.values())]
+    print(f"## Pooled over the {len(paired_tasks)} tasks both arms ran\n")
     print("| metric | " + " | ".join(arms) + " |")
     print("|" + "---|" * (len(arms) + 1))
-    tot = {n: trace_totals(a["trace"]) for n, a in arms.items()}
-    solved = {n: sum(1 for r in a["results"].values() if r["solved"]) for n, a in arms.items()}
-    ntask = {n: len(a["results"]) for n, a in arms.items()}
+    tot = {n: trace_totals([r for t in paired_tasks for r in a["by_task"].get(t, [])])
+           for n, a in arms.items()}
+    solved = {n: sum(1 for t in paired_tasks if a["results"][t]["solved"]) for n, a in arms.items()}
+    ntask = {n: len(paired_tasks) for n in arms}
 
     def row(label: str, fmt):
         print(f"| {label} | " + " | ".join(fmt(n) for n in arms) + " |")
@@ -143,7 +162,8 @@ def main() -> int:
     row("solve rate (Wilson 95%)", lambda n: (
         f"{solved[n]/max(ntask[n],1):.0%} "
         f"[{wilson(solved[n], ntask[n])[0]:.0%}, {wilson(solved[n], ntask[n])[1]:.0%}]"))
-    row("agent wall, total s", lambda n: f"{sum(r['wall_s'] for r in arms[n]['results'].values()):.0f}")
+    row("agent wall, total s",
+        lambda n: f"{sum(arms[n]['results'][t]['wall_s'] for t in paired_tasks):.0f}")
     row("requests", lambda n: str(tot[n]["requests"]))
     row("prompt tokens", lambda n: f"{tot[n]['prompt_tokens']:,}")
     row("completion tokens", lambda n: f"{tot[n]['completion_tokens']:,}")
@@ -180,7 +200,7 @@ def main() -> int:
     # ---- paired ----
     if len(arms) == 2:
         (na, a), (nb, b) = list(arms.items())
-        paired = [t for t in all_tasks if t in a["results"] and t in b["results"]]
+        paired = paired_tasks
         bb = sum(1 for t in paired if b["results"][t]["solved"] and not a["results"][t]["solved"])
         cc = sum(1 for t in paired if a["results"][t]["solved"] and not b["results"][t]["solved"])
         p = mcnemar_exact(bb, cc)

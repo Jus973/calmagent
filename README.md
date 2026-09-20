@@ -91,6 +91,47 @@ It is worth something because a shorter context makes every remaining token of b
 
 <!-- AB-RESULTS -->
 
+## Pooled
+
+| metric | off | on |
+|---|---|---|
+| tasks run | 4 | 3 |
+| solved | 1/4 | 2/3 |
+| solve rate (Wilson 95%) | 25% [5%, 70%] | 67% [21%, 94%] |
+| agent wall, total s | 1181 | 215 |
+| requests | 69 | 34 |
+| prompt tokens | 683,233 | 120,998 |
+| completion tokens | 8,610 | 6,262 |
+| upstream wall s | 1173 | 473 |
+| · decode s (derived) | 430 | 313 |
+| · prefill s (derived) | 742 | 159 |
+| prefill with no cache s (derived) | 4072 | 721 |
+| cache capture of available saving | 81.8% | 77.9% |
+| dedup: messages replaced | 0 | 23 |
+| dedup: bytes removed from prompts | 0 | 29,833 |
+
+> Total wall clock and total token counts above are **confounded**: the arms take different numbers of turns because the lever forks the agent's trajectory. Compare the per-request block below, and see `bench_agent/replay_bench.py` for the lever measured without an agent.
+
+## Per request (normalised for how many turns the agent took)
+
+| metric | off | on |
+|---|---|---|
+| requests per task | 17.2 | 11.3 |
+| prompt tokens per request | 9,902 | 3,559 |
+| completion tokens per request | 125 | 184 |
+| upstream ms per request | 16,993 | 13,898 |
+| upstream ms per completion token | 136 | 75 |
+
+## Paired
+
+- 3 paired tasks; discordant: on-only 1, off-only 0
+- exact McNemar p = 1.000
+- **solve rate is unchanged within noise.** With 3 tasks this test can only detect a large difference; a one- or two-task gap is not evidence either way.
+
+Full table, per task, including the arms' configs: [`results/proxy.md`](results/proxy.md) — regenerate with `python -m bench_agent.publish runs/20260920T072732Z_ab_off runs/20260920T072732Z_ab_on`.
+
+<!-- /AB-RESULTS -->
+
 ## What this does not claim
 
 - **Not that we made the cache work better.** This agent's cache already works. What the proxy did

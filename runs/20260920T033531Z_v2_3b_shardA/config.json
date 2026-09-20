@@ -1,0 +1,49 @@
+{
+ "arms": [
+  "v2",
+  "v2_pm",
+  "wcr"
+ ],
+ "Ns": [
+  1,
+  2,
+  4,
+  8
+ ],
+ "seeds": [
+  0
+ ],
+ "subset": "/home/ubuntu/repos/calmagent/data/subset.json",
+ "limit": null,
+ "tasks": [
+  "ClassEval_0",
+  "ClassEval_6",
+  "ClassEval_13",
+  "ClassEval_19",
+  "ClassEval_24",
+  "ClassEval_32",
+  "ClassEval_37",
+  "ClassEval_47"
+ ],
+ "max_comps": 64,
+ "budget_from": "runs/20260920T024127Z_c3b_t4_shardA",
+ "budget_tokens": null,
+ "feedback": "F1",
+ "k": 4,
+ "repair_n": 8,
+ "rounds": 3,
+ "test_width": 1,
+ "sampling": {
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "max_tokens_slot": 512,
+  "max_tokens_class": 2048
+ },
+ "per_class_timeout_s": 5,
+ "wall_timeout_s": 20,
+ "model": "qwen3t4",
+ "base_url": "http://localhost:11434/v1",
+ "no_n": "1",
+ "server_env": {},
+ "started": "2026-09-20T03:35:31.056363+00:00"
+}

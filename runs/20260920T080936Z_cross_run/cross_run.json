@@ -1,0 +1,124 @@
+{
+  "summary": {
+    "comparisons": 6,
+    "median_reusable_prefix_share": 0.1373,
+    "total_tokens_wasted_across_runs": 66419,
+    "total_cost_s": 395.9,
+    "causes": {
+      "timestamp in tool output": 6
+    },
+    "cold_ms_per_prompt_token": 5.96,
+    "note": "Upper bound twice over, and neither bound is this bench's real-world cost. It assumes the server still holds the earlier run's prefix, which with one KV slot it usually will not; and on this bench the diverging line is the parent temp directory's mtime, which run_agent.py creates fresh per task, so the harness is the trigger rather than the agent or a real repo. What the figure does show exactly is the mechanism: one volatile line 40 tokens in costs everything behind it.",
+    "caveat": "trigger is harness-created; see module docstring"
+  },
+  "findings": [
+    {
+      "conversation": 0,
+      "runs": [
+        "20260920T070307Z_probe10_off",
+        "20260920T072732Z_ab_off"
+      ],
+      "messages_in_deepest_prompt": 40,
+      "first_divergent_message": 3,
+      "first_divergent_byte": 148,
+      "cause": "timestamp in tool output",
+      "reusable_prefix_share": 0.0685,
+      "prompt_tokens": 21366,
+      "tokens_reusable_across_runs": 1464,
+      "tokens_wasted_across_runs": 19902,
+      "cost_of_waste_s": 118.6,
+      "sample_a": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:03 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA",
+      "sample_b": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:27 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA"
+    },
+    {
+      "conversation": 1,
+      "runs": [
+        "20260920T070307Z_probe10_off",
+        "20260920T072732Z_ab_off"
+      ],
+      "messages_in_deepest_prompt": 10,
+      "first_divergent_message": 3,
+      "first_divergent_byte": 148,
+      "cause": "timestamp in tool output",
+      "reusable_prefix_share": 0.2607,
+      "prompt_tokens": 4064,
+      "tokens_reusable_across_runs": 1059,
+      "tokens_wasted_across_runs": 3005,
+      "cost_of_waste_s": 17.9,
+      "sample_a": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:11 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA",
+      "sample_b": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:38 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA"
+    },
+    {
+      "conversation": 2,
+      "runs": [
+        "20260920T070307Z_probe10_off",
+        "20260920T072732Z_ab_off"
+      ],
+      "messages_in_deepest_prompt": 50,
+      "first_divergent_message": 3,
+      "first_divergent_byte": 148,
+      "cause": "timestamp in tool output",
+      "reusable_prefix_share": 0.1041,
+      "prompt_tokens": 10525,
+      "tokens_reusable_across_runs": 1096,
+      "tokens_wasted_across_runs": 9429,
+      "cost_of_waste_s": 56.2,
+      "sample_a": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:12 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA",
+      "sample_b": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:39 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA"
+    },
+    {
+      "conversation": 3,
+      "runs": [
+        "20260920T070307Z_probe10_off",
+        "20260920T072732Z_ab_off"
+      ],
+      "messages_in_deepest_prompt": 40,
+      "first_divergent_message": 3,
+      "first_divergent_byte": 148,
+      "cause": "timestamp in tool output",
+      "reusable_prefix_share": 0.0398,
+      "prompt_tokens": 28791,
+      "tokens_reusable_across_runs": 1146,
+      "tokens_wasted_across_runs": 27645,
+      "cost_of_waste_s": 164.8,
+      "sample_a": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:15 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA",
+      "sample_b": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:43 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA"
+    },
+    {
+      "conversation": 4,
+      "runs": [
+        "20260920T070307Z_probe10_off",
+        "20260920T072732Z_ab_off"
+      ],
+      "messages_in_deepest_prompt": 18,
+      "first_divergent_message": 3,
+      "first_divergent_byte": 148,
+      "cause": "timestamp in tool output",
+      "reusable_prefix_share": 0.1373,
+      "prompt_tokens": 7378,
+      "tokens_reusable_across_runs": 1013,
+      "tokens_wasted_across_runs": 6365,
+      "cost_of_waste_s": 37.9,
+      "sample_a": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:23 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA",
+      "sample_b": "20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:58 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 TA"
+    },
+    {
+      "conversation": 5,
+      "runs": [
+        "20260920T070307Z_probe10_off",
+        "20260920T072732Z_ab_off"
+      ],
+      "messages_in_deepest_prompt": 4,
+      "first_divergent_message": 3,
+      "first_divergent_byte": 146,
+      "cause": "timestamp in tool output",
+      "reusable_prefix_share": 0.9411,
+      "prompt_tokens": 1247,
+      "tokens_reusable_across_runs": 1174,
+      "tokens_wasted_across_runs": 73,
+      "cost_of_waste_s": 0.4,
+      "sample_a": "p 20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 03:25 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 ",
+      "sample_b": "p 20 02:56 . | drwx------@ 3 justinzhang  staff    96 Sep 20 04:04 .. | -rw-r--r--@ 1 justinzhang  staff   851 Sep 20 02:56 "
+    }
+  ]
+}

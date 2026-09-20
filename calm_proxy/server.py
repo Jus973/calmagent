@@ -15,6 +15,7 @@ from aiohttp import web
 
 from .config import Config
 from .middleware import trace as tracemw
+from .middleware.prefix import PrefixTracker
 from .middleware.trace import TraceWriter
 from . import sse
 
@@ -59,6 +60,7 @@ class Proxy:
         self.config = config
         trace_dir = config.trace_dir if config.has("trace") else None
         self.tracer = TraceWriter(trace_dir)
+        self.prefix = PrefixTracker() if config.has("prefix") else None
         self._client: aiohttp.ClientSession | None = None
 
     # -- lifecycle ---------------------------------------------------------
@@ -155,6 +157,8 @@ class Proxy:
             "upstream_status": None,
             "error": None,
         }
+        if self.prefix is not None:
+            record["prefix"] = self.prefix.observe(session, messages)
 
         started = time.monotonic()
         try:

@@ -82,3 +82,45 @@ Also landed:
   your traffic — a recording from a real run becomes a regression test, no model needed.
 
 `pytest tests/proxy -q` → 83 passed.
+
+### 03:25 DV-3 FINAL — what `calm_proxy` is, what it measures, what to believe
+`calm_proxy` is an OpenAI-compatible proxy you put between any agent and any local model server.
+Point the agent's base URL at it and nothing else changes: `/v1/chat/completions`,
+`/v1/completions`, streaming and not, tool calls, unknown paths, statuses and SSE bytes all pass
+through unmodified. Every lever is off unless named in `--enable`.
+
+```
+python -m calm_proxy --upstream http://127.0.0.1:11434 --port 8787 \
+    --trace-dir runs/<ts>_proxy --enable trace,prefix,dedup,memo --dedup-min-bytes 200
+calm-proxy lint  runs/<ts>_proxy     # per-session: where the prefix is lost, and why
+calm-proxy stats runs/<ts>_proxy     # pooled: what each lever did, in seconds and bytes
+calm-run -- pytest -q                # content-addressed command cache (calm-run shim <dir> for PATH)
+```
+
+The levers, and the honest claim for each:
+* `trace` (I-1) — one JSON record per request (session, seq, per-message shas, prompt_sha, usage,
+  timing, `upstream` durations, memo/dedup/prefix fields), bodies content-addressed under
+  `bodies/<sha>.txt`. Pure instrument; changes nothing.
+* `prefix` (I-2) — classifies why the KV prefix broke (`append_only`, `system_changed`,
+  `history_rewritten`, `timestamp_like`, …) and estimates the reuse a prefix-aligned agent could
+  have had. Diagnostic only, so it is safe in both A/B arms. Its output is a *gap estimate*, not a
+  measured saving.
+* `dedup` (I-4) — repeated tool results become `[identical to result #k (sha256:…)]`, deterministic
+  in the history, so it shrinks the prompt without moving the prefix. Off by default, ≥200 bytes.
+* `memo` (I-3) — exact-match replay for deterministic requests (`temperature == 0` or a seed),
+  grow-only store, never stores errors, sets `X-Calm-Memo: hit`. This is `results/cache.md`'s
+  64–75% verifier-cache result applied to the model call.
+* `calm-run` (I-5) — same idea for the shell: key = sha256(tracked+untracked-unignored tree, cmd,
+  cwd, env minus volatile vars); replays stdout/stderr byte-for-byte and the exit code; never
+  caches timeouts or 137.
+
+Believe: the passthrough identity (tested direct-vs-proxy over a 5-turn conversation, streamed and
+buffered, plus recorded probe bodies), the trace contents, memo/dedup/calm-run hit counts, and the
+`upstream` prompt-eval milliseconds on the native path. Do not quote the `prefix gap` seconds as a
+measured speedup — it is a lower-bound conversion at a per-machine constant (5.96 ms/tok from LC).
+And note `cached_tokens` is null on Ollama's `/v1`: on that server the cache signal is
+`prompt_eval_ms` via `/api/chat`, nothing else.
+
+Shipped across PRs #11–#16 (proxy+trace, prefix+lint, dedup, memo, calm-run+e2e, DV-2 robustness).
+`pytest -q` → 215 passed, 1 skipped. No model, no GPU, no network: `calm_proxy/fake_upstream.py`
+is the backend for every test.
